@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DeckPro</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,500;0,700;0,900;1,400;1,500;1,700;1,900&display=swap" rel="stylesheet">
+  <meta name="theme-color" content="#E06010">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <div id="titlebar">
+    <span id="titlebar-version"></span>
+  </div>
+
+  <header>
+    <h1><img src="assets/deckpro_wordmark_white.png" alt="DeckPro" class="header-logo" draggable="false"></h1>
+    <button class="deck-header-meta" id="deck-header-meta" title="Open Deck Library">
+      <span class="dhm-series" id="dhm-series"></span>
+      <span class="dhm-sep" id="dhm-sep1">·</span>
+      <span class="dhm-title" id="dhm-title"></span>
+      <span class="dhm-sep" id="dhm-sep2">·</span>
+      <span class="dhm-date" id="dhm-date"></span>
+    </button>
+    <span class="saved-indicator" id="saved-indicator">saved</span>
+    <div class="spacer"></div>
+    <span class="pro7-dot" id="pro7-dot" title="Pro7 connection status"></span>
+    <span class="pro7-status-text" id="pro7-status-text">Not connected</span>
+    <div class="undo-redo-group">
+      <button class="btn-undo-redo" id="btn-undo" title="Undo (⌘Z)" disabled>
+        <svg width="14" height="14" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M4 7h8a5 5 0 0 1 0 10H7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+          <path d="M4 7l3-3M4 7l3 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+      <button class="btn-undo-redo" id="btn-redo" title="Redo (⌘⇧Z)" disabled>
+        <svg width="14" height="14" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M16 7H8a5 5 0 0 0 0 10h5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+          <path d="M16 7l-3-3M16 7l-3 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+    </div>
+    <button class="btn-decks" id="btn-decks" title="Deck Library">
+      <svg width="13" height="13" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="2" y="5" width="16" height="12" rx="2" stroke="currentColor" stroke-width="1.5" fill="none"/>
+        <path d="M2 8h16" stroke="currentColor" stroke-width="1.5"/>
+        <path d="M6 3h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+      Decks
+    </button>
+    <button id="btn-generate">Export</button>
+    <div class="header-more-wrap" id="header-more-wrap">
+      <button class="btn-more" id="btn-more" title="More">···</button>
+      <div class="header-more-menu" id="header-more-menu">
+        <button class="more-menu-item" id="mm-schemes">
+          <svg width="13" height="13" viewBox="0 0 20 20" fill="none"><circle cx="6" cy="8" r="2" fill="currentColor"/><circle cx="14" cy="8" r="2" fill="currentColor"/><circle cx="10" cy="14" r="2" fill="currentColor"/></svg>
+          Schemes
+        </button>
+        <button class="more-menu-item" id="mm-settings">
+          <svg width="13" height="13" viewBox="0 0 20 20" fill="none"><path fill-rule="evenodd" clip-rule="evenodd" d="M11.49 2.04a1.75 1.75 0 0 0-2.98 0L7.44 3.63a.25.25 0 0 1-.22.13H5.5A1.75 1.75 0 0 0 3.75 5.5v1.72c0 .09-.05.17-.13.22L2.04 8.51a1.75 1.75 0 0 0 0 2.98l1.58 1.07c.08.05.13.13.13.22v1.72c0 .97.78 1.75 1.75 1.75h1.72c.09 0 .17.05.22.13l1.07 1.58a1.75 1.75 0 0 0 2.98 0l1.07-1.58a.25.25 0 0 1 .22-.13h1.72c.97 0 1.75-.78 1.75-1.75v-1.72c0-.09.05-.17.13-.22l1.58-1.07a1.75 1.75 0 0 0 0-2.98l-1.58-1.07a.25.25 0 0 1-.13-.22V5.5c0-.97-.78-1.75-1.75-1.75h-1.72a.25.25 0 0 1-.22-.13L11.49 2.04ZM10 7.25a2.75 2.75 0 1 0 0 5.5 2.75 2.75 0 0 0 0-5.5Z" fill="currentColor"/></svg>
+          Settings
+        </button>
+        <button class="more-menu-item" id="mm-gen-history">
+          <svg width="13" height="13" viewBox="0 0 20 20" fill="none"><path d="M10 3v9m0 0l-3-3m3 3l3-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 14v1.5A1.5 1.5 0 0 0 5.5 17h9a1.5 1.5 0 0 0 1.5-1.5V14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          Generation history
+        </button>
+        <div class="more-menu-divider"></div>
+        <button class="more-menu-item" id="mm-help">
+          <svg width="13" height="13" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="8" stroke="currentColor" stroke-width="1.5"/><path d="M10 14v-1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M10 11c0-2 3-2 3-4a3 3 0 0 0-6 0" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          Help
+        </button>
+        <button class="more-menu-item" id="mm-changelog">
+          <svg width="13" height="13" viewBox="0 0 20 20" fill="none"><path d="M10 2a8 8 0 1 0 0 16A8 8 0 0 0 10 2Z" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M10 6v4l3 2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          What's New <span class="more-version" id="more-version"></span>
+        </button>
+        <div class="more-menu-divider"></div>
+        <button class="more-menu-item" id="mm-theme">
+          <svg id="mm-theme-icon" width="13" height="13" viewBox="0 0 20 20" fill="none"><path d="M10 3v1M10 16v1M3 10H2M18 10h-1M5.05 5.05l-.71-.71M15.66 14.66l-.71-.71M5.05 14.95l-.71.71M15.66 5.34l-.71.71M13 10a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          <span id="mm-theme-label">Dark Mode</span>
+        </button>
+      </div>
+      <div class="gen-history-panel" id="gen-history-panel"></div>
+    </div>
+  </header>
+
+  <div class="workspace">
+
+    <aside class="sidebar">
+      <div class="sidebar-actions-header">
+        <span class="queue-header-label">Add Item</span>
+      </div>
+      <div class="sidebar-actions">
+        <button class="btn-add" id="btn-add-scripture">
+          <div class="icon icon-scripture">S</div>
+          Scripture
+        </button>
+        <button class="btn-add" id="btn-add-point">
+          <div class="icon icon-point">P</div>
+          Point
+        </button>
+        <button class="btn-add" id="btn-add-blank">
+          <div class="icon icon-blank">B</div>
+          Blank
+        </button>
+        <button class="btn-add" id="btn-add-image">
+          <div class="icon icon-image">I</div>
+          Image
+        </button>
+        <button class="btn-add btn-add-full" id="btn-add-custom">
+          <div class="icon icon-custom">C</div>
+          Custom
+        </button>
+      </div>
+      <div class="sidebar-queue-header">
+        <span class="queue-header-label">Deck</span>
+        <button class="btn-show-blanks" id="btn-show-blanks" title="Show / hide blank slides">
+          <svg width="14" height="14" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M10 4C5.5 4 1.7 7 1 10c.7 3 4.5 6 9 6s8.3-3 9-6c-.7-3-4.5-6-9-6Z" stroke="currentColor" stroke-width="1.5" fill="none"/>
+            <circle cx="10" cy="10" r="2.5" fill="currentColor"/>
+          </svg>
+          Blanks
+        </button>
+      </div>
+      <div class="slide-queue" id="slide-queue"></div>
+    </aside>
+
+    <main class="main-panel" id="main-panel"></main>
+
+    <button class="btn-outline-float" id="btn-notes-open" title="Toggle Notes panel">
+      <svg width="13" height="13" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="2" y="3" width="16" height="2" rx="1" fill="currentColor"/>
+        <rect x="2" y="8" width="10" height="2" rx="1" fill="currentColor"/>
+        <rect x="2" y="13" width="12" height="2" rx="1" fill="currentColor"/>
+      </svg>
+      Notes
+    </button>
+
+
+    <aside class="notes-panel" id="notes-panel">
+      <div class="notes-resize-handle" id="notes-resize-handle"></div>
+      <div class="notes-panel-hdr">
+        <div class="notes-tabs">
+          <button class="notes-tab active" id="tab-outline" data-tab="outline">Outline</button>
+          <button class="notes-tab" id="tab-speaker" data-tab="speaker">Speaker Notes</button>
+        </div>
+        <button class="notes-panel-close" id="btn-notes-close" title="Hide panel">×</button>
+      </div>
+      <div class="notes-tab-body" id="notes-tab-outline">
+        <div class="notes-panel-body" id="notes-panel-body"></div>
+      </div>
+      <div class="notes-tab-body hidden" id="notes-tab-speaker">
+        <div class="pdf-drop-zone" id="pdf-drop-zone">
+          <div class="pdf-drop-icon">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z" stroke="currentColor" stroke-width="1.5" fill="none"/>
+              <path d="M14 2v6h6M12 18v-6M9 15l3-3 3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <div class="pdf-drop-label">Drop a PDF here</div>
+          <div class="pdf-drop-sub">Speaker notes, script, or outline</div>
+          <input type="file" id="pdf-file-input" accept=".pdf" style="display:none">
+          <button class="btn-pdf-browse" id="btn-pdf-browse">Browse…</button>
+          <div class="pdf-gdrive-row">
+            <input class="pdf-gdrive-input" id="pdf-gdrive-input" type="text" placeholder="Paste Google Drive or Docs link…" autocomplete="off">
+            <button class="btn-pdf-gdrive-load" id="btn-pdf-gdrive-load">Load</button>
+          </div>
+        </div>
+        <div class="pdf-viewer" id="pdf-viewer" style="display:none">
+          <div class="pdf-viewer-hdr">
+            <span class="pdf-viewer-name" id="pdf-viewer-name"></span>
+            <div class="pdf-viewer-controls">
+              <button class="btn-pdf-zoom" id="btn-pdf-zoom-out" title="Zoom out">−</button>
+              <span class="pdf-zoom-val" id="pdf-zoom-val">100%</span>
+              <button class="btn-pdf-zoom" id="btn-pdf-zoom-in" title="Zoom in">+</button>
+              <button class="btn-pdf-clear" id="btn-pdf-clear">× Remove</button>
+            </div>
+          </div>
+          <div class="pdf-frame-wrap" id="pdf-frame-wrap">
+            <iframe class="pdf-frame" id="pdf-frame" src=""></iframe>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+  </div>
+
+  <!-- Decks modal — Deck Library -->
+  <div class="decks-modal" id="decks-modal">
+    <div class="decks-modal-inner">
+      <div class="decks-modal-hdr">
+        <span class="decks-modal-title">Deck Library</span>
+        <input class="deck-search" id="deck-search" type="text" placeholder="Search decks…" autocomplete="off" spellcheck="false">
+        <button id="decks-modal-close">×</button>
+      </div>
+      <div class="decks-modal-toolbar">
+        <button class="btn-new-deck" id="btn-new-deck">+ New Deck</button>
+        <div class="deck-filter-group">
+          <button class="deck-filter-btn active" data-filter="active">Decks</button>
+          <button class="deck-filter-btn" data-filter="templates">Templates</button>
+          <button class="deck-filter-btn" data-filter="archived">Archived</button>
+          <button class="deck-filter-btn" data-filter="deleted">Trash</button>
+        </div>
+        <div class="deck-sort-group">
+          <button class="deck-sort-btn active" data-sort="date">Date</button>
+          <button class="deck-sort-btn" data-sort="series">Series</button>
+          <button class="deck-sort-btn" data-sort="updated">Updated</button>
+        </div>
+      </div>
+      <div class="new-deck-form hidden" id="new-deck-form">
+        <div class="new-deck-fields">
+          <input class="new-deck-input" id="nd-series" type="text" placeholder="Series" list="series-datalist" autocomplete="off" spellcheck="true">
+          <datalist id="series-datalist"></datalist>
+          <input class="new-deck-input" id="nd-title" type="text" placeholder="Title" spellcheck="true">
+          <input class="new-deck-input" id="nd-speaker" type="text" placeholder="Speaker" spellcheck="true">
+          <input class="new-deck-input new-deck-date" id="nd-date" type="date">
+        </div>
+        <div class="new-deck-scheme-row">
+          <label class="new-deck-scheme-label">Scheme</label>
+          <select class="new-deck-scheme-select" id="nd-scheme"></select>
+          <label class="new-deck-scheme-label" style="margin-left:12px">Start from</label>
+          <select class="new-deck-scheme-select" id="nd-template"><option value="">Blank deck</option></select>
+        </div>
+        <div class="new-deck-actions">
+          <button class="btn-nd-create" id="btn-nd-create">Create Deck</button>
+          <button class="btn-nd-cancel" id="btn-nd-cancel">Cancel</button>
+        </div>
+      </div>
+      <div class="decks-list" id="decks-list"></div>
+      <div class="decks-modal-footer" id="decks-modal-footer"></div>
+    </div>
+  </div>
+
+  <!-- Help modal -->
+  <div class="help-modal" id="help-modal">
+    <div class="help-modal-inner">
+      <div class="help-modal-hdr">
+        <span class="help-modal-title">DeckPro Guide</span>
+        <button id="help-modal-close">×</button>
+      </div>
+      <div class="help-nav" id="help-nav"></div>
+      <div class="help-body" id="help-body"></div>
+    </div>
+  </div>
+
+  <!-- Changelog modal -->
+  <div class="changelog-modal" id="changelog-modal">
+    <div class="changelog-modal-inner">
+      <div class="changelog-modal-hdr">
+        <span class="changelog-modal-title">What's New</span>
+        <button id="changelog-modal-close">×</button>
+      </div>
+      <div class="changelog-modal-body" id="changelog-modal-body"></div>
+    </div>
+  </div>
+
+  <!-- Generate overview modal -->
+  <div class="gen-modal" id="gen-modal">
+    <div class="gen-modal-inner">
+      <div class="gen-modal-hdr">
+        <span class="gen-modal-title" id="gen-modal-title">Generated</span>
+        <button id="gen-modal-close">×</button>
+      </div>
+      <div class="gen-modal-body" id="gen-modal-body"></div>
+    </div>
+  </div>
+
+  <!-- Delivery overlay -->
+  <div class="delivery-overlay" id="delivery-overlay">
+    <div class="delivery-box">
+      <div class="delivery-icon">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 2L2 7l10 5 10-5-10-5z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+          <path d="M2 17l10 5 10-5" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+          <path d="M2 12l10 5 10-5" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div class="delivery-title">Delivering to ProPresenter</div>
+      <div class="delivery-sub">Don't switch to ProPresenter until this completes</div>
+      <div class="delivery-steps" id="delivery-steps"></div>
+    </div>
+  </div>
+
+  <!-- Rebuild overlay -->
+  <div class="delivery-overlay" id="rebuild-overlay">
+    <div class="delivery-box">
+      <div class="delivery-icon">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div class="delivery-title" id="rebuild-title">Redeploying DeckPro</div>
+      <div class="delivery-sub" id="rebuild-sub">Takes about 30 seconds — don't close the app</div>
+      <div class="delivery-steps" id="rebuild-steps"></div>
+      <button class="rebuild-close-btn" id="rebuild-close-btn" style="display:none">Close</button>
+    </div>
+  </div>
+
+  <div class="toast-wrap" id="toast-wrap"></div>
+  <script src="app.js"></script>
+</body>
+</html>

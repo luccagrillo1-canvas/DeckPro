@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #E06010;
+      display: flex; align-items: center; justify-content: center;
+      height: 100vh; overflow: hidden;
+      -webkit-app-region: drag;
+    }
+    img {
+      width: 200px; height: auto;
+      opacity: 0;
+      animation: fadein .35s ease .1s forwards;
+    }
+    @keyframes fadein { to { opacity: 1; } }
+  </style>
+</head>
+<body>
+  <img src="assets/deckpro_wordmark_white.png" alt="DeckPro" draggable="false">
+</body>
+</html>

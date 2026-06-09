@@ -1,0 +1,69 @@
+{
+  "name": "deckpro",
+  "productName": "DeckPro",
+  "version": "3.0.0",
+  "description": "ProPresenter 7 slide deck builder for Canvas Church",
+  "main": "main.js",
+  "scripts": {
+    "start": "node server.js",
+    "electron": "electron .",
+    "build": "electron-builder --mac",
+    "install-app": "rm -rf /Applications/DeckPro.app && cp -R dist/mac-arm64/DeckPro.app /Applications/",
+    "ship": "npm run build && npm run install-app && open /Applications/DeckPro.app",
+    "release": "npm run build && bash scripts/release.sh"
+  },
+  "build": {
+    "appId": "church.canvas.deckpro",
+    "productName": "DeckPro",
+    "mac": {
+      "category": "public.app-category.productivity",
+      "icon": "public/assets/DeckPro.icon",
+      "extendInfo": {
+        "CFBundleIconName": "AppIcon"
+      },
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "arm64",
+            "x64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "arm64",
+            "x64"
+          ]
+        }
+      ]
+    },
+    "dmg": {
+      "title": "DeckPro ${version}",
+      "icon": "public/assets/DeckPro.icns"
+    },
+    "files": [
+      "main.js",
+      "server.js",
+      "library.js",
+      "builder.js",
+      "buildProp.js",
+      "encode.js",
+      "rtf.js",
+      "public/**/*",
+      "ProPresenter7-Proto/**/*",
+      "node_modules/**/*",
+      "!node_modules/electron-builder/**/*"
+    ],
+    "artifactName": "${productName}-${version}-${arch}.${ext}"
+  },
+  "dependencies": {
+    "express": "^5.2.1",
+    "protobufjs": "^8.0.0"
+  },
+  "devDependencies": {
+    "electron": "^42.0.1",
+    "electron-builder": "^26.8.1"
+  },
+  "repository": "github:OWNER/deckpro"
+}
