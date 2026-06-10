@@ -2,9 +2,16 @@
 
 // ─── Version & Changelog ──────────────────────────────────────────────────────
 
-const APP_VERSION = '3.0.0';
+const APP_VERSION = '3.0.1';
 
 const CHANGELOG = [
+  {
+    version: '3.0.1',
+    date: '2026-06-10',
+    changes: [
+      'Export keyboard shortcut is now ⌘E (was ⌘G)',
+    ],
+  },
   {
     version: '3.0.0',
     date: '2026-06-09',
@@ -5828,7 +5835,7 @@ const HELP_SECTIONS = [
       </ul>
       <h4>Keyboard Shortcuts</h4>
       <ul>
-        <li><span class="help-kbd">⌘1–5</span> Add slide type &nbsp;&nbsp; <span class="help-kbd">⌘G</span> Export</li>
+        <li><span class="help-kbd">⌘1–5</span> Add slide type &nbsp;&nbsp; <span class="help-kbd">⌘E</span> Export</li>
         <li><span class="help-kbd">⌘Z</span> Undo &nbsp;&nbsp; <span class="help-kbd">⌘⇧Z</span> Redo</li>
         <li><span class="help-kbd">⌘B</span> Bold in body text and bullet fields</li>
         <li><span class="help-kbd">Enter</span> in Bible reference field — triggers lookup</li>
@@ -5925,7 +5932,7 @@ const HELP_SECTIONS = [
     label: 'Exporting',
     html: `
       <h3>Exporting the Deck</h3>
-      <p>Click <strong>Export</strong> in the top-right (or <span class="help-kbd">⌘G</span>). DeckPro always exports directly to Pro7 — writes the deck to your ProPresenter library and updates your Props panel in one step.</p>
+      <p>Click <strong>Export</strong> in the top-right (or <span class="help-kbd">⌘E</span>). DeckPro always exports directly to Pro7 — writes the deck to your ProPresenter library and updates your Props panel in one step.</p>
       <h4>Before You Export</h4>
       <ul>
         <li><strong>Close ProPresenter first</strong> — Pro7 must not be running; it overwrites the props config on quit and would undo the export</li>

@@ -88,8 +88,8 @@ function buildMenu() {
         },
         { type: 'separator' },
         {
-          label: 'Generate',
-          accelerator: 'CmdOrCtrl+G',
+          label: 'Export',
+          accelerator: 'CmdOrCtrl+E',
           click: () => renderer(`document.getElementById('btn-generate')?.click()`),
         },
         { type: 'separator' },
