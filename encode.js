@@ -19,6 +19,71 @@ const os = require('os');
 const { buildPresentation } = require('./builder');
 const { buildAllPropCues, encodePropDocument } = require('./buildProp');
 
+// ─── Pro7 config backup safety net ──────────────────────────────────────────
+// Before each export we patch Pro7's Configuration/Props in place. Keep a
+// rolling set of timestamped backups so a bad export can always be undone.
+
+const PROPS_CONFIG_PATH = path.join(
+  os.homedir(),
+  'Library/Application Support/RenewedVision/ProPresenter/UserWorkspaces/ProPresenter/Configuration/Props'
+);
+
+function propsBackupDir() {
+  const base = process.env.DECKPRO_DATA_DIR || path.join(os.homedir(), '.deckpro');
+  return path.join(base, 'pro7-config-backups');
+}
+
+const PROPS_BACKUP_KEEP = 10;
+
+/** Write a timestamped backup of the current Props config and prune to the last N. */
+function backupPropsConfig(raw) {
+  const dir = propsBackupDir();
+  fs.mkdirSync(dir, { recursive: true });
+  const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+  const dest = path.join(dir, `Props-${stamp}.bak`);
+  fs.writeFileSync(dest, raw);
+  // Prune oldest beyond the keep limit
+  try {
+    const files = fs.readdirSync(dir)
+      .filter(f => f.startsWith('Props-') && f.endsWith('.bak'))
+      .sort(); // ISO timestamps sort chronologically
+    while (files.length > PROPS_BACKUP_KEEP) {
+      fs.unlinkSync(path.join(dir, files.shift()));
+    }
+  } catch (_) {}
+  return dest;
+}
+
+/** List available Props-config backups, newest first. */
+function listPropsBackups() {
+  const dir = propsBackupDir();
+  if (!fs.existsSync(dir)) return [];
+  return fs.readdirSync(dir)
+    .filter(f => f.startsWith('Props-') && f.endsWith('.bak'))
+    .map(f => {
+      const full = path.join(dir, f);
+      const st = fs.statSync(full);
+      return { file: f, path: full, sizeKb: Math.round(st.size / 1024), at: st.mtime.toISOString() };
+    })
+    .sort((a, b) => b.at.localeCompare(a.at));
+}
+
+/**
+ * Restore a Props-config backup over the live config.
+ * Pro7 MUST be closed first (caller's responsibility) or it will clobber the restore on quit.
+ * Before overwriting, snapshots the current config so a restore is itself undoable.
+ */
+function restorePropsBackup(backupFile) {
+  const dir = propsBackupDir();
+  // Accept either a bare filename or an absolute path; never escape the backups dir
+  const src = path.isAbsolute(backupFile) ? backupFile : path.join(dir, path.basename(backupFile));
+  if (!src.startsWith(dir) && !path.isAbsolute(backupFile)) throw new Error('Invalid backup path');
+  if (!fs.existsSync(src)) throw new Error('Backup not found');
+  if (fs.existsSync(PROPS_CONFIG_PATH)) backupPropsConfig(fs.readFileSync(PROPS_CONFIG_PATH));
+  fs.copyFileSync(src, PROPS_CONFIG_PATH);
+  return true;
+}
+
 /**
  * Find the active Pro7 library folder in Application Support.
  * Pro7 scans this folder for PropDocument files — _Props.pro must go here.
@@ -356,18 +421,16 @@ const DECKPRO_SLOT_UUID_SET = new Set(DECKPRO_PROP_SLOTS.map(s => s.uuid));
  * - All other data — unknown fields, collections, Pro7 internals — is preserved byte-for-byte.
  */
 async function updateConfigProps(newCues) {
-  const confPath = path.join(
-    os.homedir(),
-    'Library/Application Support/RenewedVision/ProPresenter/UserWorkspaces/ProPresenter/Configuration/Props'
-  );
+  const confPath = PROPS_CONFIG_PATH;
+  let backupPath = null;
   try {
     if (!fs.existsSync(confPath)) {
       console.log('updateConfigProps: Config/Props not found, skipping');
-      return;
+      return { backupPath: null };
     }
 
     const raw = fs.readFileSync(confPath);
-    fs.writeFileSync(confPath + '.deckpro-backup', raw);
+    backupPath = backupPropsConfig(raw);
 
     // Build map: uuid → encoded field bytes for incoming prop cues
     const incomingEncoded = {};
@@ -472,8 +535,10 @@ async function updateConfigProps(newCues) {
     fs.writeFileSync(confPath, patched);
     const replaced = [...incomingUuids].filter(u => existingCueUuids.has(u)).length;
     console.log(`updateConfigProps: patched ${replaced} cues, added ${added} new, DeckPro collection ${deckproCollectionWritten ? 'updated' : 'created'} (file: ${raw.length}b → ${patched.length}b)`);
+    return { backupPath };
   } catch (err) {
     console.error('updateConfigProps failed (non-fatal):', err.message);
+    return { backupPath };
   }
 }
 
@@ -627,12 +692,14 @@ async function encode(spec, outputPath, legacyPropsDir) {
     } catch (_) {}
 
     const writtenProps = [];
+    let propsBackup = null;
     if (propBuf && propDocObj) {
       // Props go directly into Configuration/Props — no _Props.pro needed in the library
       // Update visual content of permanent prop slots in Configuration/Props
-      await updateConfigProps(propDocObj.cues || []);
+      const r = await updateConfigProps(propDocObj.cues || []);
+      propsBackup = r && r.backupPath ? path.basename(r.backupPath) : null;
     }
-    return { presentationBytes: presentationBuf.length, props: writtenProps, presentationPath: presPath, delivered: true };
+    return { presentationBytes: presentationBuf.length, props: writtenProps, presentationPath: presPath, delivered: true, propsBackup };
   }
 
   // Local file mode — write to disk
@@ -657,4 +724,4 @@ async function encode(spec, outputPath, legacyPropsDir) {
   return { presentationBytes: presentationBuf.length, props: writtenProps, presentationPath: outPath };
 }
 
-module.exports = { encode, encodeToBuffer };
+module.exports = { encode, encodeToBuffer, listPropsBackups, restorePropsBackup, PROPS_CONFIG_PATH };

@@ -515,36 +515,31 @@ function rtfResponseHoldTitle() {
  * Uses the notes RTF format (deftab1300, no stroke color).
  * Returns null if spans are empty (caller falls back to emptyNotesRtf).
  */
-function rtfNotes(spans) {
+function rtfNotes(spans, style = {}) {
   if (!spans || !spans.length || spans.every(s => !s.text)) return null;
 
   const { content, allBold, mixed } = buildSpanContent(spans);
-  const pard     = '\\pard\\pardeftab1300\\pardirnatural\\partightenfactor0';
-  const colortbl = '{\\colortbl;\\red255\\green255\\blue255;\\red255\\green255\\blue255;}\n{\\*\\expandedcolortbl;;\\csgray\\c100000;}';
+  const notesFont = style.notesFont     || 'Montserrat-Medium';
+  const boldFont  = style.notesBoldFont || 'Montserrat-Black';
+  const fs        = (style.notesSize || 50) * 2;
+  const adv       = style.notesFontAdv || {};
+  const cf        = charFmt(adv);
+  const pard      = makePard(adv, false);
+  const colortbl  = '{\\colortbl;\\red255\\green255\\blue255;\\red255\\green255\\blue255;}\n{\\*\\expandedcolortbl;;\\csgray\\c100000;}';
 
   let fonttbl, body;
   if (mixed) {
-    fonttbl = '{\\fonttbl\\f0\\fnil\\fcharset0 Montserrat-Medium;\\f1\\fnil\\fcharset0 Montserrat-Black;}';
-    body    = `\\f0\\fs100 \\cf2 \\CocoaLigature0 ${content}`;
+    fonttbl = `{\\fonttbl\\f0\\fnil\\fcharset0 ${notesFont};\\f1\\fnil\\fcharset0 ${boldFont};}`;
+    body    = `\\f0\\fs${fs} \\cf2 ${cf}\\CocoaLigature0 ${content}`;
   } else if (allBold) {
-    fonttbl = '{\\fonttbl\\f0\\fnil\\fcharset0 Montserrat-Black;}';
-    body    = `\\f0\\b\\fs100 \\cf2 \\CocoaLigature0 ${content}`;
+    fonttbl = `{\\fonttbl\\f0\\fnil\\fcharset0 ${boldFont};}`;
+    body    = `\\f0\\b\\fs${fs} \\cf2 ${cf}\\CocoaLigature0 ${content}`;
   } else {
-    fonttbl = '{\\fonttbl\\f0\\fnil\\fcharset0 Montserrat-Medium;}';
-    body    = `\\f0\\fs100 \\cf2 \\CocoaLigature0 ${content}`;
+    fonttbl = `{\\fonttbl\\f0\\fnil\\fcharset0 ${notesFont};}`;
+    body    = `\\f0\\fs${fs} \\cf2 ${cf}\\CocoaLigature0 ${content}`;
   }
 
-  const rtfStr = [
-    '{\\rtf1\\ansi\\ansicpg1252\\cocoartf2865',
-    `\\cocoatextscaling0\\cocoaplatform0${fonttbl}`,
-    colortbl,
-    '\\deftab1300',
-    pard,
-    '',
-    `${body}}`,
-  ].join('\n');
-
-  return toBase64(rtfStr);
+  return toBase64(rtfDoc({ fonttbl, colortbl, pard, body }));
 }
 
 module.exports = {

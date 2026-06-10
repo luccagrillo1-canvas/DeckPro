@@ -2,9 +2,19 @@
 
 // ─── Version & Changelog ──────────────────────────────────────────────────────
 
-const APP_VERSION = '3.0.1';
+const APP_VERSION = '3.1.0';
 
 const CHANGELOG = [
+  {
+    version: '3.1.0',
+    date: '2026-06-10',
+    changes: [
+      "Auto-manage ProPresenter on export — if Pro7 is open, DeckPro now quits it, writes your deck and props, then relaunches it automatically. Toggle in Settings under Pro7 Connection (on by default); turn it off to be warned instead.",
+      "Pro7 config safety net — every export keeps a rolling backup (last 10) of ProPresenter's props configuration. Restore any of them with one click from Export history, in case an export ever goes sideways.",
+      "Slide notes now have full formatting controls in Schemes — font, size, alignment, spacing and more for the confidence-monitor notes, separate from every other element.",
+      "Renamed Generation history to Export history to match the rest of the app.",
+    ],
+  },
   {
     version: '3.0.1',
     date: '2026-06-10',
@@ -706,12 +716,15 @@ const DEFAULT_STYLE_SCHEME = () => ({
   propBoldFont: 'Montserrat-ExtraBold',
   titleFont:    'Montserrat-ExtraBold',
   startEndFont: 'Montserrat-ExtraBold',
+  notesFont:     'Montserrat-Medium',
+  notesBoldFont: 'Montserrat-Black',
   // Sizes (pt — backend doubles for RTF automatically)
   bodySize:      44,
   titleSize:     60,
   startEndSize:  45,
   propBodySize:  80,
   propTitleSize: 110,
+  notesSize:     50,
   // Transitions — main presentation
   transitionType:     'fade',
   transitionDuration: 0.6,
@@ -741,6 +754,7 @@ const DEFAULT_STYLE_SCHEME = () => ({
   propBoldFontAdv: FONT_ADV_DEFAULTS(),
   titleFontAdv:    FONT_ADV_DEFAULTS(),
   startEndFontAdv: FONT_ADV_DEFAULTS(),
+  notesFontAdv:    FONT_ADV_DEFAULTS(),
   // Build order per slide type
   buildOrders: {
     content: [
@@ -783,6 +797,7 @@ const DEFAULT_STATE = () => ({
     outputFolder:        '',
     pro7Port:            1025,
     pro7Password:        '',
+    autoManagePro7:      true,
     macros:              DEFAULT_MACROS(),
     features:            DEFAULT_FEATURES(),
     stageScreen:         DEFAULT_STAGESCREEN(),
@@ -910,9 +925,13 @@ function loadState() {
         // Merge with defaults so all new fields get values
         const merged = { ...DEF, ...out };
         // Merge nested fontAdv objects too
-        for (const k of ['bodyFontAdv','propBodyFontAdv','boldFontAdv','titleFontAdv','startEndFontAdv']) {
+        for (const k of ['bodyFontAdv','propBodyFontAdv','boldFontAdv','titleFontAdv','startEndFontAdv','notesFontAdv']) {
           merged[k] = { ...FONT_ADV_DEFAULTS(), ...(out[k] || {}) };
         }
+        // Seed slide-notes font fields for schemes saved before notes were customizable
+        if (!out.notesFont)     merged.notesFont     = DEF.notesFont;
+        if (!out.notesBoldFont) merged.notesBoldFont = DEF.notesBoldFont;
+        if (!out.notesSize)     merged.notesSize     = DEF.notesSize;
         // Seed the prop point font from the main bold font on first load
         if (!out.propBoldFont)    merged.propBoldFont    = merged.boldFont;
         if (!out.propBoldFontAdv) merged.propBoldFontAdv = JSON.parse(JSON.stringify(merged.boldFontAdv));
@@ -1865,6 +1884,13 @@ function renderConfigPanel(panel) {
             : 'Not connected — check Pro7 is running and Network API is enabled in preferences'}
         </div>
         ${pro7rt.connected && pro7rt.liveMacros ? `<div id="macro-live-panel"></div>` : ''}
+        <div class="rc-toggle-row" id="automanage-row" style="margin-top:12px">
+          <div class="toggle ${cfg.autoManagePro7 !== false ? 'on' : ''}" id="automanage-toggle"></div>
+          <span>Auto-manage ProPresenter on export</span>
+        </div>
+        <div style="font-size:11.5px;color:var(--muted);margin-top:6px;line-height:1.5">
+          When on, exporting will quit ProPresenter if it's open, write your deck and props, then relaunch it — so you never have to close it by hand. Turn off to be warned instead.
+        </div>
       </div>
 
       <div class="settings-section">
@@ -2013,6 +2039,13 @@ function renderConfigPanel(panel) {
   });
   document.getElementById('cfg-pro7password').addEventListener('input', e => {
     cfg.pro7Password = e.target.value;
+    saveState();
+  });
+
+  // Auto-manage ProPresenter on export
+  document.getElementById('automanage-row')?.addEventListener('click', () => {
+    cfg.autoManagePro7 = !(cfg.autoManagePro7 !== false); // default-true semantics
+    document.getElementById('automanage-toggle').classList.toggle('on', cfg.autoManagePro7);
     saveState();
   });
 
@@ -2449,6 +2482,7 @@ function renderStylePanel(panel) {
     ['propBoldFontAdv', 'propBoldFont', 'Point — prop / LED wall', scheme.propBoldFont || 'Montserrat-ExtraBold', null,           null           ],
     ['titleFontAdv',    'titleFont',    'Reference bar font',     scheme.titleFont    || 'Montserrat-ExtraBold', 'titleSize',    'propTitleSize'],
     ['startEndFontAdv', 'startEndFont', 'Start / End font',       scheme.startEndFont || 'Montserrat-ExtraBold', 'startEndSize', null           ],
+    ['notesFontAdv',    'notesFont',    'Slide notes — confidence monitor', scheme.notesFont || 'Montserrat-Medium', 'notesSize', null           ],
   ];
 
   panel.innerHTML = `
@@ -2678,7 +2712,7 @@ function renderStylePanel(panel) {
   });
 
   // Font selects (family + style)
-  ['bodyFont', 'propBodyFont', 'boldFont', 'propBoldFont', 'titleFont', 'startEndFont'].forEach(field => {
+  ['bodyFont', 'propBodyFont', 'boldFont', 'propBoldFont', 'titleFont', 'startEndFont', 'notesFont'].forEach(field => {
     const famSel = document.getElementById(`sf-fam-${field}`);
     const stySel = document.getElementById(`sf-sty-${field}`);
     if (!famSel || !stySel) return;
@@ -4143,11 +4177,13 @@ function preflightWarnings() {
 async function generate() {
   const btn = document.getElementById('btn-generate');
 
-  // Check Pro7 is closed BEFORE disabling the button — so we can bail cleanly
+  // Check Pro7 BEFORE disabling the button — so we can bail cleanly.
+  // If auto-manage is on, the server will quit/relaunch Pro7 for us, so we proceed.
+  const autoManage = state.config.autoManagePro7 !== false;
   try {
     const check = await fetch('/api/pro7/process');
     const { running } = await check.json();
-    if (running) { showProRunningModal(); return; }
+    if (running && !autoManage) { showProRunningModal(); return; }
   } catch (_) { /* can't check — allow export anyway */ }
 
   const warnings = preflightWarnings();
@@ -4401,12 +4437,19 @@ async function runGenerate(downloadMode, btn, deliverMode = false) {
   const spec     = buildSpec();
   const fileName = spec.name;
   spec.deliverMode = true;
+  spec.autoManagePro7 = state.config.autoManagePro7 !== false;
 
-  showDeliveryOverlay([
+  const steps = [
     'Building presentation',
     'Writing to ProPresenter library',
     'Writing props',
-  ]);
+  ];
+  if (spec.autoManagePro7) {
+    steps.unshift('Closing ProPresenter (if open)');
+    steps.push('Relaunching ProPresenter');
+  }
+  showDeliveryOverlay(steps);
+  const lastStep = steps.length - 1;
 
   try {
     updateDeliveryStep(0, false);
@@ -4417,12 +4460,11 @@ async function runGenerate(downloadMode, btn, deliverMode = false) {
     });
     const data = await res.json();
     if (data.ok) {
-      updateDeliveryStep(0, true);
-      await new Promise(r => setTimeout(r, 300));
-      updateDeliveryStep(1, true);
-      await new Promise(r => setTimeout(r, 300));
-      updateDeliveryStep(2, true);
-      await new Promise(r => setTimeout(r, 500));
+      // Mark all steps done in sequence for a smooth finish
+      for (let i = 0; i <= lastStep; i++) {
+        updateDeliveryStep(i, true);
+        await new Promise(r => setTimeout(r, i === lastStep ? 500 : 250));
+      }
       hideDeliveryOverlay();
       addGenHistoryEntry(data);
       showGenerateModal(data, spec);
@@ -4470,7 +4512,10 @@ function triggerDownloads(data) {
   for (const p of (data.props || [])) dl(p.data, p.fileName);
 }
 
-function showWarningDialog(warnings) {
+function showWarningDialog(warnings, opts = {}) {
+  const heading  = opts.heading  || 'Before you export';
+  const okLabel  = opts.okLabel  || 'Export Anyway';
+  const cancelLabel = opts.cancelLabel || 'Go Back';
   return new Promise(resolve => {
     const overlay = document.createElement('div');
     overlay.className = 'warn-overlay';
@@ -4482,12 +4527,12 @@ function showWarningDialog(warnings) {
             <path d="M10 8v4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
             <circle cx="10" cy="14.5" r=".75" fill="currentColor"/>
           </svg>
-          <span>Before you export</span>
+          <span>${esc(heading)}</span>
         </div>
         <ul class="warn-list">${warnings.map(w => `<li>${esc(w)}</li>`).join('')}</ul>
         <div class="warn-actions">
-          <button class="warn-btn-cancel">Go Back</button>
-          <button class="warn-btn-ok">Export Anyway</button>
+          <button class="warn-btn-cancel">${esc(cancelLabel)}</button>
+          <button class="warn-btn-ok">${esc(okLabel)}</button>
         </div>
       </div>`;
     document.body.appendChild(overlay);
@@ -4670,6 +4715,7 @@ function addGenHistoryEntry(data) {
     fileName: data.presentationPath.split('/').pop(),
     path: data.presentationPath,
     propsPath: data.props?.[0]?.path || null,
+    propsBackup: data.propsBackup || null,
     sizeKB: data.presentationBytes ? Math.round(data.presentationBytes / 1024) : null,
     delivered: !!data.delivered,
     date: new Date().toISOString(),
@@ -4726,8 +4772,11 @@ function renderGenHistory() {
         </div>
         <div class="ghi-info">
           <div class="ghi-name" title="${esc(e.path)}">${esc(e.fileName)}</div>
-          <div class="ghi-meta">${e.delivered ? '⬆ Exported · ' : ''}${e.sizeKB ? e.sizeKB + ' KB · ' : ''}${fmt(e.date)}</div>
+          <div class="ghi-meta">${e.delivered ? '⬆ Exported · ' : ''}${e.sizeKB ? e.sizeKB + ' KB · ' : ''}${fmt(e.date)}${e.propsBackup ? ' · 🛟 backup' : ''}</div>
         </div>
+        ${e.propsBackup ? `<button class="ghi-restore" data-backup="${esc(e.propsBackup)}" title="Restore Pro7's props config to the state before this export">
+          <svg width="13" height="13" viewBox="0 0 20 20" fill="none"><path d="M4 10a6 6 0 1 1 1.8 4.3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M4 6v4h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>` : ''}
         <button class="ghi-reveal" data-path="${esc(e.path)}" title="Reveal in Finder">
           <svg width="13" height="13" viewBox="0 0 20 20" fill="none"><path d="M3 10h14M10 3l7 7-7 7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </button>
@@ -4745,6 +4794,38 @@ function renderGenHistory() {
       fetch('/api/reveal', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ filePath: btn.dataset.path }) });
     });
   });
+  panel.querySelectorAll('.ghi-restore').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      restorePro7Backup(btn.dataset.backup);
+    });
+  });
+}
+
+async function restorePro7Backup(backupFile) {
+  const ok = await showWarningDialog([
+    "This restores ProPresenter's props configuration to the state it was in right before that export.",
+    'Your current props config will be snapshotted first, so this is undoable.',
+    'If ProPresenter is open it will be quit and relaunched.',
+  ], { heading: 'Restore ProPresenter config', okLabel: 'Restore', cancelLabel: 'Cancel' });
+  if (!ok) return;
+  const autoManage = state.config.autoManagePro7 !== false;
+  try {
+    const res = await fetch('/api/pro7/restore', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ file: backupFile, autoManage }),
+    });
+    const data = await res.json();
+    if (data.ok) {
+      toast('success', 'Pro7 config restored', data.relaunched ? 'ProPresenter was relaunched.' : 'Restored the props configuration.');
+    } else if (data.pro7Running) {
+      toast('error', 'ProPresenter is open', 'Turn on Auto-manage ProPresenter, or close Pro7, then try again.');
+    } else {
+      toast('error', 'Restore failed', data.error || 'Unknown error');
+    }
+  } catch (err) {
+    toast('error', 'Network error', err.message);
+  }
 }
 
 function initGenHistory() {

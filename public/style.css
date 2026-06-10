@@ -186,7 +186,7 @@ header h1:hover { opacity: .8; }
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .ghi-meta { font-size: 11px; color: var(--muted); margin-top: 1px; }
-.ghi-reveal {
+.ghi-reveal, .ghi-restore {
   background: none; border: none;
   color: var(--muted); cursor: pointer;
   padding: 4px; border-radius: 4px;
@@ -195,6 +195,7 @@ header h1:hover { opacity: .8; }
   transition: color .15s, background .15s;
 }
 .ghi-reveal:hover { color: var(--text); background: var(--border); }
+.ghi-restore:hover { color: var(--blue); background: var(--border); }
 
 .gen-history-header {
   display: flex; align-items: center; justify-content: space-between;

@@ -60,6 +60,8 @@ const DEFAULT_STYLE = {
   boldFont:     'Montserrat-ExtraBold',
   titleFont:    'Montserrat-ExtraBold',
   startEndFont: 'Montserrat-ExtraBold',
+  notesFont:     'Montserrat-Medium',  // confidence-monitor slide notes
+  notesBoldFont: 'Montserrat-Black',
 
   // Sizes (pt)
   bodySize:      44,
@@ -67,6 +69,7 @@ const DEFAULT_STYLE = {
   startEndSize:  45,
   propBodySize:  80,
   propTitleSize: 110,
+  notesSize:     50,
 
   // Transitions
   transitionType:     'fade',
@@ -92,6 +95,7 @@ const DEFAULT_STYLE = {
   boldFontAdv:     null,
   titleFontAdv:    null,
   startEndFontAdv: null,
+  notesFontAdv:    null,
 
   // Canvas (presentation)
   canvasW: 1920, canvasH: 1080,
@@ -118,7 +122,7 @@ function resolveStyle(style = {}) {
   const s  = { ...DEFAULT_STYLE, ...style };
   const fa = s.fillEnabled ? 1 : 0;
   // Normalize fontAdv fields — merge with defaults so callers always get a full object
-  const ADKEY = ['bodyFontAdv', 'propBodyFontAdv', 'boldFontAdv', 'titleFontAdv', 'startEndFontAdv'];
+  const ADKEY = ['bodyFontAdv', 'propBodyFontAdv', 'boldFontAdv', 'titleFontAdv', 'startEndFontAdv', 'notesFontAdv'];
   const out = {
     ...s,
     cFill:        { ...hexToColor(s.bodyFill),  alpha: fa },
@@ -1061,7 +1065,7 @@ function buildStartCue(spec, rs) {
   const titleEl = makeStartEndTitleEl({ text: label }, rs);
   const slots   = [makeSlot(bodyEl), makeSlot(titleEl, { info: 2 })];
   const bo      = applyBuildOrders(slots, rs.buildOrders?.startEnd);
-  const notesRtf = rtf.rtfNotes([{ text }]) || emptyNotesRtf();
+  const notesRtf = rtf.rtfNotes([{ text }], rs) || emptyNotesRtf();
   return {
     uuid: uuid(),
     _type: 'start',
@@ -1084,7 +1088,7 @@ function buildEndCue(spec, rs) {
   const titleEl = makeStartEndTitleEl({ text: label }, rs);
   const slots   = [makeSlot(bodyEl), makeSlot(titleEl, { info: 2 })];
   const bo      = applyBuildOrders(slots, rs.buildOrders?.startEnd);
-  const notesRtf = rtf.rtfNotes([{ text }]) || emptyNotesRtf();
+  const notesRtf = rtf.rtfNotes([{ text }], rs) || emptyNotesRtf();
   return {
     uuid: uuid(),
     _type: 'end',
@@ -1103,7 +1107,7 @@ function buildBlankCue(spec, rs) {
   const bo = applyBuildOrders([], rs.buildOrders?.blank);
   // Slides notes from spans (confidence monitor text repurposed as notes)
   const notesRtf = (spec.spans?.length)
-    ? (rtf.rtfNotes(spec.spans) || emptyNotesRtf())
+    ? (rtf.rtfNotes(spec.spans, rs) || emptyNotesRtf())
     : emptyNotesRtf();
   const actions = [
     makeSlideAction(spec.label || '', [], bo, notesRtf),
@@ -1170,7 +1174,7 @@ function buildScriptureCues(spec, rs) {
 
     const label     = idx === 0 ? spec.label : `${spec.label} (${idx + 1})`;
     // Notes always contain the FULL verse (all bodies) so confidence monitor shows complete text
-    const notesRtf  = allBodySpansForNotes ? (rtf.rtfNotes(allBodySpansForNotes) || emptyNotesRtf()) : emptyNotesRtf();
+    const notesRtf  = allBodySpansForNotes ? (rtf.rtfNotes(allBodySpansForNotes, rs) || emptyNotesRtf()) : emptyNotesRtf();
     return {
       uuid: uuid(),
       _type: 'scripture',
@@ -1215,7 +1219,7 @@ function buildPointCues(spec, rs) {
 
       const propName = `${spec.propBaseName}_${idx + 1}`;
       const label    = idx === 0 ? spec.label : `${spec.label} (${idx + 1})`;
-      const notesRtf = rtf.rtfNotes([{ text: bulletText, bold: true }]);
+      const notesRtf = rtf.rtfNotes([{ text: bulletText, bold: true }], rs);
 
       return {
         uuid: uuid(),
@@ -1245,7 +1249,7 @@ function buildPointCues(spec, rs) {
   ];
   const bo = applyBuildOrders(slots, rs.buildOrders?.point);
 
-  const notesRtf = rtf.rtfNotes([{ text: spec.bodyText || '', bold: true }]);
+  const notesRtf = rtf.rtfNotes([{ text: spec.bodyText || '', bold: true }], rs);
   return [{
     uuid: uuid(),
     _type: 'point',
@@ -1264,7 +1268,7 @@ function buildPointCues(spec, rs) {
 function buildImageCue(spec, rs) {
   const gradEl   = makeGradientElement(rs);
   const liveEl   = makeLiveElement(rs);
-  const notesRtf = rtf.rtfNotes([{ text: spec.label || 'Image' }]) || emptyNotesRtf();
+  const notesRtf = rtf.rtfNotes([{ text: spec.label || 'Image' }], rs) || emptyNotesRtf();
 
   const slots = [
     makeSlot(liveEl, { info: 2 }),
@@ -1301,7 +1305,7 @@ function buildResponseCardCues(responses = {}, rs = {}) {
     { text: '\n2 — ' + (r2 || '') },
     { text: '\n3 — ' + (r3 || '') },
   ];
-  const rcNotesRtf = rtf.rtfNotes(rcNotesSpans) || emptyNotesRtf();
+  const rcNotesRtf = rtf.rtfNotes(rcNotesSpans, rs) || emptyNotesRtf();
 
   const ss = STAGE_SCREEN;
 

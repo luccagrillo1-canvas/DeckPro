@@ -1,12 +1,14 @@
 {
   "name": "deckpro",
   "productName": "DeckPro",
-  "version": "3.0.1",
+  "version": "3.1.0",
   "description": "ProPresenter 7 slide deck builder for Canvas Church",
   "main": "main.js",
   "scripts": {
     "start": "node server.js",
     "electron": "electron .",
+    "preflight": "node scripts/preflight.js",
+    "prebuild": "node scripts/preflight.js",
     "build": "electron-builder --mac",
     "install-app": "rm -rf /Applications/DeckPro.app && cp -R dist/mac-arm64/DeckPro.app /Applications/",
     "ship": "npm run build && npm run install-app && open /Applications/DeckPro.app",

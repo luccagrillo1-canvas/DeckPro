@@ -6,7 +6,7 @@ const os           = require('os');
 const http         = require('http');
 const https        = require('https');
 const { execSync } = require('child_process');
-const { encode }            = require('./encode');
+const { encode, listPropsBackups, restorePropsBackup } = require('./encode');
 const { MACRO_DEFAULTS }   = require('./builder');
 const library              = require('./library');
 
@@ -132,13 +132,61 @@ app.post('/api/reveal', (req, res) => {
   }
 });
 
-app.get('/api/pro7/process', (req, res) => {
+function pro7IsRunning() {
   try {
-    const result = execSync('pgrep -x ProPresenter', { timeout: 2000 }).toString().trim();
-    res.json({ running: result.length > 0 });
+    return execSync('pgrep -x ProPresenter', { timeout: 2000 }).toString().trim().length > 0;
   } catch (_) {
-    // pgrep exits with code 1 if no match — not a real error
-    res.json({ running: false });
+    return false; // pgrep exits 1 when no match
+  }
+}
+
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+/** Gracefully quit Pro7 and wait until the process is fully gone (so it flushes its config). */
+async function quitPro7AndWait(timeoutMs = 20000) {
+  if (!pro7IsRunning()) return true;
+  try { execSync(`osascript -e 'tell application "ProPresenter" to quit'`, { timeout: 5000 }); }
+  catch (_) { /* may already be quitting */ }
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    await sleep(400);
+    if (!pro7IsRunning()) return true;
+  }
+  return !pro7IsRunning();
+}
+
+/** Relaunch Pro7 (fire and forget). */
+function launchPro7() {
+  try { execSync(`open -a ProPresenter`, { timeout: 5000 }); return true; }
+  catch (_) { return false; }
+}
+
+app.get('/api/pro7/process', (req, res) => {
+  res.json({ running: pro7IsRunning() });
+});
+
+// ── Pro7 config backups (safety net for the Props patch) ──────────────────
+app.get('/api/pro7/backups', (req, res) => {
+  try { res.json({ ok: true, backups: listPropsBackups() }); }
+  catch (err) { res.json({ ok: false, error: err.message }); }
+});
+
+app.post('/api/pro7/restore', async (req, res) => {
+  try {
+    const { file, autoManage } = req.body || {};
+    if (!file) return res.status(400).json({ ok: false, error: 'Missing backup file' });
+    const wasRunning = pro7IsRunning();
+    let relaunched = false;
+    if (wasRunning) {
+      if (!autoManage) return res.json({ ok: false, pro7Running: true });
+      const quit = await quitPro7AndWait();
+      if (!quit) return res.json({ ok: false, error: 'Could not close ProPresenter — close it manually and retry.' });
+    }
+    restorePropsBackup(file);
+    if (wasRunning && autoManage) relaunched = launchPro7();
+    res.json({ ok: true, relaunched });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message });
   }
 });
 
@@ -561,9 +609,24 @@ app.post('/api/generate', async (req, res) => {
       return res.json({ ok: true, ...result });
     }
 
+    // Auto-manage ProPresenter: if it's running and the deck patches the live
+    // Props config, quit it (so it flushes), patch, then relaunch.
+    const patchesConfig = !!spec.deliverMode;
+    let pro7WasRunning = false;
+    let pro7Relaunched = false;
+    if (patchesConfig && spec.autoManagePro7 && pro7IsRunning()) {
+      pro7WasRunning = true;
+      const quit = await quitPro7AndWait();
+      if (!quit) {
+        return res.status(409).json({ ok: false, error: 'Could not close ProPresenter — close it manually and retry.' });
+      }
+    }
+
     const outputFolder = spec.outputFolder || DEFAULT_DIR;
     const outputPath   = path.join(outputFolder, `${safe}.pro`);
     const result       = await encode(spec, outputPath);
+
+    if (pro7WasRunning) pro7Relaunched = launchPro7();
 
     res.json({
       ok: true,
@@ -571,6 +634,8 @@ app.post('/api/generate', async (req, res) => {
       presentationPath: result.presentationPath || outputPath,
       presentationBytes: result.presentationBytes,
       props: result.props,
+      propsBackup: result.propsBackup || null,
+      pro7Relaunched,
     });
   } catch (err) {
     console.error('Generate error:', err);
