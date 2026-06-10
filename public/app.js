@@ -2,9 +2,16 @@
 
 // ─── Version & Changelog ──────────────────────────────────────────────────────
 
-const APP_VERSION = '3.1.0';
+const APP_VERSION = '3.1.1';
 
 const CHANGELOG = [
+  {
+    version: '3.1.1',
+    date: '2026-06-10',
+    changes: [
+      "Bible lookup now preserves hard line breaks — poetry like the Psalms keeps its line structure on the slide, the prop, and the LED wall instead of being flattened into one paragraph.",
+    ],
+  },
   {
     version: '3.1.0',
     date: '2026-06-10',
@@ -3077,7 +3084,7 @@ function richEditor(id, spans) {
         <button class="btn-fmt" id="${id}-underline" type="button" title="Underline (⌘U)"><u>U</u></button>
       </div>
       <div class="rich-content" id="${id}" contenteditable="true" spellcheck="true"
-           data-placeholder="Enter text…">${spansToHtml(spans)}</div>
+           data-placeholder="Enter text…">${spansToHtmlPreview(spans)}</div>
     </div>
   `;
 }
@@ -4929,7 +4936,12 @@ async function lookupBibleVerse(slide, ref, overrideBibleId = '') {
 
     if (!data.ok) { toast('error', 'Verse not found', data.error || ref); return; }
 
-    const text = (data.text || '').replace(/\s+/g, ' ').trim();
+    // Preserve hard line breaks (poetry). Collapse only horizontal whitespace; keep newlines.
+    const text = (data.text || '')
+      .replace(/\r\n?/g, '\n')
+      .replace(/[ \t]+/g, ' ')
+      .replace(/ *\n */g, '\n')
+      .trim();
     if (!text) { toast('error', 'No text returned', ref); return; }
 
     const spans = [{ text, bold: false }];

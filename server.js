@@ -379,13 +379,15 @@ app.get('/api/bible/search', async (req, res) => {
   if (!passageId) return res.json({ ok: false, error: `Couldn't parse reference: "${ref}". Try "John 3:16" format.` });
 
   try {
-    const qs = 'content-type=text&include-notes=false&include-titles=false&include-chapter-numbers=false&include-verse-numbers=false&include-verse-spans=false';
+    // Request HTML, not text — HTML carries poetry structure (<p class="q1">/<p class="q2"> per line),
+    // which lets us preserve hard line breaks. Plain-text mode flattens poetry into one paragraph.
+    const qs = 'content-type=html&include-notes=false&include-titles=false&include-chapter-numbers=false&include-verse-numbers=false&include-verse-spans=false';
     const urlPath = `/v1/bibles/${encodeURIComponent(bibleId)}/passages/${encodeURIComponent(passageId)}?${qs}`;
     const r = await bibleFetch(apiKey, urlPath);
     if (r.status !== 200) return res.json({ ok: false, error: `API.Bible returned ${r.status}: ${JSON.stringify(r.body).slice(0, 300)}` });
 
     const raw  = r.body.data?.content || '';
-    const text = raw.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
+    const text = htmlPassageToText(raw);
     const reference = r.body.data?.reference || ref;
 
     if (!text) return res.json({ ok: false, error: 'No text returned for that passage' });
@@ -394,6 +396,30 @@ app.get('/api/bible/search', async (req, res) => {
     res.json({ ok: false, error: err.message });
   }
 });
+
+/**
+ * Convert an API.Bible passage HTML fragment to plain text, preserving hard line
+ * breaks. Each block (<p>, including poetry lines <p class="q1/q2">) and each <br>
+ * becomes a newline; runs of horizontal whitespace collapse but newlines are kept.
+ */
+function htmlPassageToText(html) {
+  return String(html || '')
+    .replace(/<\/(p|div|h[1-6]|li|blockquote)>/gi, '\n')  // block ends → newline
+    .replace(/<br\s*\/?>/gi, '\n')                          // explicit breaks → newline
+    .replace(/<[^>]+>/g, '')                                // strip remaining tags
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&amp;/gi, '&')
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;|&apos;/gi, "'")
+    .replace(/&#(\d+);/g, (_, n) => String.fromCharCode(+n))
+    .replace(/&#x([0-9a-fA-F]+);/g, (_, n) => String.fromCharCode(parseInt(n, 16)))
+    .replace(/[ \t\f\v]+/g, ' ')      // collapse horizontal whitespace only
+    .replace(/ *\n */g, '\n')          // trim spaces around newlines
+    .replace(/\n{3,}/g, '\n\n')        // cap consecutive blank lines
+    .trim();
+}
 
 // ── Google Drive PDF proxy ────────────────────────────────────────────────
 
