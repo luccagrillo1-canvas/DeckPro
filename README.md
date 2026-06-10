@@ -2,7 +2,7 @@
 
 ProPresenter 7 slide deck builder for Canvas Church. Build the weekly message deck — scriptures, points, response cards, props — and export it straight into Pro7 with one click.
 
-![version](https://img.shields.io/github/v/release/OWNER/deckpro?label=latest)
+![version](https://img.shields.io/github/v/release/luccagrillo1-canvas/deckpro?label=latest)
 
 ## Install (Mac)
 

@@ -65,5 +65,5 @@
     "electron": "^42.0.1",
     "electron-builder": "^26.8.1"
   },
-  "repository": "github:OWNER/deckpro"
+  "repository": "github:luccagrillo1-canvas/deckpro"
 }
