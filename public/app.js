@@ -2,9 +2,20 @@
 
 // ─── Version & Changelog ──────────────────────────────────────────────────────
 
-const APP_VERSION = '3.4.1';
+const APP_VERSION = '3.5.0';
 
 const CHANGELOG = [
+  {
+    version: '3.5.0',
+    date: '2026-06-15',
+    changes: [
+      "Schemes redesigned as a cleaner editor instead of one long settings form. Four focused tabs — Text, Layout, Motion, Preview — with Text and Layout as the primary creative areas.",
+      "Text tab rebuilt as compact style cards (Body, Point/Bold, Reference Bar, Start/End, Slide Notes) with Main Screen and Prop/LED Wall settings shown side by side for easy comparison; advanced controls tuck into a per-card disclosure.",
+      "Transitions and Build Order moved together under a new Motion tab (Transitions shown side by side; Build Order as a secondary sub-view).",
+      "New Preview tab shows approximate Main Screen, Prop/LED Wall, Reference Bar, Start/End, and Slide Notes examples built from the scheme's own fonts, sizes, and colours.",
+      "Compact scheme toolbar (selector · name · duplicate · delete · lock · Import from Pro7 · Test Scheme) replaces the old stacked header. \"Presentation Settings\" renamed to \"Preferences.\"",
+    ],
+  },
   {
     version: '3.4.1',
     date: '2026-06-15',
@@ -1750,7 +1761,7 @@ function renderConfigPanel(panel) {
   panel.innerHTML = `
     <div class="slide-form">
       <h2>
-        Presentation Settings
+        Preferences
       </h2>
 
       <div class="settings-section">
@@ -2367,14 +2378,108 @@ function refreshAlignBtns(panel, scheme) {
   });
 }
 
+// ── Text-tab building blocks ────────────────────────────────────────────────
+// Renders the Font / Weight / Size / Color quick-controls for one text role.
+// Element IDs/classes match the originals so existing change handlers bind.
+function fontControl({ advKey, field, sizeField = null, propSizeField = null, scheme, dis }) {
+  const val = scheme[field] || '';
+  const { family: curFam } = parseFontPS(val);
+  const families = _fontFamilyMap ? Object.keys(_fontFamilyMap).sort((a, b) => a.localeCompare(b)) : [];
+  const famOptions = families.length
+    ? families.map(f => `<option value="${esc(f)}" ${f === curFam ? 'selected' : ''}>${esc(f)}</option>`).join('')
+    : `<option value="${esc(curFam)}">${esc(curFam || '…')}</option>`;
+  const stylesForFam = _fontFamilyMap?.[curFam] || (val ? [{ style: parseFontPS(val).style, postscript: val }] : []);
+  const styOptions = stylesForFam.map(({ style, postscript }) =>
+    `<option value="${esc(postscript)}" ${postscript === val ? 'selected' : ''}>${esc(style)}</option>`
+  ).join('') || `<option value="${esc(val)}">${esc(parseFontPS(val).style)}</option>`;
+  const sizeBox = (f) => f
+    ? `<span class="tsc-size-box"><input type="number" class="sz-input sf-size" id="ss-${f}" value="${scheme[f] ?? 44}" min="1" max="400" step="1" ${dis}><span class="sf-unit">pt</span></span>`
+    : '';
+  const curAdv = scheme[advKey] || FONT_ADV_DEFAULTS();
+  const sizeRow = (sizeField || propSizeField)
+    ? `<label class="tsc-row"><span class="tsc-lbl">Size</span>
+         <span class="tsc-size-row">${sizeBox(sizeField)}${propSizeField ? `<span class="tsc-size-sep" title="LED-wall size">wall</span>${sizeBox(propSizeField)}` : ''}</span></label>`
+    : '';
+  return `
+    <label class="tsc-row"><span class="tsc-lbl">Font</span>
+      <select class="sf-fam-select" id="sf-fam-${field}" ${dis}>${famOptions}</select></label>
+    <label class="tsc-row"><span class="tsc-lbl">Weight</span>
+      <select class="sf-sty-select" id="sf-sty-${field}" ${dis}>${styOptions}</select></label>
+    ${sizeRow}
+    <label class="tsc-row"><span class="tsc-lbl">Color</span>
+      <span class="color-input-wrap font-color-inline">
+        <input type="color" class="fav-color" data-scheme="${advKey}" value="${curAdv.color || '#ffffff'}" ${dis}>
+        <input type="text" class="color-hex fav-color-hex" data-scheme="${advKey}" value="${curAdv.color || ''}" maxlength="7" placeholder="Default" ${dis}>
+        <button class="fav-color-clear" data-scheme="${advKey}" title="Reset to default color" ${dis}>×</button>
+      </span></label>`;
+}
+
+// Surface color rows (Bar Fill / Text / Shadow etc). IDs match fontAdvPanel's so handlers bind.
+function extraColorControls(fields, scheme, dis) {
+  return fields.map(({ label, field }) => {
+    const val = scheme[field] || '#ffffff';
+    return `<label class="tsc-row"><span class="tsc-lbl">${esc(label)}</span>
+      <span class="color-input-wrap">
+        <input type="color" id="sc-${field}" value="${esc(val)}" ${dis}>
+        <input type="text" class="color-hex" id="sc-${field}-hex" value="${esc(val)}" maxlength="7" ${dis}>
+      </span></label>`;
+  }).join('');
+}
+
+// Static visual preview of the active scheme (Phase 1 — wired to scheme values, not full render).
+function schemePreviewPanel(scheme) {
+  const fam = (ps) => `"${esc(parseFontPS(ps || '').family || ps || 'sans-serif')}", sans-serif`;
+  const bodyColor  = (scheme.bodyFontAdv && scheme.bodyFontAdv.color) || '#ffffff';
+  const titleFill  = scheme.titleFill || '#a9391a';
+  const titleText  = scheme.titleText || '#f6d046';
+  const seColor    = (scheme.startEndFontAdv && scheme.startEndFontAdv.color) || '#ffffff';
+  // Scale 1080-tall canvas down to a ~200px-tall preview
+  const sc = 200 / (scheme.canvasH || 1080);
+  const px = (pt) => Math.max(8, Math.round((pt || 44) * sc * 2));
+  return `
+    <div class="sp-grid">
+      <div class="sp-card">
+        <div class="sp-card-hd">Main Screen — Scripture</div>
+        <div class="sp-screen sp-16x9">
+          <div class="sp-grad"></div>
+          <div class="sp-refbar" style="background:${esc(titleFill)};color:${esc(titleText)};font-family:${fam(scheme.titleFont)};font-size:${px(scheme.titleSize)}px">JOHN 3:16</div>
+          <div class="sp-body" style="font-family:${fam(scheme.bodyFont)};color:${esc(bodyColor)};font-size:${px(scheme.bodySize)}px">For God so loved the world…</div>
+        </div>
+      </div>
+      <div class="sp-card">
+        <div class="sp-card-hd">Main Screen — Point</div>
+        <div class="sp-screen sp-16x9">
+          <div class="sp-grad"></div>
+          <div class="sp-body sp-point" style="font-family:${fam(scheme.boldFont)};color:${esc(bodyColor)};font-size:${px(scheme.bodySize)}px">LOVE ONE ANOTHER</div>
+        </div>
+      </div>
+      <div class="sp-card">
+        <div class="sp-card-hd">Prop / LED Wall</div>
+        <div class="sp-screen sp-wall">
+          <div class="sp-body sp-wall-body" style="font-family:${fam(scheme.propBodyFont)};font-size:${px(scheme.propBodySize)}px">For God so loved the world…</div>
+        </div>
+      </div>
+      <div class="sp-card">
+        <div class="sp-card-hd">Start / End</div>
+        <div class="sp-screen sp-16x9">
+          <div class="sp-se" style="font-family:${fam(scheme.startEndFont)};color:${esc(seColor)};font-size:${px(scheme.startEndSize)}px">MESSAGE TITLE</div>
+        </div>
+      </div>
+      <div class="sp-card sp-card-wide">
+        <div class="sp-card-hd">Slide Notes — Confidence Monitor</div>
+        <div class="sp-notes" style="font-family:${fam(scheme.notesFont)}">Speaker note preview — only visible on the confidence monitor.</div>
+      </div>
+    </div>
+    <p class="sp-foot">Approximate preview from this scheme's fonts, sizes and colours. Use <strong>Test Scheme</strong> (top right) to generate a real deck in ProPresenter.</p>`;
+}
+
 function renderStylePanel(panel) {
   if (!state.styleSchemes || !state.styleSchemes.length) {
     state.styleSchemes  = [DEFAULT_STYLE_SCHEME()];
     state.activeSchemeId = 'default';
   }
   const scheme = state.styleSchemes.find(p => p.id === state.activeSchemeId) || state.styleSchemes[0];
-  // Advanced tabs (Layout / Build Order) are opt-in; never leave the user stranded on one when hidden.
-  if (!_schemeAdvanced && (_styleTab === 'build' || _styleTab === 'layout')) _styleTab = 'style';
+  if (!['text', 'layout', 'motion', 'preview'].includes(_styleTab)) _styleTab = 'text';
   const locked = !!scheme.isLocked;
   const dis    = locked ? 'disabled' : '';
   const schemeOptions = state.styleSchemes.map(p =>
@@ -2398,16 +2503,6 @@ function renderStylePanel(panel) {
     startEndFont: 'The Start and End title slides.',
     notesFont:    'Speaker notes shown only on the confidence monitor, not to the room.',
   };
-  // [advKey, fontField, label, currentPostscript, sizeField, propSizeField]
-  const FONTS = [
-    ['bodyFontAdv',     'bodyFont',     'Body — main screens',    scheme.bodyFont     || 'Montserrat-Medium',    'bodySize',     null           ],
-    ['propBodyFontAdv', 'propBodyFont', 'Body — prop / LED wall', scheme.propBodyFont || 'Montserrat-SemiBold',  'propBodySize', null           ],
-    ['boldFontAdv',     'boldFont',     'Bold / point text',      scheme.boldFont     || 'Montserrat-ExtraBold', null,           null           ],
-    ['propBoldFontAdv', 'propBoldFont', 'Point — prop / LED wall', scheme.propBoldFont || 'Montserrat-ExtraBold', null,           null           ],
-    ['titleFontAdv',    'titleFont',    'Reference bar font',     scheme.titleFont    || 'Montserrat-ExtraBold', 'titleSize',    'propTitleSize'],
-    ['startEndFontAdv', 'startEndFont', 'Start / End font',       scheme.startEndFont || 'Montserrat-ExtraBold', 'startEndSize', null           ],
-    ['notesFontAdv',    'notesFont',    'Slide notes — confidence monitor', scheme.notesFont || 'Montserrat-Medium', 'notesSize', null           ],
-  ];
 
   panel.innerHTML = `
     <div class="slide-form">
@@ -2419,9 +2514,10 @@ function renderStylePanel(panel) {
         Pick one to use it, or duplicate it to make your own.
       </p>
 
-      <div class="settings-section" style="padding-bottom:0;border:none">
-        <div class="style-scheme-header">
-          <select id="style-scheme-select">${schemeOptions}</select>
+      <div class="scheme-toolbar">
+        <select id="style-scheme-select" class="scheme-tb-select" title="Active scheme">${schemeOptions}</select>
+        <input type="text" id="style-scheme-name" class="scheme-tb-name" value="${esc(scheme.name)}" placeholder="Scheme name" ${dis}>
+        <div class="scheme-tb-icons">
           <button class="btn-scheme-icon" id="btn-scheme-new" title="New scheme">
             <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M6.5 1v11M1 6.5h11" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
           </button>
@@ -2433,15 +2529,11 @@ function renderStylePanel(panel) {
             <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 3.5h9M5 3.5V2h3v1.5M4 3.5l.5 7h4l.5-7" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
           </button>
           <button class="btn-scheme-lock ${locked ? 'locked' : 'unlocked'}" id="btn-scheme-lock"
-            title="${locked ? 'Unlock to edit' : 'Lock scheme'}">
-            ${locked ? '🔒' : '🔓'}
-          </button>
-          <button class="btn-scheme-test" id="btn-scheme-import" title="Build a scheme from a presentation you styled in Pro7">Import from Pro7</button>
-          <button class="btn-scheme-test" id="btn-scheme-test">Test Scheme</button>
+            title="${locked ? 'Unlock to edit' : 'Lock scheme'}">${locked ? '🔒' : '🔓'}</button>
         </div>
-        <div class="field" style="margin-top:10px;margin-bottom:14px">
-          <label>Scheme Name</label>
-          <input type="text" id="style-scheme-name" value="${esc(scheme.name)}" ${dis}>
+        <div class="scheme-tb-actions">
+          <button class="btn-scheme-test" id="btn-scheme-import" title="Build a scheme from a presentation you styled in Pro7">Import from Pro7</button>
+          <button class="btn-scheme-test btn-scheme-test-primary" id="btn-scheme-test">Test Scheme</button>
         </div>
       </div>
 
@@ -2461,108 +2553,127 @@ function renderStylePanel(panel) {
       <fieldset class="scheme-fields ${locked ? 'scheme-locked' : ''}" ${locked ? 'disabled' : ''}>
 
       <div class="style-tabs">
-        ${(_schemeAdvanced
-            ? [['style','Text'],['transitions','Transitions'],['build','Build Order'],['layout','Layout']]
-            : [['style','Text'],['transitions','Transitions']]
-          ).map(([t, lbl]) => `
+        ${[['text','Text'],['layout','Layout'],['motion','Motion'],['preview','Preview']].map(([t, lbl]) => `
           <button class="style-tab${_styleTab === t ? ' active' : ''}" data-tab="${t}">${lbl}</button>`).join('')}
-        <button class="style-adv-toggle ${_schemeAdvanced ? 'on' : ''}" id="btn-scheme-advanced"
-          title="Show advanced layout (element positions) and build-order (animation) controls">
-          ⚙ Advanced ${_schemeAdvanced ? '▾' : '▸'}
-        </button>
       </div>
 
-      <!-- Text tab: fill toggle + Fonts (with sizes + extra colors) -->
-      <div class="style-tab-body" id="style-tab-style" ${_styleTab !== 'style' ? 'style="display:none"' : ''}>
+      <!-- TEXT tab — compact style cards -->
+      <div class="style-tab-body" id="style-tab-text" ${_styleTab !== 'text' ? 'style="display:none"' : ''}>
         <div class="style-fill-toggle-row ${locked ? 'disabled' : ''}" id="fill-toggle-row">
           <div class="toggle ${scheme.fillEnabled ? 'on' : ''}" id="fill-toggle"></div>
           <label>Show element fills</label>
         </div>
 
-        <div class="style-group-title" style="margin-top:12px">Fonts</div>
-        <p class="style-group-hint">Sizes are in points (pt). Where a second, dimmed size box appears, it sets the LED-wall (prop) size. Hover a <span class="lbl-tip">?</span> for what each one controls.</p>
-        ${FONTS.map(([advKey, field, lbl, val, sizeField, propSizeField]) => {
-          const { family: curFam } = parseFontPS(val);
-          const families = _fontFamilyMap ? Object.keys(_fontFamilyMap).sort((a, b) => a.localeCompare(b)) : [];
-          const famOptions = families.length
-            ? families.map(f => `<option value="${esc(f)}" ${f === curFam ? 'selected' : ''}>${esc(f)}</option>`).join('')
-            : `<option value="${esc(curFam)}">${esc(curFam || '…')}</option>`;
-          const stylesForFam = _fontFamilyMap?.[curFam] || (val ? [{ style: parseFontPS(val).style, postscript: val }] : []);
-          const styOptions = stylesForFam.map(({ style, postscript }) =>
-            `<option value="${esc(postscript)}" ${postscript === val ? 'selected' : ''}>${esc(style)}</option>`
-          ).join('') || `<option value="${esc(val)}">${esc(parseFontPS(val).style)}</option>`;
-          const sizeInp = sizeField
-            ? `<input type="number" class="sz-input sf-size" id="ss-${sizeField}" value="${scheme[sizeField] ?? 44}" min="1" max="400" step="1" ${dis} title="Size (pt)">`
-            : '';
-          const propSizeInp = propSizeField
-            ? `<input type="number" class="sz-input sf-size sf-prop-size" id="ss-${propSizeField}" value="${scheme[propSizeField] ?? 80}" min="1" max="400" step="1" ${dis} title="Prop size (pt)">`
-            : '';
-          const extraColorFields = FONT_EXTRA_COLORS[advKey] || [];
-          const curAdv   = scheme[advKey] || FONT_ADV_DEFAULTS();
-          const colorVal = curAdv.color || '#ffffff';
-          const tip = FONT_TIPS[field];
-          return `<div class="field" style="margin-bottom:10px">
-            <label>${esc(lbl)}${tip ? ` <span class="lbl-tip" title="${esc(tip)}">?</span>` : ''}</label>
-            <select class="sf-fam-select" id="sf-fam-${field}" ${dis}>${famOptions}</select>
-            <div class="font-sty-size-row">
-              <select class="sf-sty-select" id="sf-sty-${field}" ${dis}>${styOptions}</select>
-              ${sizeInp}${propSizeInp}${sizeField ? '<span class="sf-unit">pt</span>' : ''}
-              <div class="color-input-wrap font-color-inline">
-                <input type="color" class="fav-color" data-scheme="${advKey}" value="${colorVal}" ${dis}>
-                <input type="text" class="color-hex fav-color-hex" data-scheme="${advKey}" value="${curAdv.color || ''}" maxlength="7" placeholder="Color…" ${dis}>
-                <button class="fav-color-clear" data-scheme="${advKey}" title="Default color" ${dis}>×</button>
+        <div class="tcard">
+          <div class="tcard-hd">Body <span class="lbl-tip" title="${esc(FONT_TIPS.bodyFont)}">?</span></div>
+          <div class="tcard-cols tcard-2">
+            <div class="tcard-col"><div class="tcard-col-hd">Main Screen</div>
+              ${fontControl({ advKey: 'bodyFontAdv', field: 'bodyFont', sizeField: 'bodySize', scheme, dis })}</div>
+            <div class="tcard-col"><div class="tcard-col-hd">Prop / LED Wall</div>
+              ${fontControl({ advKey: 'propBodyFontAdv', field: 'propBodyFont', sizeField: 'propBodySize', scheme, dis })}</div>
+          </div>
+          ${fontAdvPanel('bodyFontAdv', 'Body — main screen', scheme, locked, FONT_EXTRA_COLORS.bodyFontAdv || [])}
+          ${fontAdvPanel('propBodyFontAdv', 'Body — prop / LED wall', scheme, locked, [])}
+        </div>
+
+        <div class="tcard">
+          <div class="tcard-hd">Point / Bold Text <span class="lbl-tip" title="${esc(FONT_TIPS.boldFont)}">?</span></div>
+          <div class="tcard-cols tcard-2">
+            <div class="tcard-col"><div class="tcard-col-hd">Main Screen</div>
+              ${fontControl({ advKey: 'boldFontAdv', field: 'boldFont', scheme, dis })}</div>
+            <div class="tcard-col"><div class="tcard-col-hd">Prop / LED Wall</div>
+              ${fontControl({ advKey: 'propBoldFontAdv', field: 'propBoldFont', scheme, dis })}</div>
+          </div>
+          ${fontAdvPanel('boldFontAdv', 'Point — main screen', scheme, locked, [])}
+          ${fontAdvPanel('propBoldFontAdv', 'Point — prop / LED wall', scheme, locked, [])}
+        </div>
+
+        <div class="tcard">
+          <div class="tcard-hd">Reference Bar <span class="lbl-tip" title="${esc(FONT_TIPS.titleFont)}">?</span></div>
+          <div class="tcard-cols tcard-1">
+            <div class="tcard-col">
+              ${fontControl({ advKey: 'titleFontAdv', field: 'titleFont', sizeField: 'titleSize', propSizeField: 'propTitleSize', scheme, dis })}
+              ${extraColorControls(FONT_EXTRA_COLORS.titleFontAdv || [], scheme, dis)}
+            </div>
+          </div>
+          ${fontAdvPanel('titleFontAdv', 'Reference bar', scheme, locked, [])}
+        </div>
+
+        <div class="tcard">
+          <div class="tcard-hd">Start / End <span class="lbl-tip" title="${esc(FONT_TIPS.startEndFont)}">?</span></div>
+          <div class="tcard-cols tcard-1">
+            <div class="tcard-col">${fontControl({ advKey: 'startEndFontAdv', field: 'startEndFont', sizeField: 'startEndSize', scheme, dis })}</div>
+          </div>
+          ${fontAdvPanel('startEndFontAdv', 'Start / End', scheme, locked, [])}
+        </div>
+
+        <div class="tcard">
+          <div class="tcard-hd">Slide Notes / Confidence Monitor <span class="lbl-tip" title="${esc(FONT_TIPS.notesFont)}">?</span></div>
+          <div class="tcard-cols tcard-1">
+            <div class="tcard-col">${fontControl({ advKey: 'notesFontAdv', field: 'notesFont', sizeField: 'notesSize', scheme, dis })}</div>
+          </div>
+          ${fontAdvPanel('notesFontAdv', 'Slide notes', scheme, locked, [])}
+        </div>
+      </div>
+
+      <!-- MOTION tab — Transitions + Build Order -->
+      <div class="style-tab-body" id="style-tab-motion" ${_styleTab !== 'motion' ? 'style="display:none"' : ''}>
+        <div class="motion-subtabs">
+          ${[['transitions', 'Transitions'], ['build', 'Build Order']].map(([t, lbl]) =>
+            `<button class="motion-subtab${_motionTab === t ? ' active' : ''}" data-mtab="${t}">${lbl}</button>`).join('')}
+        </div>
+
+        <div class="motion-sub" id="motion-sub-transitions" ${_motionTab !== 'transitions' ? 'style="display:none"' : ''}>
+          <div class="trans-cols">
+            <div class="trans-col">
+              <div class="trans-col-title">Slide</div>
+              <div class="segmented-control trans-seg" id="adv-trans-seg">
+                <button data-val="fade"     class="${(scheme.transitionType || 'fade') === 'fade'     ? 'active' : ''}" ${dis}>Fade</button>
+                <button data-val="dissolve" class="${(scheme.transitionType || 'fade') === 'dissolve' ? 'active' : ''}" ${dis}>Dissolve</button>
+                <button data-val="cut"      class="${(scheme.transitionType || 'fade') === 'cut'      ? 'active' : ''}" ${dis}>Cut</button>
+              </div>
+              <div class="trans-dur-wrap" id="adv-dur-field" style="${(scheme.transitionType || 'fade') === 'cut' ? 'display:none' : ''}">
+                <input type="number" id="adv-trans-dur" value="${scheme.transitionDuration ?? 0.6}" min="0.1" max="5" step="0.1" class="trans-dur" ${dis}>
+                <span class="fav-unit">s</span>
               </div>
             </div>
-            ${fontAdvPanel(advKey, lbl, scheme, locked, extraColorFields)}
-          </div>`;
-        }).join('')}
-
-      </div>
-
-      <!-- Transitions tab -->
-      <div class="style-tab-body" id="style-tab-transitions" ${_styleTab !== 'transitions' ? 'style="display:none"' : ''}>
-        <div class="trans-cols">
-          <div class="trans-col">
-            <div class="trans-col-title">Slide</div>
-            <div class="segmented-control trans-seg" id="adv-trans-seg">
-              <button data-val="fade"     class="${(scheme.transitionType || 'fade') === 'fade'     ? 'active' : ''}" ${dis}>Fade</button>
-              <button data-val="dissolve" class="${(scheme.transitionType || 'fade') === 'dissolve' ? 'active' : ''}" ${dis}>Dissolve</button>
-              <button data-val="cut"      class="${(scheme.transitionType || 'fade') === 'cut'      ? 'active' : ''}" ${dis}>Cut</button>
-            </div>
-            <div class="trans-dur-wrap" id="adv-dur-field" style="${(scheme.transitionType || 'fade') === 'cut' ? 'display:none' : ''}">
-              <input type="number" id="adv-trans-dur" value="${scheme.transitionDuration ?? 0.6}" min="0.1" max="5" step="0.1" class="trans-dur" ${dis}>
-              <span class="fav-unit">s</span>
+            <div class="trans-col">
+              <div class="trans-col-title">Prop</div>
+              <div class="segmented-control trans-seg" id="adv-prop-trans-seg">
+                <button data-val="fade"     class="${(scheme.propTransitionType || 'fade') === 'fade'     ? 'active' : ''}" ${dis}>Fade</button>
+                <button data-val="dissolve" class="${(scheme.propTransitionType || 'fade') === 'dissolve' ? 'active' : ''}" ${dis}>Dissolve</button>
+                <button data-val="cut"      class="${(scheme.propTransitionType || 'fade') === 'cut'      ? 'active' : ''}" ${dis}>Cut</button>
+              </div>
+              <div class="trans-dur-wrap" id="adv-prop-dur-field" style="${(scheme.propTransitionType || 'fade') === 'cut' ? 'display:none' : ''}">
+                <input type="number" id="adv-prop-trans-dur" value="${scheme.propTransitionDuration ?? 0.6}" min="0.1" max="5" step="0.1" class="trans-dur" ${dis}>
+                <span class="fav-unit">s</span>
+              </div>
             </div>
           </div>
-          <div class="trans-col">
-            <div class="trans-col-title">Prop</div>
-            <div class="segmented-control trans-seg" id="adv-prop-trans-seg">
-              <button data-val="fade"     class="${(scheme.propTransitionType || 'fade') === 'fade'     ? 'active' : ''}" ${dis}>Fade</button>
-              <button data-val="dissolve" class="${(scheme.propTransitionType || 'fade') === 'dissolve' ? 'active' : ''}" ${dis}>Dissolve</button>
-              <button data-val="cut"      class="${(scheme.propTransitionType || 'fade') === 'cut'      ? 'active' : ''}" ${dis}>Cut</button>
-            </div>
-            <div class="trans-dur-wrap" id="adv-prop-dur-field" style="${(scheme.propTransitionType || 'fade') === 'cut' ? 'display:none' : ''}">
-              <input type="number" id="adv-prop-trans-dur" value="${scheme.propTransitionDuration ?? 0.6}" min="0.1" max="5" step="0.1" class="trans-dur" ${dis}>
-              <span class="fav-unit">s</span>
-            </div>
+        </div>
+
+        <div class="motion-sub" id="motion-sub-build" ${_motionTab !== 'build' ? 'style="display:none"' : ''}>
+          <p class="style-group-hint">Advanced — controls how each element animates in and out, per slide type.</p>
+          <div class="bo-tabs" id="bo-tabs">
+            ${[['content','Content'],['point','Point'],['blank','Blank'],['startEnd','Start/End']].map(([tab, lbl]) =>
+              `<button class="bo-tab${_boActiveTab === tab ? ' active' : ''}" data-tab="${tab}">${lbl}</button>`
+            ).join('')}
+          </div>
+          <div id="bo-table-wrap">
+            ${renderBuildTable(_boActiveTab, scheme, locked)}
           </div>
         </div>
       </div>
 
-      <!-- Build Order tab -->
-      <div class="style-tab-body" id="style-tab-build" ${_styleTab !== 'build' ? 'style="display:none"' : ''}>
-        <div class="bo-tabs" id="bo-tabs">
-          ${[['content','Content'],['point','Point'],['blank','Blank'],['startEnd','Start/End']].map(([tab, lbl]) =>
-            `<button class="bo-tab${_boActiveTab === tab ? ' active' : ''}" data-tab="${tab}">${lbl}</button>`
-          ).join('')}
-        </div>
-        <div id="bo-table-wrap">
-          ${renderBuildTable(_boActiveTab, scheme, locked)}
-        </div>
+      <!-- PREVIEW tab -->
+      <div class="style-tab-body" id="style-tab-preview" ${_styleTab !== 'preview' ? 'style="display:none"' : ''}>
+        ${schemePreviewPanel(scheme)}
       </div>
 
-      <!-- Layout tab -->
+      <!-- LAYOUT tab -->
+      <!-- TODO Phase 2: add visual canvas preview + selected-region inspector (LayoutPreview component) -->
       <div class="style-tab-body" id="style-tab-layout" ${_styleTab !== 'layout' ? 'style="display:none"' : ''}>
+        <p class="style-group-hint">Element positions on the 1920×1080 main canvas and the prop/LED-wall canvas. X/Y/W/H in pixels; use the align buttons for quick centering.</p>
         ${lyTable([
           { label: 'Main Canvas',  type: 'head' },
           { label: 'Canvas',       cols: ['—','—','canvasW','canvasH'] },
@@ -2583,7 +2694,7 @@ function renderStylePanel(panel) {
     </div>
   `;
 
-  // Style tabs
+  // Top-level tabs: Text / Layout / Motion / Preview
   panel.querySelectorAll('.style-tab').forEach(btn => {
     btn.addEventListener('click', () => {
       _styleTab = btn.dataset.tab;
@@ -2594,10 +2705,15 @@ function renderStylePanel(panel) {
     });
   });
 
-  // Advanced toggle — reveals the Layout + Build Order tabs
-  document.getElementById('btn-scheme-advanced')?.addEventListener('click', () => {
-    _schemeAdvanced = !_schemeAdvanced;
-    renderStylePanel(panel);
+  // Motion sub-tabs: Transitions / Build Order
+  panel.querySelectorAll('.motion-subtab').forEach(btn => {
+    btn.addEventListener('click', () => {
+      _motionTab = btn.dataset.mtab;
+      panel.querySelectorAll('.motion-subtab').forEach(b => b.classList.toggle('active', b.dataset.mtab === _motionTab));
+      panel.querySelectorAll('.motion-sub').forEach(sub => {
+        sub.style.display = sub.id === `motion-sub-${_motionTab}` ? '' : 'none';
+      });
+    });
   });
 
   // Locked-scheme banner actions
@@ -4678,8 +4794,8 @@ function toast(type, title, detail) {
 
 let _pdfObjectUrl = null;
 let _pdfZoom = 100;
-let _styleTab = 'style';
-let _schemeAdvanced = false; // Layout + Build Order tabs are hidden until the user opts into Advanced
+let _styleTab = 'text';      // Text | Layout | Motion | Preview
+let _motionTab = 'transitions'; // within Motion: transitions | build
 
 function attachPdfHandlers() {
   const zone      = document.getElementById('pdf-drop-zone');
@@ -6100,7 +6216,7 @@ const HELP_SECTIONS = [
       <h4>Status at a Glance</h4>
       <p>Each deck shows when it was last exported and whether it has been edited since — so you always know what is current in Pro7.</p>
       <h4>Sharing Across Computers</h4>
-      <p>In <strong>Presentation Settings → Deck Library</strong>, point the library location at an iCloud Drive, Dropbox, or shared folder. Another computer pointing at the same folder joins the same library. If the same deck is edited in two places, DeckPro detects the conflict and asks which version to keep.</p>
+      <p>In <strong>Preferences → Deck Library</strong>, point the library location at an iCloud Drive, Dropbox, or shared folder. Another computer pointing at the same folder joins the same library. If the same deck is edited in two places, DeckPro detects the conflict and asks which version to keep.</p>
     `,
   },
   {
