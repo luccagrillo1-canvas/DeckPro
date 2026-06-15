@@ -3046,6 +3046,27 @@ details[open] .cm-swivel-summary::before { transform: rotate(90deg); }
 }
 .warn-btn-ok:hover { opacity: .88; }
 
+/* ── Scheme import modal ──────────────────────────────────────────────────── */
+.scheme-import-modal { width: 460px; }
+.scheme-import-modal .warn-hdr { color: var(--text); }
+.scheme-import-modal .warn-btn-ok { background: var(--blue); }
+.scheme-import-modal .warn-btn-ok:disabled { opacity: .4; cursor: default; }
+.scheme-import-help {
+  font-size: 12.5px; color: var(--muted); line-height: 1.55; margin-bottom: 14px;
+}
+.scheme-import-or {
+  font-size: 12px; color: var(--muted); margin: 4px 0 14px;
+  display: flex; align-items: center; gap: 8px;
+}
+.scheme-import-report {
+  font-size: 12.5px; line-height: 1.5; border-radius: 7px;
+  padding: 9px 11px; margin-bottom: 14px;
+  background: var(--bg); color: var(--text); border: 1px solid var(--border);
+}
+.scheme-import-report.err {
+  background: rgba(229,57,53,.08); border-color: rgba(229,57,53,.3); color: var(--danger);
+}
+
 /* ── Bible lookup button + translation picker ─────────────────────────────── */
 .ref-row { display: flex; gap: 6px; align-items: center; }
 .ref-row input { flex: 1; }

@@ -1,7 +1,7 @@
 {
   "name": "deckpro",
   "productName": "DeckPro",
-  "version": "3.2.0",
+  "version": "3.3.0",
   "description": "ProPresenter 7 slide deck builder for Canvas Church",
   "main": "main.js",
   "scripts": {
@@ -52,6 +52,7 @@
       "buildProp.js",
       "encode.js",
       "rtf.js",
+      "extractScheme.js",
       "public/**/*",
       "ProPresenter7-Proto/**/*",
       "node_modules/**/*",

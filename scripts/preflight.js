@@ -14,7 +14,7 @@ const fs   = require('fs');
 const root  = path.join(__dirname, '..');
 const FILES = [
   'main.js', 'server.js', 'library.js', 'builder.js',
-  'buildProp.js', 'encode.js', 'rtf.js', 'public/app.js',
+  'buildProp.js', 'encode.js', 'rtf.js', 'extractScheme.js', 'public/app.js',
 ];
 
 let failed = 0;
