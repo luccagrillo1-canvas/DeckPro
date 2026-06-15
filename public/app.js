@@ -2,9 +2,20 @@
 
 // ─── Version & Changelog ──────────────────────────────────────────────────────
 
-const APP_VERSION = '3.1.1';
+const APP_VERSION = '3.2.0';
 
 const CHANGELOG = [
+  {
+    version: '3.2.0',
+    date: '2026-06-15',
+    changes: [
+      "Dark mode: inputs in Settings (folder path, Pro7 port, password, API key, Bible translation dropdown) now correctly render with a dark background and light text",
+      "Toggle accent consistency: all panel toggles (blank-before, auto-manage, feature visibility) now use a neutral grey track when off and the orange accent when on, instead of the dark-blue-grey that appeared in dark mode",
+      "Slide preview feature removed from the codebase — it was already hidden from the UI; cleaned up dead code and CSS",
+      "Redeploy dialog now warns to save your deck to the Library first so no work is lost on relaunch",
+      "Spell check: language explicitly set to en-US in Electron so the system dictionary provides word suggestions on right-click",
+    ],
+  },
   {
     version: '3.1.1',
     date: '2026-06-10',
@@ -1190,137 +1201,6 @@ function computeOptimalBodyWidth(spans, rs) {
   } finally {
     document.body.removeChild(msr);
   }
-}
-
-// ─── Slide preview ────────────────────────────────────────────────────────────
-
-function renderPreviewCanvas(slide) {
-  const scheme   = activeStyleScheme();
-  const canvasW  = scheme.canvasW ?? 1920;
-  const canvasH  = scheme.canvasH ?? 1080;
-  const bodyX    = slide.bodyX  ?? scheme.bodyX  ?? 0;
-  const bodyY    = scheme.bodyY ?? 729.98;
-  const bodyW    = slide.bodyW  ?? scheme.bodyW  ?? canvasW;
-  const bodyH    = scheme.bodyH ?? 350.02;
-  const bodySize = scheme.bodySize ?? 44;
-  const gradY    = scheme.gradientY ?? 351.77;
-  const gradH    = scheme.gradientH ?? 728.23;
-
-  let inner = '';
-
-  if (slide.type === 'scripture') {
-    const bodies      = slide.bodies || [slide.body || []];
-    const rawBody     = bodies[0] || [];
-    const displayBody = slide.stripNewlines ? rawBody.filter(s => s.text !== '\n') : rawBody;
-    const ref         = slide.reference || '';
-    const titleH      = scheme.titleH ?? 50.51;
-    // Auto Title Y: measure actual text height via DOM to position title bar
-    let titleY;
-    if (scheme.autoTitleY && ref && displayBody.length > 0) {
-      const gap    = scheme.titleAutoGap ?? 16;
-      const lineH  = bodySize * 1.3;
-      // Measure body text height in a hidden div
-      const _msr   = document.createElement('div');
-      Object.assign(_msr.style, {
-        position: 'fixed', top: '-9999px', left: '-9999px',
-        visibility: 'hidden', pointerEvents: 'none',
-        width: `${bodyW}px`,
-        fontSize: `${bodySize}px`,
-        fontFamily: 'Montserrat,"Montserrat-Medium",sans-serif',
-        fontWeight: '500',
-        lineHeight: '1.3',
-        whiteSpace: 'normal',
-      });
-      _msr.innerHTML = spansToHtmlPreview(displayBody);
-      document.body.appendChild(_msr);
-      const measuredLines = Math.max(1, Math.round(_msr.scrollHeight / lineH));
-      document.body.removeChild(_msr);
-      const marginBottom   = scheme.bodyMarginBottom ?? 60;
-      const estimatedTextH = measuredLines * lineH;
-      const textTop = bodyY + bodyH - marginBottom - estimatedTextH;
-      titleY = textTop - gap - titleH;
-    } else {
-      titleY = bodyY;
-    }
-    const titleFill   = '#a9391a';
-    const titleColor  = scheme.titleText || '#f6d046';
-    const titleSize   = scheme.titleSize ?? 40;
-    const allBold     = displayBody.length > 0 && displayBody.every(s => s.bold && s.text !== '\n');
-
-    inner = `
-      <div style="position:absolute;left:0;top:${gradY}px;width:100%;height:${gradH}px;
-        background:linear-gradient(to top,rgba(0,0,0,.95) 0%,rgba(0,0,0,0) 100%)"></div>
-      ${ref ? `<div style="position:absolute;left:0;top:${titleY}px;width:100%;height:${titleH}px;
-        background:${titleFill};display:flex;align-items:center;justify-content:center;
-        font-family:Impact,sans-serif;font-size:${titleSize}px;color:${titleColor};
-        letter-spacing:3px;text-transform:uppercase;padding:0 20px;box-sizing:border-box">
-        ${esc(ref)}</div>` : ''}
-      <div style="position:absolute;left:${bodyX}px;top:${bodyY}px;width:${bodyW}px;height:${bodyH}px;
-        display:flex;flex-direction:column;justify-content:flex-end;
-        padding-bottom:60px;box-sizing:border-box;
-        font-size:${bodySize}px;font-family:Montserrat,sans-serif;font-weight:500;
-        color:#fff;line-height:1.3;text-align:${allBold ? 'center' : 'left'}">
-        <span>${spansToHtmlPreview(displayBody)}</span></div>`;
-
-  } else if (slide.type === 'point') {
-    const text     = slide.mode === 'revealing'
-      ? bulletToText((slide.bullets || [[]])[0])
-      : (slide.bodyText || '');
-    inner = `
-      <div style="position:absolute;left:0;top:${gradY}px;width:100%;height:${gradH}px;
-        background:linear-gradient(to top,rgba(0,0,0,.95) 0%,rgba(0,0,0,0) 100%)"></div>
-      <div style="position:absolute;left:${bodyX}px;top:${bodyY}px;width:${bodyW}px;height:${bodyH}px;
-        display:flex;flex-direction:column;justify-content:flex-end;
-        padding-bottom:60px;box-sizing:border-box;
-        font-size:${bodySize}px;font-family:Montserrat,sans-serif;font-weight:900;
-        color:#fff;line-height:1.3;text-align:center;text-transform:uppercase">
-        ${esc(text)}</div>`;
-  }
-
-  return `<div class="prev-canvas" style="width:${canvasW}px;height:${canvasH}px">
-    <div style="position:absolute;inset:0;background:#000"></div>
-    ${inner}
-    <div class="prev-bounds-box" style="left:${bodyX}px;top:${bodyY}px;width:${bodyW}px;height:${bodyH}px"></div>
-  </div>`;
-}
-
-function showPreview(slide) {
-  let modal = document.getElementById('preview-modal');
-  if (!modal) {
-    modal = document.createElement('div');
-    modal.id        = 'preview-modal';
-    modal.className = 'preview-modal';
-    modal.innerHTML = `
-      <div class="preview-modal-inner">
-        <div class="preview-modal-hdr">
-          <span>Slide Preview</span>
-          <button id="preview-close">×</button>
-        </div>
-        <div class="preview-modal-body" id="preview-modal-body"></div>
-        <div class="preview-modal-note">Approximate — fonts &amp; scaling may differ from ProPresenter</div>
-      </div>`;
-    document.body.appendChild(modal);
-    modal.querySelector('#preview-close').addEventListener('click', () => modal.classList.remove('open'));
-    modal.addEventListener('click', e => { if (e.target === modal) modal.classList.remove('open'); });
-  }
-  const scheme  = activeStyleScheme();
-  const canvasW = scheme.canvasW ?? 1920;
-  const canvasH = scheme.canvasH ?? 1080;
-  document.getElementById('preview-modal-body').innerHTML =
-    `<div class="prev-wrap">${renderPreviewCanvas(slide)}</div>`;
-  modal.classList.add('open');
-
-  // Scale canvas to fit available space (max 90vw × 80vh minus padding)
-  requestAnimationFrame(() => {
-    const canvas = modal.querySelector('.prev-canvas');
-    if (!canvas) return;
-    const maxW = window.innerWidth  * 0.88 - 32;
-    const maxH = window.innerHeight * 0.82 - 80;
-    const scale = Math.min(maxW / canvasW, maxH / canvasH, 1);
-    canvas.style.transform = `scale(${scale})`;
-    canvas.parentElement.style.width  = `${Math.round(canvasW * scale)}px`;
-    canvas.parentElement.style.height = `${Math.round(canvasH * scale)}px`;
-  });
 }
 
 // ─── Sidebar ──────────────────────────────────────────────────────────────────
@@ -3793,14 +3673,6 @@ function attachFormHandlers(slide) {
         fitBtn?.classList.remove('active');
       }
       saveState();
-    });
-  }
-
-  const previewBtn = get('btn-preview');
-  if (previewBtn) {
-    previewBtn.addEventListener('click', () => {
-      if (slide.fitWidth) applyFitWidth();
-      showPreview(slide);
     });
   }
 

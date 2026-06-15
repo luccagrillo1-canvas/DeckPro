@@ -104,7 +104,7 @@ function buildMenu() {
               defaultId: 0,
               cancelId: 1,
               message: 'Redeploy DeckPro?',
-              detail: 'Builds a fresh app, replaces /Applications/DeckPro.app, and relaunches. Takes ~30 seconds.',
+              detail: 'Builds a fresh app, replaces /Applications/DeckPro.app, and relaunches. Takes ~30 seconds.\n\nMake sure you have saved your current deck to the Library first — any unsaved changes will be lost on relaunch.',
             }).then(({ response }) => {
               if (response !== 0) return;
 
@@ -305,6 +305,9 @@ function createWindow() {
     shell.openExternal(url);
     return { action: 'deny' };
   });
+
+  // Ensure Chromium's spell checker uses en-US so right-click shows suggestions
+  win.webContents.session.setSpellCheckerLanguages(['en-US']);
 
   win.webContents.on('context-menu', (event, params) => {
     if (!params.isEditable && !params.misspelledWord) return;

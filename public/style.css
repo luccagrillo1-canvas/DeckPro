@@ -20,6 +20,18 @@ body.dark {
   --border:  #2c3040;
   --text:    #dfe3ec;
   --muted:   #7a8499;
+  color-scheme: dark;
+}
+
+/* ── Dark mode: ensure all text inputs/selects in settings panels render dark ── */
+body.dark .folder-row input,
+body.dark .stage-field,
+body.dark .settings-row input,
+body.dark .macro-uuid-field,
+body.dark .macro-uuid-input {
+  background: var(--surface);
+  color: var(--text);
+  border-color: var(--border);
 }
 
 body.dark .pro7-connect-status.ok  { background: rgba(46,125,50,.18); color: #6fcf7a; }
@@ -1661,6 +1673,19 @@ header h1:hover { opacity: .8; }
   text-align: right;
 }
 .macro-uuid-input { width: 100%; }
+.stage-field {
+  padding: 4px 7px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  font-size: 11px;
+  font-family: 'SF Mono', Menlo, monospace;
+  color: var(--text);
+  background: var(--surface);
+  outline: none;
+  width: 100%;
+  transition: border-color .15s;
+}
+.stage-field:focus { border-color: var(--blue); }
 .macro-uuid-field {
   padding: 4px 7px;
   border: 1px solid var(--border);
@@ -1971,16 +1996,38 @@ fieldset.scheme-fields:disabled,
   text-transform: none;
   letter-spacing: 0;
 }
-/* Override toggle colours for light-background contexts */
+/* Override toggle colours for light-background contexts — neutral grey off, orange on */
 .feature-toggle-row .toggle {
   width: 28px; height: 16px;
-  background: var(--border);
+  background: rgba(120,120,128,.35);
   border-radius: 8px;
   flex-shrink: 0;
 }
 .feature-toggle-row .toggle.on { background: var(--blue); }
-.feature-toggle-row .toggle::after { width: 10px; height: 10px; top: 3px; left: 3px; background: #888; }
+.feature-toggle-row .toggle::after { width: 10px; height: 10px; top: 3px; left: 3px; background: white; }
 .feature-toggle-row .toggle.on::after { background: white; transform: translateX(12px); }
+
+/* rc-toggle-row (automanage) and blank-before toggles in content panels */
+.rc-toggle-row .toggle,
+.blank-before-row .toggle {
+  background: rgba(120,120,128,.35);
+}
+.rc-toggle-row .toggle.on,
+.blank-before-row .toggle.on {
+  background: var(--blue);
+}
+.rc-toggle-row .toggle::after,
+.blank-before-row .toggle::after {
+  background: white;
+}
+
+/* style-fill-toggle-row (scheme panel checkboxes) */
+.style-fill-toggle-row .toggle {
+  background: rgba(120,120,128,.35);
+}
+.style-fill-toggle-row .toggle.on { background: var(--blue); }
+.style-fill-toggle-row .toggle::after { width: 10px; height: 10px; top: 3px; left: 3px; background: white; }
+.style-fill-toggle-row .toggle.on::after { background: white; transform: translateX(12px); }
 
 /* ─── Font advanced panel ─────────────────────────────────────────────── */
 
@@ -2662,65 +2709,6 @@ details[open] .font-adv-summary::before { transform: rotate(90deg); }
 .body-tool-btn:hover { background: #e8f0fe; border-color: var(--blue); color: var(--blue); }
 .body-tool-btn.active { background: var(--blue); color: #fff; border-color: var(--blue); }
 .body-tool-btn.muted { color: var(--muted); font-size: 10px; }
-
-/* ── Slide preview modal ─────────────────────────────────────────────────── */
-.preview-modal {
-  display: none;
-  position: fixed; inset: 0; z-index: 9999;
-  background: rgba(0,0,0,.65);
-  align-items: center; justify-content: center;
-}
-.preview-modal.open { display: flex; }
-
-.preview-modal-inner {
-  background: #1a1a2e;
-  border-radius: 10px;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  max-width: 92vw;
-  max-height: 90vh;
-  box-shadow: 0 20px 60px rgba(0,0,0,.8);
-}
-.preview-modal-hdr {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 10px 14px;
-  background: rgba(255,255,255,.06);
-  font-size: 13px; font-weight: 600; color: #fff;
-}
-.preview-modal-hdr button {
-  background: none; border: none; color: #aaa; font-size: 20px;
-  cursor: pointer; line-height: 1; padding: 0 4px;
-}
-.preview-modal-hdr button:hover { color: #fff; }
-.preview-modal-body { overflow: auto; }
-.preview-modal-note {
-  padding: 6px 14px;
-  font-size: 11px; color: rgba(255,255,255,.35);
-  text-align: center;
-}
-
-/* The wrapper that scales the 1920×1080 canvas down to fit */
-.prev-wrap {
-  padding: 16px;
-  display: flex; align-items: center; justify-content: center;
-}
-.prev-canvas {
-  position: relative;
-  overflow: hidden;
-  flex-shrink: 0;
-  transform-origin: top left;
-}
-/* Body text formatting inside preview */
-.prev-canvas strong { font-weight: 900; }
-.prev-canvas em     { font-style: italic; }
-/* Body bounds indicator (dashed outline of the text box) */
-.prev-bounds-box {
-  position: absolute;
-  border: 1px dashed rgba(255,255,255,.25);
-  pointer-events: none;
-  box-sizing: border-box;
-}
 
 /* ── Notes panel ──────────────────────────────────────────────────────────── */
 .notes-panel {
