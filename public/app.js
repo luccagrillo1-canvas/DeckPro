@@ -2,9 +2,16 @@
 
 // ─── Version & Changelog ──────────────────────────────────────────────────────
 
-const APP_VERSION = '3.4.0';
+const APP_VERSION = '3.4.1';
 
 const CHANGELOG = [
+  {
+    version: '3.4.1',
+    date: '2026-06-15',
+    changes: [
+      "Fix: the update progress overlay said \"Delivering to ProPresenter / Don't switch to ProPresenter\" (the export wording) while installing an app update. It now correctly reads \"Updating DeckPro / Don't close the app until this completes.\"",
+    ],
+  },
   {
     version: '3.4.0',
     date: '2026-06-15',
@@ -4170,10 +4177,15 @@ async function generate() {
   await runGenerate(false, btn, true);
 }
 
-function showDeliveryOverlay(steps) {
+function showDeliveryOverlay(steps, opts = {}) {
   const overlay = document.getElementById('delivery-overlay');
   const stepsEl = document.getElementById('delivery-steps');
   if (!overlay || !stepsEl) return;
+  // Title/subtitle default to the export copy but can be overridden (e.g. for updates)
+  const titleEl = document.getElementById('delivery-title');
+  const subEl   = document.getElementById('delivery-sub');
+  if (titleEl) titleEl.textContent = opts.title    || 'Delivering to ProPresenter';
+  if (subEl)   subEl.textContent   = opts.subtitle || "Don't switch to ProPresenter until this completes";
   stepsEl.innerHTML = steps.map((s, i) => `
     <div class="delivery-step" id="delivery-step-${i}">
       <div class="delivery-step-icon" id="delivery-step-icon-${i}">
@@ -5961,7 +5973,10 @@ async function installUpdate() {
     'Downloading update',
     'Installing',
     'Relaunching',
-  ]);
+  ], {
+    title: 'Updating DeckPro',
+    subtitle: "Don't close the app until this completes",
+  });
   updateDeliveryStep(0, false);
   try {
     const r = await fetch('/api/update/install', { method: 'POST' }).then(x => x.json());
