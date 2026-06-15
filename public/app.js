@@ -2,9 +2,16 @@
 
 // ─── Version & Changelog ──────────────────────────────────────────────────────
 
-const APP_VERSION = '3.5.0';
+const APP_VERSION = '3.6.0';
 
 const CHANGELOG = [
+  {
+    version: '3.6.0',
+    date: '2026-06-15',
+    changes: [
+      "Layout tab now has a visual preview — scaled Main Screen and Prop/LED-wall canvases showing each element's position and size as boxes. Click a box to highlight its row in the table below (and vice-versa), so it's clear what each number controls.",
+    ],
+  },
   {
     version: '3.5.0',
     date: '2026-06-15',
@@ -2328,8 +2335,8 @@ function lyTable(rows, scheme, dis) {
         </div>
       </td>` : '<td></td>';
 
-    return `<tr>
-      <td class="ly-row-name">${esc(row.label)}</td>
+    return `<tr${row.region ? ` data-region="${row.region}"` : ''}>
+      <td class="ly-row-name${row.region ? ' ly-row-name-click' : ''}">${esc(row.label)}</td>
       <td>${inp(c0)}</td>
       ${yTd}
       <td>${inp(c2)}</td>
@@ -2471,6 +2478,45 @@ function schemePreviewPanel(scheme) {
       </div>
     </div>
     <p class="sp-foot">Approximate preview from this scheme's fonts, sizes and colours. Use <strong>Test Scheme</strong> (top right) to generate a real deck in ProPresenter.</p>`;
+}
+
+// Visual Layout preview — scaled Main + Prop canvases with clickable region boxes
+// linked to the layout table rows. (Phase 2; drag/resize is deferred — Phase 3.)
+function layoutPreview(scheme, sel) {
+  const mainW = scheme.canvasW || 1920, mainH = scheme.canvasH || 1080;
+  const propW = scheme.propCanvasW || 3200, propH = scheme.propCanvasH || 1280;
+  // [slug, label, x, y, w, h] — drawn back-to-front so small boxes sit on top
+  const mainRegions = [
+    ['gradient',  'Gradient',     scheme.gradientX ?? 0, scheme.gradientY ?? 0, scheme.canvasW ?? 1920, scheme.gradientH ?? 0],
+    ['queue',     'Queue',        scheme.queueX ?? 0,    scheme.queueY ?? 0,    scheme.queueW ?? 0,     scheme.queueH ?? 0],
+    ['body',      'Body',         scheme.bodyX ?? 0,     scheme.bodyY ?? 0,     scheme.bodyW ?? 0,      scheme.bodyH ?? 0],
+    ['header',    'Header',       scheme.titleX ?? 0,    scheme.titleY ?? 0,    scheme.titleW ?? 0,     scheme.titleH ?? 0],
+    ['startEnd',  'Start / End',  scheme.startEndX ?? 0, scheme.startEndY ?? 0, scheme.startEndW ?? 0,  scheme.startEndH ?? 0],
+    ['live',      'Live',         scheme.liveX ?? 0,     scheme.liveY ?? 0,     scheme.liveW ?? 0,      scheme.liveH ?? 0],
+  ];
+  const propRegions = [
+    ['propBody',   'Prop body',   scheme.propBodyX ?? 0, scheme.propBodyY ?? 0, scheme.propBodyW ?? 0,  scheme.propBodyH ?? 0],
+    ['propHeader', 'Prop header', scheme.propTitleX ?? 0, scheme.propTitleY ?? 0, scheme.propTitleW ?? 0, scheme.propTitleH ?? 0],
+  ];
+  const box = (cw, ch) => ([slug, lbl, x, y, w, h]) => {
+    if (!w || !h) return '';
+    const pct = (v, d) => (v / d) * 100;
+    return `<div class="lp-region lp-region-${slug}${sel === slug ? ' sel' : ''}" data-region="${slug}"
+      style="left:${pct(x, cw).toFixed(2)}%;top:${pct(y, ch).toFixed(2)}%;width:${pct(w, cw).toFixed(2)}%;height:${pct(h, ch).toFixed(2)}%"
+      title="${esc(lbl)}"><span class="lp-region-lbl">${esc(lbl)}</span></div>`;
+  };
+  return `
+    <div class="lp-wrap">
+      <div class="lp-canvas-block">
+        <div class="lp-canvas-lbl">Main Canvas · ${Math.round(mainW)}×${Math.round(mainH)}</div>
+        <div class="lp-canvas" style="aspect-ratio:${mainW} / ${mainH}">${mainRegions.map(box(mainW, mainH)).join('')}</div>
+      </div>
+      <div class="lp-canvas-block">
+        <div class="lp-canvas-lbl">Prop / LED Wall · ${Math.round(propW)}×${Math.round(propH)}</div>
+        <div class="lp-canvas" style="aspect-ratio:${propW} / ${propH}">${propRegions.map(box(propW, propH)).join('')}</div>
+      </div>
+    </div>
+    <p class="style-group-hint" style="margin-top:8px">Click a region to highlight its row below. Boxes are drawn from this scheme's positions; off-canvas elements (e.g. Live) may sit outside the frame.</p>`;
 }
 
 function renderStylePanel(panel) {
@@ -2671,22 +2717,22 @@ function renderStylePanel(panel) {
       </div>
 
       <!-- LAYOUT tab -->
-      <!-- TODO Phase 2: add visual canvas preview + selected-region inspector (LayoutPreview component) -->
       <div class="style-tab-body" id="style-tab-layout" ${_styleTab !== 'layout' ? 'style="display:none"' : ''}>
-        <p class="style-group-hint">Element positions on the 1920×1080 main canvas and the prop/LED-wall canvas. X/Y/W/H in pixels; use the align buttons for quick centering.</p>
+        ${layoutPreview(scheme, _layoutSel)}
+        <p class="style-group-hint">X/Y/W/H in pixels; use the align buttons for quick centering.</p>
         ${lyTable([
           { label: 'Main Canvas',  type: 'head' },
           { label: 'Canvas',       cols: ['—','—','canvasW','canvasH'] },
-          { label: 'Body',         cols: ['bodyX','bodyY','bodyW','bodyH'] },
-          { label: 'Header',       cols: ['titleX','titleY','titleW','titleH'], autoY: { field: 'autoTitleY', gapField: 'titleAutoGap' } },
-          { label: 'Start / End',  cols: ['startEndX','startEndY','startEndW','startEndH'] },
-          { label: 'Gradient',     cols: ['gradientX','gradientY',null,'gradientH'] },
-          { label: 'Live',         cols: ['liveX','liveY','liveW','liveH'] },
-          { label: 'Queue',        cols: ['queueX','queueY','queueW','queueH'] },
+          { label: 'Body',         cols: ['bodyX','bodyY','bodyW','bodyH'], region: 'body' },
+          { label: 'Header',       cols: ['titleX','titleY','titleW','titleH'], autoY: { field: 'autoTitleY', gapField: 'titleAutoGap' }, region: 'header' },
+          { label: 'Start / End',  cols: ['startEndX','startEndY','startEndW','startEndH'], region: 'startEnd' },
+          { label: 'Gradient',     cols: ['gradientX','gradientY',null,'gradientH'], region: 'gradient' },
+          { label: 'Live',         cols: ['liveX','liveY','liveW','liveH'], region: 'live' },
+          { label: 'Queue',        cols: ['queueX','queueY','queueW','queueH'], region: 'queue' },
           { label: 'Prop Canvas',  type: 'head' },
           { label: 'Canvas',       cols: [null,null,'propCanvasW','propCanvasH'] },
-          { label: 'Prop body',    cols: ['propBodyX','propBodyY','propBodyW','propBodyH'] },
-          { label: 'Prop header',  cols: ['propTitleX','propTitleY','propTitleW','propTitleH'], autoY: { field: 'propAutoTitleY', gapField: 'propTitleAutoGap' } },
+          { label: 'Prop body',    cols: ['propBodyX','propBodyY','propBodyW','propBodyH'], region: 'propBody' },
+          { label: 'Prop header',  cols: ['propTitleX','propTitleY','propTitleW','propTitleH'], autoY: { field: 'propAutoTitleY', gapField: 'propTitleAutoGap' }, region: 'propHeader' },
         ], scheme, dis)}
       </div>
 
@@ -2715,6 +2761,22 @@ function renderStylePanel(panel) {
       });
     });
   });
+
+  // Layout visual preview ↔ table row linking (works whether or not the scheme is locked)
+  const applyRegionSel = (slug, scroll) => {
+    panel.querySelectorAll('.lp-region').forEach(b => b.classList.toggle('sel', b.dataset.region === slug));
+    panel.querySelectorAll('.ly-table tbody tr[data-region]').forEach(tr => {
+      const on = tr.dataset.region === slug;
+      tr.classList.toggle('ly-row-selected', on);
+      if (on && scroll) tr.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    });
+  };
+  const selectRegion = (slug) => { _layoutSel = slug; applyRegionSel(slug, true); };
+  panel.querySelectorAll('.lp-region').forEach(b => b.addEventListener('click', () => selectRegion(b.dataset.region)));
+  panel.querySelectorAll('.ly-row-name-click').forEach(c => c.addEventListener('click', () => {
+    const tr = c.closest('tr'); if (tr?.dataset.region) selectRegion(tr.dataset.region);
+  }));
+  if (_layoutSel) applyRegionSel(_layoutSel, false);
 
   // Locked-scheme banner actions
   document.getElementById('btn-lock-unlock')?.addEventListener('click', () => {
@@ -4796,6 +4858,7 @@ let _pdfObjectUrl = null;
 let _pdfZoom = 100;
 let _styleTab = 'text';      // Text | Layout | Motion | Preview
 let _motionTab = 'transitions'; // within Motion: transitions | build
+let _layoutSel = null;          // selected region slug in the Layout visual preview
 
 function attachPdfHandlers() {
   const zone      = document.getElementById('pdf-drop-zone');
