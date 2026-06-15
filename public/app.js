@@ -2,9 +2,17 @@
 
 // ─── Version & Changelog ──────────────────────────────────────────────────────
 
-const APP_VERSION = '3.2.0';
+const APP_VERSION = '3.3.0';
 
 const CHANGELOG = [
+  {
+    version: '3.3.0',
+    date: '2026-06-15',
+    changes: [
+      "Import a scheme from Pro7 — new \"Import from Pro7\" button in the Schemes panel. Pick a presentation from your ProPresenter library (or browse for a .pro file) and DeckPro reads its fonts, sizes, colours, and element positions into a new scheme. Best workflow: export a deck, restyle it in Pro7 to taste, then import it back so your edits become a reusable scheme.",
+      "The library picker lists your presentations automatically, hides Props files, and flags any that can't be read so you don't pick a dead end.",
+    ],
+  },
   {
     version: '3.2.0',
     date: '2026-06-15',
@@ -2395,6 +2403,7 @@ function renderStylePanel(panel) {
             title="${locked ? 'Unlock to edit' : 'Lock scheme'}">
             ${locked ? '🔒' : '🔓'}
           </button>
+          <button class="btn-scheme-test" id="btn-scheme-import" title="Build a scheme from a presentation you styled in Pro7">Import from Pro7</button>
           <button class="btn-scheme-test" id="btn-scheme-test">Test Scheme</button>
         </div>
         <div class="field" style="margin-top:10px;margin-bottom:14px">
@@ -2569,6 +2578,9 @@ function renderStylePanel(panel) {
 
   // Test scheme
   document.getElementById('btn-scheme-test').addEventListener('click', () => runSchemeTest(getScheme()));
+
+  // Import scheme from a Pro7 presentation
+  document.getElementById('btn-scheme-import').addEventListener('click', () => showSchemeImport(panel));
 
   // Scheme name
   document.getElementById('style-scheme-name').addEventListener('input', e => {
@@ -4193,6 +4205,125 @@ function showRebuildError(msg) {
     closeBtn.style.display = '';
     closeBtn.onclick = () => document.getElementById('rebuild-overlay')?.classList.remove('visible');
   }
+}
+
+// ─── Import a scheme from a Pro7 presentation ───────────────────────────────
+// Build it in Pro7 (or restyle a DeckPro export), then read its fonts, sizes,
+// colours and element positions back into a new scheme.
+
+async function showSchemeImport(panel) {
+  const overlay = document.createElement('div');
+  overlay.className = 'warn-overlay';
+  overlay.innerHTML = `
+    <div class="warn-modal scheme-import-modal">
+      <div class="warn-hdr"><span>Import scheme from Pro7</span></div>
+      <p class="scheme-import-help">
+        Pick a presentation you've styled in ProPresenter (fonts, sizes, colours, element positions)
+        and DeckPro will read those into a new scheme. Tip: export a deck, restyle it in Pro7, then import it back.
+      </p>
+      <div class="field" style="margin-bottom:8px">
+        <label>Presentation</label>
+        <select id="si-select"><option value="">Loading your Pro7 library…</option></select>
+      </div>
+      <div class="scheme-import-or">or <button class="btn-sm" id="si-browse">Browse for a .pro file…</button></div>
+      <div id="si-report" class="scheme-import-report" style="display:none"></div>
+      <div class="warn-actions">
+        <button class="warn-btn-cancel" id="si-cancel">Cancel</button>
+        <button class="warn-btn-ok" id="si-import" disabled>Import</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+
+  const sel      = overlay.querySelector('#si-select');
+  const reportEl = overlay.querySelector('#si-report');
+  const importBtn= overlay.querySelector('#si-import');
+  let chosenPath = '';
+
+  const close = () => overlay.remove();
+  overlay.querySelector('#si-cancel').addEventListener('click', close);
+  overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
+
+  const setChosen = (path) => { chosenPath = path || ''; importBtn.disabled = !chosenPath; };
+  sel.addEventListener('change', () => setChosen(sel.value));
+
+  // Load the library list
+  try {
+    const res  = await fetch('/api/scheme/presentations');
+    const data = await res.json();
+    if (data.ok && data.presentations.length) {
+      const readable   = data.presentations.filter(p => p.readable);
+      const unreadable = data.presentations.filter(p => !p.readable);
+      sel.innerHTML =
+        '<option value="">— choose a presentation —</option>' +
+        readable.map(p => `<option value="${esc(p.path)}">${esc(p.name)} · ${p.cues} slides</option>`).join('') +
+        (unreadable.length
+          ? `<optgroup label="Can't be read (different format)">${
+              unreadable.map(p => `<option value="" disabled>${esc(p.name)}</option>`).join('')}</optgroup>`
+          : '');
+    } else {
+      sel.innerHTML = '<option value="">No presentations found in your Pro7 library</option>';
+    }
+  } catch (_) {
+    sel.innerHTML = '<option value="">Could not read your Pro7 library</option>';
+  }
+
+  // Browse fallback
+  overlay.querySelector('#si-browse').addEventListener('click', async () => {
+    try {
+      const res = await fetch('/api/scheme/browse');
+      const data = await res.json();
+      if (data.ok && data.path) {
+        sel.value = '';
+        setChosen(data.path);
+        const fname = data.path.split('/').pop();
+        let opt = sel.querySelector('option[data-browsed]');
+        if (!opt) { opt = document.createElement('option'); opt.dataset.browsed = '1'; sel.appendChild(opt); }
+        opt.value = data.path; opt.textContent = `📁 ${fname}`; sel.value = data.path;
+      }
+    } catch (_) {}
+  });
+
+  // Import → extract → create scheme
+  importBtn.addEventListener('click', async () => {
+    if (!chosenPath) return;
+    importBtn.disabled = true;
+    importBtn.textContent = 'Reading…';
+    reportEl.style.display = 'none';
+    try {
+      const res  = await fetch('/api/scheme/extract', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ path: chosenPath }),
+      });
+      const data = await res.json();
+      if (!data.ok) {
+        reportEl.style.display = 'block';
+        reportEl.className = 'scheme-import-report err';
+        reportEl.textContent = data.error || 'Could not read that presentation.';
+        importBtn.disabled = false; importBtn.textContent = 'Import';
+        return;
+      }
+      // Merge extracted fields over a fresh default scheme
+      const base = DEFAULT_STYLE_SCHEME();
+      const merged = {
+        ...base, ...data.scheme,
+        id: 'scheme_' + Date.now(),
+        name: `From ${data.report.presentation}`.slice(0, 60),
+        isDefault: false, isLocked: false,
+      };
+      state.styleSchemes.push(merged);
+      state.activeSchemeId = merged.id;
+      saveState(); syncStyleButton();
+      close();
+      renderStylePanel(panel);
+      toast('success', 'Scheme imported',
+        `Captured ${data.report.captured.length} settings from "${data.report.presentation}". Review and tweak below.`);
+    } catch (err) {
+      reportEl.style.display = 'block';
+      reportEl.className = 'scheme-import-report err';
+      reportEl.textContent = err.message;
+      importBtn.disabled = false; importBtn.textContent = 'Import';
+    }
+  });
 }
 
 async function runSchemeTest(scheme) {

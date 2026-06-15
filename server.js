@@ -8,6 +8,7 @@ const https        = require('https');
 const { execSync } = require('child_process');
 const { encode, listPropsBackups, restorePropsBackup } = require('./encode');
 const { MACRO_DEFAULTS }   = require('./builder');
+const { extractScheme, listPresentations } = require('./extractScheme');
 const library              = require('./library');
 
 const app  = express();
@@ -116,6 +117,41 @@ app.get('/api/browse-folder', (req, res) => {
       `osascript -e 'POSIX path of (choose folder with prompt "Select output folder")'`
     ).toString().trim();
     res.json({ ok: true, folder: chosen });
+  } catch (err) {
+    res.json({ ok: false, error: err.message });
+  }
+});
+
+// ── Auto-scheme: derive a style scheme from a Pro7 presentation ─────────────
+// Workflow: DeckPro exports a presentation, the user restyles it in Pro7, then
+// imports it here so the edits become a scheme. See extractScheme.js.
+
+app.get('/api/scheme/presentations', async (req, res) => {
+  try {
+    res.json({ ok: true, presentations: await listPresentations() });
+  } catch (err) {
+    res.json({ ok: false, error: err.message });
+  }
+});
+
+app.get('/api/scheme/browse', (req, res) => {
+  try {
+    const chosen = execSync(
+      `osascript -e 'POSIX path of (choose file with prompt "Select a ProPresenter (.pro) presentation" of type {"pro"})'`,
+      { timeout: 120000 }
+    ).toString().trim();
+    res.json({ ok: true, path: chosen });
+  } catch (err) {
+    // osascript exits non-zero when the user cancels — report cleanly
+    res.json({ ok: false, error: 'cancelled' });
+  }
+});
+
+app.post('/api/scheme/extract', async (req, res) => {
+  try {
+    const { path: filePath } = req.body;
+    if (!filePath) return res.status(400).json({ ok: false, error: 'Missing path' });
+    res.json(await extractScheme(filePath));
   } catch (err) {
     res.json({ ok: false, error: err.message });
   }
