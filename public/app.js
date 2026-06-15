@@ -2,9 +2,18 @@
 
 // ─── Version & Changelog ──────────────────────────────────────────────────────
 
-const APP_VERSION = '3.3.0';
+const APP_VERSION = '3.4.0';
 
 const CHANGELOG = [
+  {
+    version: '3.4.0',
+    date: '2026-06-15',
+    changes: [
+      "Schemes panel made friendlier: a short intro explains what a scheme is, and the technical layout (element positions) and build-order (animation) controls are now tucked behind an \"Advanced\" toggle — so everyday users just see fonts, sizes, colours, and transitions.",
+      "Every font slot now has a hover \"?\" explaining exactly what it controls (main screens vs LED-wall prop, reference bar, confidence-monitor notes, etc.), and size boxes are clearly marked in points (pt).",
+      "Locked schemes now show a clear explainer banner with Duplicate and Unlock buttons, instead of just greying everything out — no more wondering why nothing is editable.",
+    ],
+  },
   {
     version: '3.3.0',
     date: '2026-06-15',
@@ -2357,6 +2366,8 @@ function renderStylePanel(panel) {
     state.activeSchemeId = 'default';
   }
   const scheme = state.styleSchemes.find(p => p.id === state.activeSchemeId) || state.styleSchemes[0];
+  // Advanced tabs (Layout / Build Order) are opt-in; never leave the user stranded on one when hidden.
+  if (!_schemeAdvanced && (_styleTab === 'build' || _styleTab === 'layout')) _styleTab = 'style';
   const locked = !!scheme.isLocked;
   const dis    = locked ? 'disabled' : '';
   const schemeOptions = state.styleSchemes.map(p =>
@@ -2368,6 +2379,17 @@ function renderStylePanel(panel) {
     titleFontAdv: [{ label: 'Fill',   field: 'titleFill'   },
                    { label: 'Text',   field: 'titleText'   },
                    { label: 'Shadow', field: 'titleShadow' }],
+  };
+  // Plain-language explanations of each font slot (technical term kept in the label,
+  // explanation surfaced on hover via a ? badge). Keyed by font field.
+  const FONT_TIPS = {
+    bodyFont:     'Scripture & body text on the main projection screens.',
+    propBodyFont: 'Scripture body text on the LED wall behind the stage (the "prop"), separate from the main screens.',
+    boldFont:     'Bold words inside body text, and point text on the main screens.',
+    propBoldFont: 'Point text on the LED wall behind the stage (the "prop").',
+    titleFont:    'The scripture reference bar — e.g. "John 3:16".',
+    startEndFont: 'The Start and End title slides.',
+    notesFont:    'Speaker notes shown only on the confidence monitor, not to the room.',
   };
   // [advKey, fontField, label, currentPostscript, sizeField, propSizeField]
   const FONTS = [
@@ -2385,6 +2407,10 @@ function renderStylePanel(panel) {
       <h2>
         Schemes
       </h2>
+      <p class="scheme-intro">
+        A scheme controls how every slide looks — fonts, sizes, colours, animations and positions.
+        Pick one to use it, or duplicate it to make your own.
+      </p>
 
       <div class="settings-section" style="padding-bottom:0;border:none">
         <div class="style-scheme-header">
@@ -2412,11 +2438,31 @@ function renderStylePanel(panel) {
         </div>
       </div>
 
+      ${locked ? `
+      <div class="scheme-lock-banner">
+        <span class="slb-icon">🔒</span>
+        <div class="slb-text">
+          <strong>This scheme is locked</strong>
+          <span>Locked so it can't be changed by accident. Duplicate it to make your own editable copy, or unlock to edit this one directly.</span>
+        </div>
+        <div class="slb-actions">
+          <button class="btn-sm" id="btn-lock-duplicate">Duplicate</button>
+          <button class="btn-sm" id="btn-lock-unlock">Unlock</button>
+        </div>
+      </div>` : ''}
+
       <fieldset class="scheme-fields ${locked ? 'scheme-locked' : ''}" ${locked ? 'disabled' : ''}>
 
       <div class="style-tabs">
-        ${[['style','Text'],['transitions','Transitions'],['build','Build Order'],['layout','Layout']].map(([t, lbl]) => `
+        ${(_schemeAdvanced
+            ? [['style','Text'],['transitions','Transitions'],['build','Build Order'],['layout','Layout']]
+            : [['style','Text'],['transitions','Transitions']]
+          ).map(([t, lbl]) => `
           <button class="style-tab${_styleTab === t ? ' active' : ''}" data-tab="${t}">${lbl}</button>`).join('')}
+        <button class="style-adv-toggle ${_schemeAdvanced ? 'on' : ''}" id="btn-scheme-advanced"
+          title="Show advanced layout (element positions) and build-order (animation) controls">
+          ⚙ Advanced ${_schemeAdvanced ? '▾' : '▸'}
+        </button>
       </div>
 
       <!-- Text tab: fill toggle + Fonts (with sizes + extra colors) -->
@@ -2427,6 +2473,7 @@ function renderStylePanel(panel) {
         </div>
 
         <div class="style-group-title" style="margin-top:12px">Fonts</div>
+        <p class="style-group-hint">Sizes are in points (pt). Where a second, dimmed size box appears, it sets the LED-wall (prop) size. Hover a <span class="lbl-tip">?</span> for what each one controls.</p>
         ${FONTS.map(([advKey, field, lbl, val, sizeField, propSizeField]) => {
           const { family: curFam } = parseFontPS(val);
           const families = _fontFamilyMap ? Object.keys(_fontFamilyMap).sort((a, b) => a.localeCompare(b)) : [];
@@ -2446,12 +2493,13 @@ function renderStylePanel(panel) {
           const extraColorFields = FONT_EXTRA_COLORS[advKey] || [];
           const curAdv   = scheme[advKey] || FONT_ADV_DEFAULTS();
           const colorVal = curAdv.color || '#ffffff';
+          const tip = FONT_TIPS[field];
           return `<div class="field" style="margin-bottom:10px">
-            <label>${esc(lbl)}</label>
+            <label>${esc(lbl)}${tip ? ` <span class="lbl-tip" title="${esc(tip)}">?</span>` : ''}</label>
             <select class="sf-fam-select" id="sf-fam-${field}" ${dis}>${famOptions}</select>
             <div class="font-sty-size-row">
               <select class="sf-sty-select" id="sf-sty-${field}" ${dis}>${styOptions}</select>
-              ${sizeInp}${propSizeInp}
+              ${sizeInp}${propSizeInp}${sizeField ? '<span class="sf-unit">pt</span>' : ''}
               <div class="color-input-wrap font-color-inline">
                 <input type="color" class="fav-color" data-scheme="${advKey}" value="${colorVal}" ${dis}>
                 <input type="text" class="color-hex fav-color-hex" data-scheme="${advKey}" value="${curAdv.color || ''}" maxlength="7" placeholder="Color…" ${dis}>
@@ -2537,6 +2585,22 @@ function renderStylePanel(panel) {
         body.style.display = body.id === `style-tab-${_styleTab}` ? '' : 'none';
       });
     });
+  });
+
+  // Advanced toggle — reveals the Layout + Build Order tabs
+  document.getElementById('btn-scheme-advanced')?.addEventListener('click', () => {
+    _schemeAdvanced = !_schemeAdvanced;
+    renderStylePanel(panel);
+  });
+
+  // Locked-scheme banner actions
+  document.getElementById('btn-lock-unlock')?.addEventListener('click', () => {
+    const s = getScheme(); if (!s) return;
+    s.isLocked = false;
+    saveState(); renderStylePanel(panel);
+  });
+  document.getElementById('btn-lock-duplicate')?.addEventListener('click', () => {
+    document.getElementById('btn-scheme-dupe')?.click();
   });
 
   const getScheme = () => state.styleSchemes.find(x => x.id === state.activeSchemeId);
@@ -4603,6 +4667,7 @@ function toast(type, title, detail) {
 let _pdfObjectUrl = null;
 let _pdfZoom = 100;
 let _styleTab = 'style';
+let _schemeAdvanced = false; // Layout + Build Order tabs are hidden until the user opts into Advanced
 
 function attachPdfHandlers() {
   const zone      = document.getElementById('pdf-drop-zone');

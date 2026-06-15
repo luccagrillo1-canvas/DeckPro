@@ -1458,6 +1458,50 @@ header h1:hover { opacity: .8; }
   margin-bottom: 10px;
 }
 
+/* ── Schemes panel friendliness: intro, hints, tooltips, advanced toggle ── */
+.scheme-intro {
+  font-size: 12.5px; line-height: 1.55; color: var(--muted);
+  margin: -4px 0 16px;
+}
+.style-group-hint {
+  font-size: 11.5px; line-height: 1.5; color: var(--muted);
+  margin: -4px 0 12px;
+}
+.lbl-tip {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 14px; height: 14px; border-radius: 50%;
+  background: var(--border); color: var(--muted);
+  font-size: 9px; font-weight: 700; cursor: help;
+  vertical-align: middle; margin-left: 2px;
+}
+.lbl-tip:hover { background: var(--blue); color: #fff; }
+.sf-unit { font-size: 11px; color: var(--muted); flex-shrink: 0; }
+
+/* Advanced toggle sits at the far right of the scheme tab row */
+.style-adv-toggle {
+  margin-left: auto; flex-shrink: 0;
+  border: none; background: transparent; cursor: pointer;
+  font-size: 11.5px; font-weight: 600; color: var(--muted);
+  padding: 6px 4px 6px 12px; white-space: nowrap;
+  transition: color .12s;
+}
+.style-adv-toggle:hover { color: var(--text); }
+.style-adv-toggle.on { color: var(--blue); }
+
+/* Locked-scheme explainer banner */
+.scheme-lock-banner {
+  display: flex; align-items: flex-start; gap: 11px;
+  padding: 12px 14px; margin-bottom: 16px;
+  background: color-mix(in srgb, var(--blue) 7%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--blue) 28%, var(--border));
+  border-radius: 9px;
+}
+.slb-icon { font-size: 16px; line-height: 1.3; flex-shrink: 0; }
+.slb-text { flex: 1; display: flex; flex-direction: column; gap: 3px; }
+.slb-text strong { font-size: 13px; color: var(--text); }
+.slb-text span { font-size: 12px; line-height: 1.5; color: var(--muted); }
+.slb-actions { display: flex; gap: 6px; flex-shrink: 0; align-self: center; }
+
 .style-fill-toggle-row {
   display: flex;
   align-items: center;
