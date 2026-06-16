@@ -2,9 +2,17 @@
 
 // ─── Version & Changelog ──────────────────────────────────────────────────────
 
-const APP_VERSION = '3.7.0';
+const APP_VERSION = '3.8.0';
 
 const CHANGELOG = [
+  {
+    version: '3.8.0',
+    date: '2026-06-15',
+    changes: [
+      "Import from Pro7 now shows a review screen before saving — see the detected text styles, layout sizes and slide transition, rename the scheme, and read clear warnings about anything that couldn't be inferred (e.g. prop/LED-wall styling, which lives in a separate file). Back returns to the picker; Save creates the scheme.",
+      "Scheme import now detects the slide transition (type + duration) from the presentation.",
+    ],
+  },
   {
     version: '3.7.0',
     date: '2026-06-15',
@@ -4590,27 +4598,110 @@ async function showSchemeImport(panel) {
         importBtn.disabled = false; importBtn.textContent = 'Import';
         return;
       }
-      // Merge extracted fields over a fresh default scheme
-      const base = DEFAULT_STYLE_SCHEME();
-      const merged = {
-        ...base, ...data.scheme,
-        id: 'scheme_' + Date.now(),
-        name: `From ${data.report.presentation}`.slice(0, 60),
-        isDefault: false, isLocked: false,
-      };
-      state.styleSchemes.push(merged);
-      state.activeSchemeId = merged.id;
-      saveState(); syncStyleButton();
-      close();
-      renderStylePanel(panel);
-      toast('success', 'Scheme imported',
-        `Captured ${data.report.captured.length} settings from "${data.report.presentation}". Review and tweak below.`);
+      // Show the review screen before saving anything
+      renderImportReview(overlay, panel, data, close);
     } catch (err) {
       reportEl.style.display = 'block';
       reportEl.className = 'scheme-import-report err';
       reportEl.textContent = err.message;
       importBtn.disabled = false; importBtn.textContent = 'Import';
     }
+  });
+}
+
+// Review screen shown after extraction, before the scheme is saved.
+function renderImportReview(overlay, panel, data, close) {
+  const { scheme, report } = data;
+  const isColor = v => typeof v === 'string' && /^#[0-9a-fA-F]{6}$/.test(v);
+
+  // [key, label, kind] — kind: 'font' | 'size' | 'color' | 'num' | 'text'
+  const fmtVal = (key, label, kind) => {
+    if (scheme[key] == null || scheme[key] === '') return '';
+    let v = scheme[key];
+    let disp;
+    if (kind === 'color' && isColor(v)) {
+      disp = `<span class="si-swatch" style="background:${esc(v)}"></span>${esc(v)}`;
+    } else if (kind === 'font') {
+      disp = esc(parseFontPS(v).family ? `${parseFontPS(v).family} ${parseFontPS(v).style}`.trim() : v);
+    } else if (kind === 'size') {
+      disp = `${esc(String(v))} pt`;
+    } else if (kind === 'num') {
+      disp = esc(String(Math.round(v * 100) / 100));
+    } else {
+      disp = esc(String(v));
+    }
+    return `<div class="si-rev-row"><span class="si-rev-k">${esc(label)}</span><span class="si-rev-v">${disp}</span></div>`;
+  };
+  const group = (title, rows) => {
+    const html = rows.map(([k, l, kind]) => fmtVal(k, l, kind)).join('');
+    return html ? `<div class="si-rev-group"><div class="si-rev-title">${esc(title)}</div>${html}</div>` : '';
+  };
+
+  const textRows = [
+    ['bodyFont', 'Body font', 'font'], ['bodySize', 'Body size', 'size'],
+    ['boldFont', 'Bold-in-body font', 'font'],
+    ['titleFont', 'Reference font', 'font'], ['titleSize', 'Reference size', 'size'],
+    ['startEndFont', 'Start/End font', 'font'], ['startEndSize', 'Start/End size', 'size'],
+    ['bodyFill', 'Body fill', 'color'], ['titleFill', 'Reference bar fill', 'color'],
+    ['titleText', 'Reference text', 'color'], ['titleShadow', 'Reference shadow', 'color'],
+  ];
+  const layoutRows = [
+    ['canvasW', 'Canvas width', 'num'], ['canvasH', 'Canvas height', 'num'],
+    ['bodyY', 'Body Y', 'num'], ['bodyH', 'Body height', 'num'],
+    ['titleY', 'Reference bar Y', 'num'],
+    ['gradientY', 'Gradient Y', 'num'], ['gradientH', 'Gradient height', 'num'],
+    ['liveX', 'Live X', 'num'], ['queueW', 'Queue width', 'num'],
+    ['startEndY', 'Start/End Y', 'num'],
+  ];
+  const transRows = [
+    ['transitionType', 'Slide transition', 'text'],
+    ['transitionDuration', 'Duration', 'size'],
+  ];
+
+  const warningsHtml = (report.warnings || []).length
+    ? `<div class="si-rev-group si-rev-warn">
+         <div class="si-rev-title">Heads up</div>
+         <ul>${report.warnings.map(w => `<li>${esc(w)}</li>`).join('')}</ul>
+       </div>` : '';
+
+  overlay.querySelector('.scheme-import-modal').innerHTML = `
+    <div class="warn-hdr"><span>Review imported scheme</span></div>
+    <p class="scheme-import-help">
+      From <strong>${esc(report.presentation)}</strong> — ${report.captured.length} setting${report.captured.length === 1 ? '' : 's'} detected
+      across ${report.slideCounts.scripture || 0} scripture, ${report.slideCounts.point || 0} point and ${report.slideCounts.startEnd || 0} start/end slides.
+      Review below, then save.
+    </p>
+    <div class="field" style="margin-bottom:10px">
+      <label>Scheme name</label>
+      <input type="text" id="si-name" value="${esc(`From ${report.presentation}`.slice(0, 60))}" maxlength="60">
+    </div>
+    <div class="si-review-groups">
+      ${group('Text styles', textRows)}
+      ${group('Layout', layoutRows)}
+      ${group('Transitions', transRows)}
+      ${warningsHtml}
+    </div>
+    <div class="warn-actions">
+      <button class="warn-btn-cancel" id="si-back">Back</button>
+      <button class="warn-btn-ok" id="si-save">Save scheme</button>
+    </div>`;
+
+  overlay.querySelector('#si-back').addEventListener('click', () => { close(); showSchemeImport(panel); });
+  overlay.querySelector('#si-save').addEventListener('click', () => {
+    const nameEl = overlay.querySelector('#si-name');
+    const name = (nameEl.value || '').trim() || `From ${report.presentation}`;
+    const merged = {
+      ...DEFAULT_STYLE_SCHEME(), ...scheme,
+      id: 'scheme_' + Date.now(),
+      name: name.slice(0, 60),
+      isDefault: false, isLocked: false,
+    };
+    state.styleSchemes.push(merged);
+    state.activeSchemeId = merged.id;
+    saveState(); syncStyleButton();
+    close();
+    renderStylePanel(panel);
+    toast('success', 'Scheme imported', `Saved "${merged.name}" with ${report.captured.length} detected settings.`);
   });
 }
 
