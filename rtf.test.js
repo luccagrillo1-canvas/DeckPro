@@ -55,25 +55,23 @@ test('live element', rtfLive(),
 
 test('title: John 13:35', rtfTitle('John 13:35'),
 `{\\rtf1\\ansi\\ansicpg1252\\cocoartf2865
-\\cocoatextscaling0\\cocoaplatform0{\\fonttbl\\f0\\fswiss\\fcharset0 Impact;}
-{\\colortbl;\\red255\\green255\\blue255;\\red246\\green208\\blue70;\\red0\\green0\\blue0;}
-{\\*\\expandedcolortbl;;\\cssrgb\\c100000\\c100000\\c100000;\\cssrgb\\c96471\\c81569\\c27451;\\cssrgb\\c0\\c0\\c0;}
+\\cocoatextscaling0\\cocoaplatform0{\\fonttbl\\f0\\fswiss\\fcharset0 Arial;}
+{\\colortbl;\\red255\\green255\\blue255;\\red255\\green255\\blue255;\\red0\\green0\\blue0;}
+{\\*\\expandedcolortbl;;\\cssrgb\\c100000\\c100000\\c100000;\\cssrgb\\c100000\\c100000\\c100000;\\cssrgb\\c0\\c0\\c0;}
 \\deftab1680
 \\pard\\pardeftab1680\\sa400\\pardirnatural\\qc\\partightenfactor0
 
-\\f0\\b\\fs80 \\cf2 \\kerning1\\expnd16\\expndtw80
-\\CocoaLigature0 \\outl0\\strokewidth-20 \\strokec3 John 13:35}`);
+\\f0\\b\\fs80 \\cf2 \\CocoaLigature0 \\outl0\\strokewidth-20 \\strokec3 John 13:35}`);
 
 test('title: 2 Corinthians 3:18', rtfTitle('2 Corinthians 3:18'),
 `{\\rtf1\\ansi\\ansicpg1252\\cocoartf2865
-\\cocoatextscaling0\\cocoaplatform0{\\fonttbl\\f0\\fswiss\\fcharset0 Impact;}
-{\\colortbl;\\red255\\green255\\blue255;\\red246\\green208\\blue70;\\red0\\green0\\blue0;}
-{\\*\\expandedcolortbl;;\\cssrgb\\c100000\\c100000\\c100000;\\cssrgb\\c96471\\c81569\\c27451;\\cssrgb\\c0\\c0\\c0;}
+\\cocoatextscaling0\\cocoaplatform0{\\fonttbl\\f0\\fswiss\\fcharset0 Arial;}
+{\\colortbl;\\red255\\green255\\blue255;\\red255\\green255\\blue255;\\red0\\green0\\blue0;}
+{\\*\\expandedcolortbl;;\\cssrgb\\c100000\\c100000\\c100000;\\cssrgb\\c100000\\c100000\\c100000;\\cssrgb\\c0\\c0\\c0;}
 \\deftab1680
 \\pard\\pardeftab1680\\sa400\\pardirnatural\\qc\\partightenfactor0
 
-\\f0\\b\\fs80 \\cf2 \\kerning1\\expnd16\\expndtw80
-\\CocoaLigature0 \\outl0\\strokewidth-20 \\strokec3 2 Corinthians 3:18}`);
+\\f0\\b\\fs80 \\cf2 \\CocoaLigature0 \\outl0\\strokewidth-20 \\strokec3 2 Corinthians 3:18}`);
 
 test('point body: Apply the Message', rtfPointBody('Apply the Message'),
 `{\\rtf1\\ansi\\ansicpg1252\\cocoartf2865

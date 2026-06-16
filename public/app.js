@@ -2,9 +2,17 @@
 
 // ─── Version & Changelog ──────────────────────────────────────────────────────
 
-const APP_VERSION = '3.8.3';
+const APP_VERSION = '3.9.0';
 
 const CHANGELOG = [
+  {
+    version: '3.9.0',
+    date: '2026-06-15',
+    changes: [
+      "Scripture reference bar is now fully scheme-driven with no hard-coded styling: the rust background bar is gone (transparent), and the reference text colour comes from the Reference Bar 'Color' setting in Schemes (defaults to white) instead of being locked to gold. Anything the scheme doesn't set falls back to Arial.",
+      "Import from Pro7 reads the reference text colour into the Reference Bar colour setting so imported schemes keep their look; it no longer imports the (now-removed) bar fill/shadow.",
+    ],
+  },
   {
     version: '3.8.3',
     date: '2026-06-15',
@@ -2474,8 +2482,8 @@ function fontControl({ advKey, field, sizeField = null, propSizeField = null, sc
 function schemePreviewPanel(scheme) {
   const fam = (ps) => `"${esc(parseFontPS(ps || '').family || ps || 'sans-serif')}", sans-serif`;
   const bodyColor  = (scheme.bodyFontAdv && scheme.bodyFontAdv.color) || '#ffffff';
-  const titleFill  = scheme.titleFill || '#a9391a';
-  const titleText  = scheme.titleText || '#f6d046';
+  // Reference bar is scheme-driven: no background fill, text colour from titleFontAdv (default white)
+  const titleText  = (scheme.titleFontAdv && scheme.titleFontAdv.color) || '#ffffff';
   const seColor    = (scheme.startEndFontAdv && scheme.startEndFontAdv.color) || '#ffffff';
   // Scale 1080-tall canvas down to a ~200px-tall preview
   const sc = 200 / (scheme.canvasH || 1080);
@@ -2486,7 +2494,7 @@ function schemePreviewPanel(scheme) {
         <div class="sp-card-hd">Main Screen — Scripture</div>
         <div class="sp-screen sp-16x9">
           <div class="sp-grad"></div>
-          <div class="sp-refbar" style="background:${esc(titleFill)};color:${esc(titleText)};font-family:${fam(scheme.titleFont)};font-size:${px(scheme.titleSize)}px">JOHN 3:16</div>
+          <div class="sp-refbar" style="background:transparent;color:${esc(titleText)};font-family:${fam(scheme.titleFont)};font-size:${px(scheme.titleSize)}px">JOHN 3:16</div>
           <div class="sp-body" style="font-family:${fam(scheme.bodyFont)};color:${esc(bodyColor)};font-size:${px(scheme.bodySize)}px">For God so loved the world…</div>
         </div>
       </div>
@@ -4647,8 +4655,7 @@ function renderImportReview(overlay, panel, data, close) {
     ['boldFont', 'Bold-in-body font', 'font'],
     ['titleFont', 'Reference font', 'font'], ['titleSize', 'Reference size', 'size'],
     ['startEndFont', 'Start/End font', 'font'], ['startEndSize', 'Start/End size', 'size'],
-    ['bodyFill', 'Body fill', 'color'], ['titleFill', 'Reference bar fill', 'color'],
-    ['titleText', 'Reference text', 'color'], ['titleShadow', 'Reference shadow', 'color'],
+    ['bodyFill', 'Body fill', 'color'],
   ];
   const layoutRows = [
     ['canvasW', 'Canvas width', 'num'], ['canvasH', 'Canvas height', 'num'],

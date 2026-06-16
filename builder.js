@@ -601,25 +601,26 @@ function makeTitleElement({ reference, titleY }, rs = {}) {
   const tw = rs.titleW ?? (rs.canvasW ?? 1920) + 0.18;
   const th = rs.titleH ?? 50.51;
   const adv = rs.titleFontAdv || {};
-  const titleShadow = { angle: 315, offset: 5, radius: 5, color: rs.cTitleShadow || hexToColor('#ff2600'), opacity: 0.75 };
   return {
     uuid: id,
     name: 'title',
     bounds: bounds(tx, titleY + (adv.yOffset ?? 0), tw, th),
     opacity: 1,
     path: RECT_PATH,
-    fill: { color: rs.cTitleFill || hexToColor('#a9391a') },
+    // Reference bar is fully scheme-driven — no hard-coded background fill,
+    // text colour or shadow. Fill is transparent (no bar); text colour, stroke
+    // and shadow all come from titleFontAdv. Arial / white are the only fallbacks.
+    fill: { color: { alpha: 0 } },
     stroke: resolveStroke(rs.titleFontAdv, { width: 3, color: C_WHITE }),
-    shadow: resolveShadow(rs.titleFontAdv, titleShadow),
+    shadow: resolveShadow(rs.titleFontAdv, EL_SHADOW_STD),
     feather: { radius: 0.05 },
     text: {
       attributes: {
-        font: { name: rs.titleFont || 'Impact', size: 40, bold: true, family: rs.titleFont || 'Impact' },
+        font: { name: rs.titleFont || 'Arial', size: 40, bold: true, family: rs.titleFont || 'Arial' },
         capitalization: 'CAPITALIZATION_ALL_CAPS',
-        textSolidFill: rs.cTitleText || hexToColor('#f6d046'),
+        textSolidFill: (rs.titleFontAdv && rs.titleFontAdv.color) ? hexToColor(rs.titleFontAdv.color) : C_WHITE,
         underlineStyle: {},
         paragraphStyle: { alignment: 'ALIGNMENT_CENTER', lineHeightMultiple: 1, paragraphSpacing: 20, defaultTabInterval: 84, textList: {} },
-        kerning: 4,
         strikethroughStyle: {},
         strokeWidth: -1,
         strokeColor: C_BLACK_A,
