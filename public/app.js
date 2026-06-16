@@ -2,9 +2,17 @@
 
 // ─── Version & Changelog ──────────────────────────────────────────────────────
 
-const APP_VERSION = '3.6.0';
+const APP_VERSION = '3.7.0';
 
 const CHANGELOG = [
+  {
+    version: '3.7.0',
+    date: '2026-06-15',
+    changes: [
+      "Point text and bold-in-body text now have separate fonts. The old combined \"Point / Bold Text\" card is split into a \"Point\" card and a \"Bold in Body\" card, each with its own Main Screen and Prop / LED Wall font, weight and styling.",
+      "Existing schemes are unchanged — point text keeps whatever the bold font was set to until you customize it.",
+    ],
+  },
   {
     version: '3.6.0',
     date: '2026-06-15',
@@ -772,8 +780,10 @@ const DEFAULT_STYLE_SCHEME = () => ({
   // Fonts
   bodyFont:     'Montserrat-Medium',
   propBodyFont: 'Montserrat-SemiBold',
-  boldFont:     'Montserrat-ExtraBold',
-  propBoldFont: 'Montserrat-ExtraBold',
+  boldFont:     'Montserrat-ExtraBold',   // bold spans inside body text (main screen)
+  propBoldFont: 'Montserrat-ExtraBold',   // bold spans inside body text (LED wall)
+  pointFont:    'Montserrat-ExtraBold',   // point text (main screen)
+  propPointFont:'Montserrat-ExtraBold',   // point text (LED wall)
   titleFont:    'Montserrat-ExtraBold',
   startEndFont: 'Montserrat-ExtraBold',
   notesFont:     'Montserrat-Medium',
@@ -812,6 +822,8 @@ const DEFAULT_STYLE_SCHEME = () => ({
   propBodyFontAdv: FONT_ADV_DEFAULTS(),
   boldFontAdv:     FONT_ADV_DEFAULTS(),
   propBoldFontAdv: FONT_ADV_DEFAULTS(),
+  pointFontAdv:    FONT_ADV_DEFAULTS(),
+  propPointFontAdv:FONT_ADV_DEFAULTS(),
   titleFontAdv:    FONT_ADV_DEFAULTS(),
   startEndFontAdv: FONT_ADV_DEFAULTS(),
   notesFontAdv:    FONT_ADV_DEFAULTS(),
@@ -992,10 +1004,18 @@ function loadState() {
         if (!out.notesFont)     merged.notesFont     = DEF.notesFont;
         if (!out.notesBoldFont) merged.notesBoldFont = DEF.notesBoldFont;
         if (!out.notesSize)     merged.notesSize     = DEF.notesSize;
-        // Seed the prop point font from the main bold font on first load
+        // Seed the prop bold font from the main bold font on first load
         if (!out.propBoldFont)    merged.propBoldFont    = merged.boldFont;
         if (!out.propBoldFontAdv) merged.propBoldFontAdv = JSON.parse(JSON.stringify(merged.boldFontAdv));
         else                      merged.propBoldFontAdv = { ...FONT_ADV_DEFAULTS(), ...out.propBoldFontAdv };
+        // Seed the split point fonts from the bold fonts for schemes saved before the split
+        // (preserves existing point-text styling — point used to share the bold font).
+        if (!out.pointFont)         merged.pointFont         = merged.boldFont;
+        if (!out.pointFontAdv)      merged.pointFontAdv      = JSON.parse(JSON.stringify(merged.boldFontAdv));
+        else                        merged.pointFontAdv      = { ...FONT_ADV_DEFAULTS(), ...out.pointFontAdv };
+        if (!out.propPointFont)     merged.propPointFont     = merged.propBoldFont;
+        if (!out.propPointFontAdv)  merged.propPointFontAdv  = JSON.parse(JSON.stringify(merged.propBoldFontAdv));
+        else                        merged.propPointFontAdv  = { ...FONT_ADV_DEFAULTS(), ...out.propPointFontAdv };
         // Ensure isDefault is set correctly by scheme id
         merged.isDefault = (merged.id === 'default');
         // For migrated saves without isLocked, lock only the default scheme
@@ -2457,7 +2477,7 @@ function schemePreviewPanel(scheme) {
         <div class="sp-card-hd">Main Screen — Point</div>
         <div class="sp-screen sp-16x9">
           <div class="sp-grad"></div>
-          <div class="sp-body sp-point" style="font-family:${fam(scheme.boldFont)};color:${esc(bodyColor)};font-size:${px(scheme.bodySize)}px">LOVE ONE ANOTHER</div>
+          <div class="sp-body sp-point" style="font-family:${fam(scheme.pointFont || scheme.boldFont)};color:${esc(bodyColor)};font-size:${px(scheme.bodySize)}px">LOVE ONE ANOTHER</div>
         </div>
       </div>
       <div class="sp-card">
@@ -2541,10 +2561,12 @@ function renderStylePanel(panel) {
   // Plain-language explanations of each font slot (technical term kept in the label,
   // explanation surfaced on hover via a ? badge). Keyed by font field.
   const FONT_TIPS = {
-    bodyFont:     'Scripture & body text on the main projection screens.',
-    propBodyFont: 'Scripture body text on the LED wall behind the stage (the "prop"), separate from the main screens.',
-    boldFont:     'Bold words inside body text, and point text on the main screens.',
-    propBoldFont: 'Point text on the LED wall behind the stage (the "prop").',
+    bodyFont:      'Scripture & body text on the main projection screens.',
+    propBodyFont:  'Scripture body text on the LED wall behind the stage (the "prop"), separate from the main screens.',
+    pointFont:     'Point slides — the main point text on the projection screens.',
+    propPointFont: 'Point slides — the point text on the LED wall behind the stage (the "prop").',
+    boldFont:      'Bold (emphasised) words inside body text on the main screens.',
+    propBoldFont:  'Bold (emphasised) words inside body text on the LED wall.',
     titleFont:    'The scripture reference bar — e.g. "John 3:16".',
     startEndFont: 'The Start and End title slides.',
     notesFont:    'Speaker notes shown only on the confidence monitor, not to the room.',
@@ -2623,15 +2645,27 @@ function renderStylePanel(panel) {
         </div>
 
         <div class="tcard">
-          <div class="tcard-hd">Point / Bold Text <span class="lbl-tip" title="${esc(FONT_TIPS.boldFont)}">?</span></div>
+          <div class="tcard-hd">Point <span class="lbl-tip" title="${esc(FONT_TIPS.pointFont)}">?</span></div>
+          <div class="tcard-cols tcard-2">
+            <div class="tcard-col"><div class="tcard-col-hd">Main Screen</div>
+              ${fontControl({ advKey: 'pointFontAdv', field: 'pointFont', scheme, dis })}</div>
+            <div class="tcard-col"><div class="tcard-col-hd">Prop / LED Wall</div>
+              ${fontControl({ advKey: 'propPointFontAdv', field: 'propPointFont', scheme, dis })}</div>
+          </div>
+          ${fontAdvPanel('pointFontAdv', 'Point — main screen', scheme, locked, [])}
+          ${fontAdvPanel('propPointFontAdv', 'Point — prop / LED wall', scheme, locked, [])}
+        </div>
+
+        <div class="tcard">
+          <div class="tcard-hd">Bold in Body <span class="lbl-tip" title="${esc(FONT_TIPS.boldFont)}">?</span></div>
           <div class="tcard-cols tcard-2">
             <div class="tcard-col"><div class="tcard-col-hd">Main Screen</div>
               ${fontControl({ advKey: 'boldFontAdv', field: 'boldFont', scheme, dis })}</div>
             <div class="tcard-col"><div class="tcard-col-hd">Prop / LED Wall</div>
               ${fontControl({ advKey: 'propBoldFontAdv', field: 'propBoldFont', scheme, dis })}</div>
           </div>
-          ${fontAdvPanel('boldFontAdv', 'Point — main screen', scheme, locked, [])}
-          ${fontAdvPanel('propBoldFontAdv', 'Point — prop / LED wall', scheme, locked, [])}
+          ${fontAdvPanel('boldFontAdv', 'Bold in body — main screen', scheme, locked, [])}
+          ${fontAdvPanel('propBoldFontAdv', 'Bold in body — prop / LED wall', scheme, locked, [])}
         </div>
 
         <div class="tcard">
@@ -2860,7 +2894,7 @@ function renderStylePanel(panel) {
   });
 
   // Font selects (family + style)
-  ['bodyFont', 'propBodyFont', 'boldFont', 'propBoldFont', 'titleFont', 'startEndFont', 'notesFont'].forEach(field => {
+  ['bodyFont', 'propBodyFont', 'pointFont', 'propPointFont', 'boldFont', 'propBoldFont', 'titleFont', 'startEndFont', 'notesFont'].forEach(field => {
     const famSel = document.getElementById(`sf-fam-${field}`);
     const stySel = document.getElementById(`sf-sty-${field}`);
     if (!famSel || !stySel) return;
