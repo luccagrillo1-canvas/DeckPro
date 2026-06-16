@@ -334,9 +334,10 @@ function rtfPointList(items) {
  */
 function rtfPointBody(bullet, style = {}) {
   const bodyFont = style.bodyFont || 'Montserrat-Medium';
-  const boldFont = style.boldFont || 'Montserrat-Black';
+  // Point text uses its own font (falls back to boldFont for pre-split schemes)
+  const boldFont = style.pointFont || style.boldFont || 'Montserrat-Black';
   const fs       = (style.bodySize || 44) * 2;
-  const adv      = style.boldFontAdv || {};
+  const adv      = style.pointFontAdv || style.boldFontAdv || {};
   const cf       = charFmt(adv);
   const pard     = makePard(adv, !adv.alignment);
   const spans    = bulletToSpans(bullet);
@@ -374,11 +375,12 @@ function rtfPointBody(bullet, style = {}) {
  */
 function rtfRevealingPoints(points, title, style = {}) {
   const bodyFont   = style.bodyFont || 'Montserrat-Medium';
-  const boldFont   = style.boldFont || 'Montserrat-ExtraBold';
+  // Point text uses its own font (falls back to boldFont for pre-split schemes)
+  const boldFont   = style.pointFont || style.boldFont || 'Montserrat-ExtraBold';
   const fsActive   = (style.bodySize || 44) * 2;
   const fsInactive = Math.round(fsActive * 0.82);
   const fsTitle    = Math.round(fsActive * 0.75);
-  const adv        = style.boldFontAdv || {};
+  const adv        = style.pointFontAdv || style.boldFontAdv || {};
   const cf         = charFmt(adv);
   const fonttbl = `{\\fonttbl\\f0\\fnil\\fcharset0 ${bodyFont};\\f1\\fnil\\fcharset0 ${boldFont};}`;
   const pard    = makePard(adv, !adv.alignment);  // default center

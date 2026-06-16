@@ -57,7 +57,8 @@ const DEFAULT_STYLE = {
   // Fonts
   bodyFont:     'Montserrat-Medium',
   propBodyFont: 'Montserrat-SemiBold',
-  boldFont:     'Montserrat-ExtraBold',
+  boldFont:     'Montserrat-ExtraBold',   // bold spans inside body text (main screen)
+  pointFont:    'Montserrat-ExtraBold',   // point text (main screen)
   titleFont:    'Montserrat-ExtraBold',
   startEndFont: 'Montserrat-ExtraBold',
   notesFont:     'Montserrat-Medium',  // confidence-monitor slide notes
@@ -93,6 +94,7 @@ const DEFAULT_STYLE = {
   bodyFontAdv:     null,  // null = use FONT_ADV_DEFAULTS()
   propBodyFontAdv: null,
   boldFontAdv:     null,
+  pointFontAdv:    null,
   titleFontAdv:    null,
   startEndFontAdv: null,
   notesFontAdv:    null,
@@ -122,7 +124,7 @@ function resolveStyle(style = {}) {
   const s  = { ...DEFAULT_STYLE, ...style };
   const fa = s.fillEnabled ? 1 : 0;
   // Normalize fontAdv fields — merge with defaults so callers always get a full object
-  const ADKEY = ['bodyFontAdv', 'propBodyFontAdv', 'boldFontAdv', 'titleFontAdv', 'startEndFontAdv', 'notesFontAdv'];
+  const ADKEY = ['bodyFontAdv', 'propBodyFontAdv', 'boldFontAdv', 'pointFontAdv', 'titleFontAdv', 'startEndFontAdv', 'notesFontAdv'];
   const out = {
     ...s,
     cFill:        { ...hexToColor(s.bodyFill),  alpha: fa },
@@ -389,12 +391,12 @@ function makePointBodyElement({ x, y, w, h, rtfData, text }, rs = {}) {
     opacity: 1,
     path: RECT_PATH,
     fill: { color: rs.cFill || hexToColor('#2196f2') },
-    stroke: resolveStroke(rs.boldFontAdv, { width: 3, color: C_WHITE }),
-    shadow: resolveShadow(rs.boldFontAdv, EL_SHADOW_STD),
+    stroke: resolveStroke(rs.pointFontAdv || rs.boldFontAdv, { width: 3, color: C_WHITE }),
+    shadow: resolveShadow(rs.pointFontAdv || rs.boldFontAdv, EL_SHADOW_STD),
     feather: { radius: 0.05 },
     text: {
       attributes: {
-        font: { name: rs.boldFont || 'Montserrat-Black', size: 44, bold: true, family: 'Montserrat' },
+        font: { name: rs.pointFont || rs.boldFont || 'Montserrat-Black', size: 44, bold: true, family: 'Montserrat' },
         capitalization: 'CAPITALIZATION_ALL_CAPS',
         textSolidFill: C_WHITE,
         underlineStyle: {},
@@ -409,7 +411,7 @@ function makePointBodyElement({ x, y, w, h, rtfData, text }, rs = {}) {
       },
       shadow: TXT_SHADOW_LO,
       rtfData,
-      scaleBehavior: resolveScaleBehavior(rs.boldFontAdv, 'SCALE_BEHAVIOR_SCALE_FONT_DOWN'),
+      scaleBehavior: resolveScaleBehavior(rs.pointFontAdv || rs.boldFontAdv, 'SCALE_BEHAVIOR_SCALE_FONT_DOWN'),
       verticalAlignment: resolveVertAlign(rs.bodyFontAdv, 'VERTICAL_ALIGNMENT_BOTTOM'),
       margins: resolveMargins(rs.bodyFontAdv, {
         left:   rs.bodyMarginLeft   ?? 0,

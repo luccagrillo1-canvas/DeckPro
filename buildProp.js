@@ -71,6 +71,7 @@ const DEFAULT_STYLE = {
   bodyFont:     'Montserrat-Medium',
   propBodyFont: 'Montserrat-SemiBold',
   boldFont:     'Montserrat-ExtraBold',
+  pointFont:    'Montserrat-ExtraBold',
   titleFont:    'Montserrat-ExtraBold',
   startEndFont: 'Montserrat-ExtraBold',
   bodySize:      44,
@@ -84,6 +85,7 @@ const DEFAULT_STYLE = {
   propTransitionDuration: 0.6,
   // Advanced font styling
   propBodyFontAdv: null,
+  pointFontAdv:    null,
   titleFontAdv:    null,
   // Prop canvas
   propCanvasW: 1920, propCanvasH: 1080,
@@ -137,7 +139,7 @@ function resolveStyle(style = {}) {
     cTitleText:   hexToColor(s.titleText),
     cTitleShadow: hexToColor(s.titleShadow),
   };
-  for (const k of ['propBodyFontAdv', 'titleFontAdv', 'boldFontAdv']) {
+  for (const k of ['propBodyFontAdv', 'titleFontAdv', 'boldFontAdv', 'pointFontAdv']) {
     out[k] = { ...FONT_ADV_DEFAULTS(), ...(s[k] || {}) };
   }
   return out;
@@ -150,9 +152,14 @@ function makePropStyle(rs) {
     bodyFont:  rs.propBodyFont  || rs.bodyFont,
     bodySize:  rs.propBodySize  || rs.bodySize,
     titleSize: rs.propTitleSize || rs.titleSize,
-    // Point text on the LED wall has its own font entry, falling back to the main bold font
+    // Bold spans inside body text on the LED wall
     boldFont:    rs.propBoldFont || rs.boldFont,
     boldFontAdv: rs.propBoldFontAdv ? { ...FONT_ADV_DEFAULTS(), ...rs.propBoldFontAdv } : rs.boldFontAdv,
+    // Point text on the LED wall has its own font entry, falling back to the prop bold / main fonts
+    pointFont:    rs.propPointFont || rs.pointFont || rs.propBoldFont || rs.boldFont,
+    pointFontAdv: rs.propPointFontAdv
+      ? { ...FONT_ADV_DEFAULTS(), ...rs.propPointFontAdv }
+      : (rs.pointFontAdv || (rs.propBoldFontAdv ? { ...FONT_ADV_DEFAULTS(), ...rs.propBoldFontAdv } : rs.boldFontAdv)),
   };
 }
 
@@ -401,20 +408,20 @@ function buildPointSinglePropCue(spec, rs = {}) {
   const by = prs.propBodyY ?? 729.98;
   const bw = prs.propBodyW ?? prs.propCanvasW ?? 1920;
   const bh = prs.propBodyH ?? 350.02;
-  const boldYOff = prs.boldFontAdv?.yOffset ?? 0;
+  const boldYOff = (prs.pointFontAdv || prs.boldFontAdv)?.yOffset ?? 0;
 
   const bodyEl = makeTextElement({
     name: 'body',
     x: bx, y: by + boldYOff, w: bw, h: bh,
     rtfData: bodyRtf,
-    font: prs.boldFont || 'Montserrat-ExtraBold',
+    font: prs.pointFont || prs.boldFont || 'Montserrat-ExtraBold',
     fontSize: prs.bodySize || 80,
     center: true,
     charCount: bodyText.length,
     vertAlign: 'VERTICAL_ALIGNMENT_BOTTOM',
     scaleBehavior: 'SCALE_BEHAVIOR_SCALE_FONT_DOWN',
     margins: { bottom: 60 },
-    adv: prs.boldFontAdv,
+    adv: prs.pointFontAdv || prs.boldFontAdv,
   }, rs);
 
   return makePropCue(propName, [makeSlot(bodyEl)], rs._propTransition ?? rs._transition, rs, spec.slotUuid ?? null);
