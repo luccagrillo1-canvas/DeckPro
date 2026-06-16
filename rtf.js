@@ -341,9 +341,13 @@ function rtfPointBody(bullet, style = {}) {
   const cf       = charFmt(adv);
   const pard     = makePard(adv, !adv.alignment);
   const spans    = bulletToSpans(bullet);
-  const allBold  = spans.every(s => s.bold);
-  if (allBold) {
-    // All bold — original single-font path
+  // Point text is rendered entirely in the point font (bold) unless the bullet
+  // genuinely mixes bold and non-bold words. A plain point (no bold markup) is
+  // NOT "body text" — it should still use the point font, so treat no-bold and
+  // all-bold the same: single point-font path.
+  const single   = !(spans.some(s => s.bold) && spans.some(s => !s.bold));
+  if (single) {
+    // Single-font path — whole point in the point font, bold
     const fonttbl = `{\\fonttbl\\f0\\fnil\\fcharset0 ${boldFont};}`;
     const body    = `\\f0\\b\\fs${fs} \\cf2 ${cf}\\CocoaLigature0 \\outl0\\strokewidth-20 \\strokec3 ${escapeRtf(bulletToText(bullet))}`;
     return toBase64(rtfDoc({ fonttbl, colortbl: COLORTBL_WHITE_STROKE, pard, body }));

@@ -27,7 +27,7 @@ test('START banner', rtfStartEnd('START'),
 `{\\rtf1\\ansi\\ansicpg1252\\cocoartf2865
 \\cocoatextscaling0\\cocoaplatform0{\\fonttbl\\f0\\fnil\\fcharset0 Montserrat-ExtraBold;}
 {\\colortbl;\\red255\\green255\\blue255;\\red255\\green255\\blue255;\\red0\\green0\\blue0;}
-{\\*\\expandedcolortbl;;\\cssrgb\\c100000\\c100000\\c100000;\\cssrgb\\c0\\c0\\c0;}
+{\\*\\expandedcolortbl;;\\cssrgb\\c100000\\c100000\\c100000;\\cssrgb\\c100000\\c100000\\c100000;\\cssrgb\\c0\\c0\\c0;}
 \\deftab1680
 \\pard\\pardeftab1680\\pardirnatural\\partightenfactor0
 
@@ -37,7 +37,7 @@ test('END banner', rtfStartEnd('End of Notes'),
 `{\\rtf1\\ansi\\ansicpg1252\\cocoartf2865
 \\cocoatextscaling0\\cocoaplatform0{\\fonttbl\\f0\\fnil\\fcharset0 Montserrat-ExtraBold;}
 {\\colortbl;\\red255\\green255\\blue255;\\red255\\green255\\blue255;\\red0\\green0\\blue0;}
-{\\*\\expandedcolortbl;;\\cssrgb\\c100000\\c100000\\c100000;\\cssrgb\\c0\\c0\\c0;}
+{\\*\\expandedcolortbl;;\\cssrgb\\c100000\\c100000\\c100000;\\cssrgb\\c100000\\c100000\\c100000;\\cssrgb\\c0\\c0\\c0;}
 \\deftab1680
 \\pard\\pardeftab1680\\pardirnatural\\partightenfactor0
 
@@ -57,7 +57,7 @@ test('title: John 13:35', rtfTitle('John 13:35'),
 `{\\rtf1\\ansi\\ansicpg1252\\cocoartf2865
 \\cocoatextscaling0\\cocoaplatform0{\\fonttbl\\f0\\fswiss\\fcharset0 Impact;}
 {\\colortbl;\\red255\\green255\\blue255;\\red246\\green208\\blue70;\\red0\\green0\\blue0;}
-{\\*\\expandedcolortbl;;\\cssrgb\\c97367\\c84279\\c33932;\\cssrgb\\c0\\c0\\c0;}
+{\\*\\expandedcolortbl;;\\cssrgb\\c100000\\c100000\\c100000;\\cssrgb\\c96471\\c81569\\c27451;\\cssrgb\\c0\\c0\\c0;}
 \\deftab1680
 \\pard\\pardeftab1680\\sa400\\pardirnatural\\qc\\partightenfactor0
 
@@ -68,7 +68,7 @@ test('title: 2 Corinthians 3:18', rtfTitle('2 Corinthians 3:18'),
 `{\\rtf1\\ansi\\ansicpg1252\\cocoartf2865
 \\cocoatextscaling0\\cocoaplatform0{\\fonttbl\\f0\\fswiss\\fcharset0 Impact;}
 {\\colortbl;\\red255\\green255\\blue255;\\red246\\green208\\blue70;\\red0\\green0\\blue0;}
-{\\*\\expandedcolortbl;;\\cssrgb\\c97367\\c84279\\c33932;\\cssrgb\\c0\\c0\\c0;}
+{\\*\\expandedcolortbl;;\\cssrgb\\c100000\\c100000\\c100000;\\cssrgb\\c96471\\c81569\\c27451;\\cssrgb\\c0\\c0\\c0;}
 \\deftab1680
 \\pard\\pardeftab1680\\sa400\\pardirnatural\\qc\\partightenfactor0
 
@@ -79,7 +79,7 @@ test('point body: Apply the Message', rtfPointBody('Apply the Message'),
 `{\\rtf1\\ansi\\ansicpg1252\\cocoartf2865
 \\cocoatextscaling0\\cocoaplatform0{\\fonttbl\\f0\\fnil\\fcharset0 Montserrat-Black;}
 {\\colortbl;\\red255\\green255\\blue255;\\red255\\green255\\blue255;\\red0\\green0\\blue0;}
-{\\*\\expandedcolortbl;;\\cssrgb\\c100000\\c100000\\c100000;\\cssrgb\\c0\\c0\\c0;}
+{\\*\\expandedcolortbl;;\\cssrgb\\c100000\\c100000\\c100000;\\cssrgb\\c100000\\c100000\\c100000;\\cssrgb\\c0\\c0\\c0;}
 \\deftab1680
 \\pard\\pardeftab1680\\pardirnatural\\qc\\partightenfactor0
 
@@ -89,7 +89,7 @@ test('point list (3 items)', rtfPointList(['Create Opportunities', 'Serve One an
 `{\\rtf1\\ansi\\ansicpg1252\\cocoartf2865
 \\cocoatextscaling0\\cocoaplatform0{\\fonttbl\\f0\\fnil\\fcharset0 Montserrat-Medium;}
 {\\colortbl;\\red255\\green255\\blue255;\\red255\\green255\\blue255;\\red0\\green0\\blue0;}
-{\\*\\expandedcolortbl;;\\cssrgb\\c100000\\c100000\\c100000;\\cssrgb\\c0\\c0\\c0;}
+{\\*\\expandedcolortbl;;\\cssrgb\\c100000\\c100000\\c100000;\\cssrgb\\c100000\\c100000\\c100000;\\cssrgb\\c0\\c0\\c0;}
 \\deftab1680
 \\pard\\pardeftab1680\\pardirnatural\\partightenfactor0
 
@@ -101,11 +101,11 @@ test('blank all-bold: Show Jesus to the world.', rtfBody([{text: 'Show Jesus to 
 `{\\rtf1\\ansi\\ansicpg1252\\cocoartf2865
 \\cocoatextscaling0\\cocoaplatform0{\\fonttbl\\f0\\fnil\\fcharset0 Montserrat-Black;}
 {\\colortbl;\\red255\\green255\\blue255;\\red255\\green255\\blue255;\\red0\\green0\\blue0;}
-{\\*\\expandedcolortbl;;\\cssrgb\\c100000\\c100000\\c100000;\\cssrgb\\c0\\c0\\c0;}
+{\\*\\expandedcolortbl;;\\cssrgb\\c100000\\c100000\\c100000;\\cssrgb\\c100000\\c100000\\c100000;\\cssrgb\\c0\\c0\\c0;}
 \\deftab1680
 \\pard\\pardeftab1680\\pardirnatural\\qc\\partightenfactor0
 
-\\f0\\b\\fs88 \\cf2 \\CocoaLigature0 \\outl0\\strokewidth-20 \\strokec3 Show Jesus to the world.}`);
+\\f0\\b\\fs88 \\cf2 \\CocoaLigature0 \\outl0\\strokewidth-20 \\strokec3 Show\\~Jesus\\~to\\~the\\~world.}`);
 
 // cue 2 — John 13:35 body: mixed bold
 const johnSpans = [
@@ -117,12 +117,12 @@ test('mixed bold: John 13:35 body', rtfBody(johnSpans),
 `{\\rtf1\\ansi\\ansicpg1252\\cocoartf2865
 \\cocoatextscaling0\\cocoaplatform0{\\fonttbl\\f0\\fnil\\fcharset0 Montserrat-Medium;\\f1\\fnil\\fcharset0 Montserrat-Black;}
 {\\colortbl;\\red255\\green255\\blue255;\\red255\\green255\\blue255;\\red0\\green0\\blue0;}
-{\\*\\expandedcolortbl;;\\cssrgb\\c100000\\c100000\\c100000;\\cssrgb\\c0\\c0\\c0;}
+{\\*\\expandedcolortbl;;\\cssrgb\\c100000\\c100000\\c100000;\\cssrgb\\c100000\\c100000\\c100000;\\cssrgb\\c0\\c0\\c0;}
 \\deftab1680
 \\pard\\pardeftab1680\\pardirnatural\\partightenfactor0
 
 \\f0\\fs88 \\cf2 \\CocoaLigature0 \\outl0\\strokewidth-20 \\strokec3 \\'93Your 
-\\f1\\b love for one another
+\\f1\\b love\\~for\\~one\\~another
 \\f0\\b0  will prove to the world that you are my disciples.\\'94}`);
 
 // cue 5 — Acts 2:46 body: multiple bold spans
@@ -139,12 +139,12 @@ test('mixed bold: Acts 2:46 body', rtfBody(acts246Spans),
 `{\\rtf1\\ansi\\ansicpg1252\\cocoartf2865
 \\cocoatextscaling0\\cocoaplatform0{\\fonttbl\\f0\\fnil\\fcharset0 Montserrat-Medium;\\f1\\fnil\\fcharset0 Montserrat-Black;}
 {\\colortbl;\\red255\\green255\\blue255;\\red255\\green255\\blue255;\\red0\\green0\\blue0;}
-{\\*\\expandedcolortbl;;\\cssrgb\\c100000\\c100000\\c100000;\\cssrgb\\c0\\c0\\c0;}
+{\\*\\expandedcolortbl;;\\cssrgb\\c100000\\c100000\\c100000;\\cssrgb\\c100000\\c100000\\c100000;\\cssrgb\\c0\\c0\\c0;}
 \\deftab1680
 \\pard\\pardeftab1680\\pardirnatural\\partightenfactor0
 
 \\f0\\fs88 \\cf2 \\CocoaLigature0 \\outl0\\strokewidth-20 \\strokec3 They worshiped 
-\\f1\\b together at the Temple
+\\f1\\b together\\~at\\~the\\~Temple
 \\f0\\b0  each day, met in homes for the Lord\\'92s Supper, and shared their meals with great 
 \\f1\\b joy
 \\f0\\b0  and 
