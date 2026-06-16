@@ -2,9 +2,16 @@
 
 // ─── Version & Changelog ──────────────────────────────────────────────────────
 
-const APP_VERSION = '3.8.0';
+const APP_VERSION = '3.8.1';
 
 const CHANGELOG = [
+  {
+    version: '3.8.1',
+    date: '2026-06-15',
+    changes: [
+      "Fix: point slides now render in the Point font (bold) you set in Schemes. Previously a plain point fell back to the body font, so the Point font had no visible effect on normal point slides — now it does, on both the main screen and the LED wall.",
+    ],
+  },
   {
     version: '3.8.0',
     date: '2026-06-15',
