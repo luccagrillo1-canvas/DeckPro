@@ -199,9 +199,12 @@ async function extractScheme(filePath) {
     if (t.y != null) scheme.autoTitleY = false; // respect the imported position literally
     set('titleFont', t.font, 'Reference font');
     set('titleSize', t.size, 'Reference size');
-    set('titleFill', t.fill, 'Reference bar colour');
-    set('titleText', t.textColor, 'Reference text colour');
-    set('titleShadow', t.shadowColor, 'Reference shadow colour');
+    // Reference text colour is scheme-driven via titleFontAdv.color (the bar has no
+    // background fill in the current model, so titleFill/titleShadow aren't imported).
+    if (t.textColor) {
+      scheme.titleFontAdv = { ...(scheme.titleFontAdv || {}), color: t.textColor };
+      captured.push('Reference text colour');
+    }
   }
 
   if (pick.gradient) {

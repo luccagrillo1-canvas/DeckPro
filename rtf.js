@@ -251,9 +251,12 @@ function rtfBody(spans, style = {}) {
  * Impact font, gold text, centered, with character spacing.
  */
 function rtfTitle(text, style = {}) {
-  const font     = style.titleFont || 'Impact';
+  // Reference bar is fully scheme-driven: font, colour and spacing come from the
+  // scheme (titleFont + titleFontAdv). Nothing is hard-coded — Arial / white are
+  // only the fallbacks when the scheme doesn't set them.
+  const font     = style.titleFont || 'Arial';
   const fs       = (style.titleSize || 40) * 2;
-  const textHex  = style.titleText || '#f6d046';
+  const textHex  = (style.titleFontAdv && style.titleFontAdv.color) || '#ffffff';
   const colortbl = makeColortbl(['#ffffff', textHex, '#000000']);
   const fonttbl  = `{\\fonttbl\\f0\\fswiss\\fcharset0 ${font};}`;
   const adv      = style.titleFontAdv || {};
@@ -261,7 +264,7 @@ function rtfTitle(text, style = {}) {
   // Base title has sa400+qc; merge with adv paragraph settings
   const sa400    = adv.paragraphSpacingAfter ? '' : '\\sa400';
   const pard     = `\\pard\\pardeftab1680${sa400}${adv.paragraphSpacingAfter ? `\\sa${Math.round(adv.paragraphSpacingAfter*20)}` : ''}\\pardirnatural${adv.alignment === 'left' ? '' : adv.alignment === 'right' ? '\\qr' : '\\qc'}\\partightenfactor0`;
-  const body     = `\\f0\\b\\fs${fs} \\cf2 ${cf}\\kerning1\\expnd16\\expndtw80\n\\CocoaLigature0 \\outl0\\strokewidth-20 \\strokec3 ${escapeRtf(text)}`;
+  const body     = `\\f0\\b\\fs${fs} \\cf2 ${cf}\\CocoaLigature0 \\outl0\\strokewidth-20 \\strokec3 ${escapeRtf(text)}`;
   return toBase64(rtfDoc({ fonttbl, colortbl, pard, body }));
 }
 
