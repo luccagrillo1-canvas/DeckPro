@@ -2,9 +2,16 @@
 
 // ─── Version & Changelog ──────────────────────────────────────────────────────
 
-const APP_VERSION = '3.8.1';
+const APP_VERSION = '3.8.2';
 
 const CHANGELOG = [
+  {
+    version: '3.8.2',
+    date: '2026-06-15',
+    changes: [
+      "Fix: the Slide Notes / Confidence Monitor size field in Schemes now saves. Previously editing it had no effect (the input wasn't wired to the scheme).",
+    ],
+  },
   {
     version: '3.8.1',
     date: '2026-06-15',
@@ -2942,7 +2949,7 @@ function renderStylePanel(panel) {
   });
 
   // Size inputs
-  ['bodySize', 'titleSize', 'startEndSize', 'propBodySize', 'propTitleSize'].forEach(field => {
+  ['bodySize', 'titleSize', 'startEndSize', 'propBodySize', 'propTitleSize', 'notesSize'].forEach(field => {
     const inp = document.getElementById(`ss-${field}`);
     if (!inp) return;
     inp.addEventListener('input', e => {
