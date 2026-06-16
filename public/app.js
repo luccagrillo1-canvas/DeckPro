@@ -2,9 +2,16 @@
 
 // ─── Version & Changelog ──────────────────────────────────────────────────────
 
-const APP_VERSION = '3.8.2';
+const APP_VERSION = '3.8.3';
 
 const CHANGELOG = [
+  {
+    version: '3.8.3',
+    date: '2026-06-15',
+    changes: [
+      "Removed the Fill / Text / Shadow colour editors from the Reference Bar card in Schemes — the reference bar keeps its standard look, the card is just less cluttered.",
+    ],
+  },
   {
     version: '3.8.2',
     date: '2026-06-15',
@@ -2463,18 +2470,6 @@ function fontControl({ advKey, field, sizeField = null, propSizeField = null, sc
       </span></label>`;
 }
 
-// Surface color rows (Bar Fill / Text / Shadow etc). IDs match fontAdvPanel's so handlers bind.
-function extraColorControls(fields, scheme, dis) {
-  return fields.map(({ label, field }) => {
-    const val = scheme[field] || '#ffffff';
-    return `<label class="tsc-row"><span class="tsc-lbl">${esc(label)}</span>
-      <span class="color-input-wrap">
-        <input type="color" id="sc-${field}" value="${esc(val)}" ${dis}>
-        <input type="text" class="color-hex" id="sc-${field}-hex" value="${esc(val)}" maxlength="7" ${dis}>
-      </span></label>`;
-  }).join('');
-}
-
 // Static visual preview of the active scheme (Phase 1 — wired to scheme values, not full render).
 function schemePreviewPanel(scheme) {
   const fam = (ps) => `"${esc(parseFontPS(ps || '').family || ps || 'sans-serif')}", sans-serif`;
@@ -2576,9 +2571,6 @@ function renderStylePanel(panel) {
 
   const FONT_EXTRA_COLORS = {
     bodyFontAdv:  [{ label: 'Fill',   field: 'bodyFill'    }],
-    titleFontAdv: [{ label: 'Fill',   field: 'titleFill'   },
-                   { label: 'Text',   field: 'titleText'   },
-                   { label: 'Shadow', field: 'titleShadow' }],
   };
   // Plain-language explanations of each font slot (technical term kept in the label,
   // explanation surfaced on hover via a ? badge). Keyed by font field.
@@ -2695,7 +2687,6 @@ function renderStylePanel(panel) {
           <div class="tcard-cols tcard-1">
             <div class="tcard-col">
               ${fontControl({ advKey: 'titleFontAdv', field: 'titleFont', sizeField: 'titleSize', propSizeField: 'propTitleSize', scheme, dis })}
-              ${extraColorControls(FONT_EXTRA_COLORS.titleFontAdv || [], scheme, dis)}
             </div>
           </div>
           ${fontAdvPanel('titleFontAdv', 'Reference bar', scheme, locked, [])}
@@ -2904,7 +2895,7 @@ function renderStylePanel(panel) {
   });
 
   // Color pickers
-  ['bodyFill', 'titleFill', 'titleText', 'titleShadow'].forEach(field => {
+  ['bodyFill'].forEach(field => {
     const picker = document.getElementById(`sc-${field}`);
     const hexIn  = document.getElementById(`sc-${field}-hex`);
     const s = getScheme();
