@@ -3244,6 +3244,21 @@ details[open] .cm-swivel-summary::before { transform: rotate(90deg); }
   background: rgba(229,57,53,.08); border-color: rgba(229,57,53,.3); color: var(--danger);
 }
 
+/* Import review screen */
+.si-review-groups { max-height: 46vh; overflow-y: auto; margin-bottom: 14px; padding-right: 2px; }
+.si-rev-group { margin-bottom: 12px; }
+.si-rev-title {
+  font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em;
+  color: var(--muted); margin: 0 0 6px; padding-bottom: 4px; border-bottom: 1px solid var(--border);
+}
+.si-rev-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 3px 0; font-size: 12.5px; }
+.si-rev-k { color: var(--muted); }
+.si-rev-v { color: var(--text); font-weight: 600; display: flex; align-items: center; gap: 6px; text-align: right; }
+.si-swatch { width: 13px; height: 13px; border-radius: 3px; border: 1px solid var(--border); flex-shrink: 0; }
+.si-rev-warn ul { margin: 0; padding-left: 16px; }
+.si-rev-warn li { font-size: 12px; line-height: 1.5; color: var(--muted); margin-bottom: 3px; }
+.si-rev-warn .si-rev-title { color: #c97a00; border-bottom-color: rgba(201,122,0,.3); }
+
 /* ── Bible lookup button + translation picker ─────────────────────────────── */
 .ref-row { display: flex; gap: 6px; align-items: center; }
 .ref-row input { flex: 1; }

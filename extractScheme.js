@@ -220,6 +220,27 @@ async function extractScheme(filePath) {
     set('startEndSize', s.size, 'Start/End size');
   }
 
+  // ── Transitions ── presentation-level transition is the reliable source.
+  // (Per-slide transitions are usually empty; prop transitions live in the
+  // separate _Props file and can't be read here.)
+  let transitionDetected = false;
+  const TNAME = { fade: 'fade', dissolve: 'dissolve', cut: 'cut' };
+  const tName = (o.transition && o.transition.effect && o.transition.effect.name || '').toLowerCase();
+  if (TNAME[tName]) {
+    set('transitionType', TNAME[tName]);
+    if (typeof o.transition.duration === 'number') set('transitionDuration', round(o.transition.duration));
+    captured.push('Slide transition');
+    transitionDetected = true;
+  }
+
+  // ── Honest warnings for anything not inferred ──
+  const warnings = [];
+  if (!pick.scriptureTitle) warnings.push('No scripture slide found — reference-bar styling kept at defaults.');
+  if (!pick.startEnd)       warnings.push('No Start/End slide found — Start/End styling kept at defaults.');
+  if (!transitionDetected)  warnings.push('Slide transition not detected — kept at default (Fade 0.6s).');
+  warnings.push('Point-text font was taken from the body bold font — set a separate Point font afterwards if you want one.');
+  warnings.push('Prop / LED-wall fonts and transitions live in a separate props file and can\'t be read here — those keep their defaults.');
+
   return {
     ok: true,
     scheme,
@@ -227,6 +248,7 @@ async function extractScheme(filePath) {
       presentation: o.name,
       slideCounts: counts,
       captured,
+      warnings,
       fieldCount: Object.keys(scheme).length,
     },
   };
