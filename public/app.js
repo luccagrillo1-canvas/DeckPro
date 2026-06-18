@@ -4471,78 +4471,78 @@ function preflightWarnings() {
 
   for (const slide of state.slides) {
     const label = slide.label || slide.type;
-    if (slide.type === ‘scripture’) {
+    if (slide.type === 'scripture') {
       if (!slide.reference?.trim()) {
-        warn(`Scripture “${label}” has no reference`, slide.id, ‘reference’);
+        warn(`Scripture “${label}” has no reference`, slide.id, 'reference');
       } else if (hasEdgeSpace(slide.reference)) {
         warn(
           `Scripture “${label}” reference has a stray space at the start or end`,
-          slide.id, ‘reference’,
+          slide.id, 'reference',
           () => { slide.reference = slide.reference.trim(); saveState(); }
         );
       }
       const bodies = slide.bodies || [[]];
       if (bodies.every(b => !b?.some(s => s.text?.trim())))
-        warn(`Scripture “${label}” has no body text`, slide.id, ‘body’);
+        warn(`Scripture “${label}” has no body text`, slide.id, 'body');
       bodies.forEach((b, i) => {
-        const joined = (b || []).map(s => s.text || ‘’).join(‘’);
-        const sfx = bodies.length > 1 ? ` (slide ${i + 1})` : ‘’;
+        const joined = (b || []).map(s => s.text || '').join('');
+        const sfx = bodies.length > 1 ? ` (slide ${i + 1})` : '';
         if (joined.length > LONG_SCRIPTURE_CHARS)
-          warn(`Scripture “${label}”${sfx} is long (${joined.length} chars) — consider splitting it into two slides`, slide.id, ‘body’);
+          warn(`Scripture “${label}”${sfx} is long (${joined.length} chars) — consider splitting it into two slides`, slide.id, 'body');
         if (hasEdgeSpace(joined)) {
-          warn(`Scripture “${label}”${sfx} has a stray space at the start or end`, slide.id, ‘body’, () => {
+          warn(`Scripture “${label}”${sfx} has a stray space at the start or end`, slide.id, 'body', () => {
             if (!slide.bodies) return;
             const bodyArr = slide.bodies[i];
             if (!bodyArr || !bodyArr.length) return;
             // Trim leading/trailing text from first/last non-empty span
             const first = bodyArr.findIndex(s => s.text);
-            if (first >= 0) bodyArr[first] = { ...bodyArr[first], text: bodyArr[first].text.replace(/^[ \t]+/, ‘’) };
+            if (first >= 0) bodyArr[first] = { ...bodyArr[first], text: bodyArr[first].text.replace(/^[ \t]+/, '') };
             const last = bodyArr.map((s, j) => s.text ? j : -1).filter(j => j >= 0).pop();
-            if (last != null) bodyArr[last] = { ...bodyArr[last], text: bodyArr[last].text.replace(/[ \t]+$/, ‘’) };
+            if (last != null) bodyArr[last] = { ...bodyArr[last], text: bodyArr[last].text.replace(/[ \t]+$/, '') };
             saveState();
           });
         }
       });
     }
-    if (slide.type === ‘point’ && slide.mode !== ‘revealing’) {
+    if (slide.type === 'point' && slide.mode !== 'revealing') {
       if (!slide.bodyText?.trim()) {
-        warn(`Point “${label}” has no body text`, slide.id, ‘bodyText’);
+        warn(`Point “${label}” has no body text`, slide.id, 'bodyText');
       } else if (hasEdgeSpace(slide.bodyText)) {
         warn(
           `Point “${label}” has a stray space at the start or end`,
-          slide.id, ‘bodyText’,
+          slide.id, 'bodyText',
           () => { slide.bodyText = slide.bodyText.trim(); saveState(); }
         );
       }
     }
-    if (slide.type === ‘point’ && slide.mode === ‘revealing’) {
+    if (slide.type === 'point' && slide.mode === 'revealing') {
       if (!(slide.bullets || []).some(b => bulletToText(b)?.trim()))
-        warn(`Revealing point “${label}” has no bullets`, slide.id, ‘bullets’);
+        warn(`Revealing point “${label}” has no bullets`, slide.id, 'bullets');
     }
   }
 
   if (cfg.includeResponseCard) {
     const r = cfg.responses || {};
     if (!r.r1?.trim() && !r.r2?.trim() && !r.r3?.trim())
-      warn(‘Response card is enabled but all three response lines are empty’, ‘rc’);
+      warn('Response card is enabled but all three response lines are empty', 'rc');
   }
 
   // ── Quote mismatch checks ──────────────────────────────────────────────────
   for (const slide of state.slides) {
     const label = slide.label || slide.type;
     const texts = [];
-    if (slide.type === ‘scripture’) {
+    if (slide.type === 'scripture') {
       const bodies = slide.bodies || [[]];
       for (const body of bodies) {
-        const joined = (body || []).map(s => s.text || ‘’).join(‘’);
-        if (joined.trim()) texts.push({ text: joined, field: ‘body’ });
+        const joined = (body || []).map(s => s.text || '').join('');
+        if (joined.trim()) texts.push({ text: joined, field: 'body' });
       }
-    } else if (slide.type === ‘point’ && slide.mode !== ‘revealing’) {
-      if (slide.bodyText?.trim()) texts.push({ text: slide.bodyText, field: ‘bodyText’ });
-    } else if (slide.type === ‘point’ && slide.mode === ‘revealing’) {
+    } else if (slide.type === 'point' && slide.mode !== 'revealing') {
+      if (slide.bodyText?.trim()) texts.push({ text: slide.bodyText, field: 'bodyText' });
+    } else if (slide.type === 'point' && slide.mode === 'revealing') {
       for (const b of (slide.bullets || [])) {
         const bt = bulletToText(b);
-        if (bt?.trim()) texts.push({ text: bt, field: ‘bullets’ });
+        if (bt?.trim()) texts.push({ text: bt, field: 'bullets' });
       }
     }
     for (const { text, field } of texts) {
