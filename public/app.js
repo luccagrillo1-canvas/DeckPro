@@ -2,9 +2,16 @@
 
 // ─── Version & Changelog ──────────────────────────────────────────────────────
 
-const APP_VERSION = '3.14.0';
+const APP_VERSION = '3.15.0';
 
 const CHANGELOG = [
+  {
+    version: '3.15.0',
+    date: '2026-06-18',
+    changes: [
+      "Preflight dialog redesigned: each warning row now shows a \"Go to ↗\" button that closes the dialog, navigates directly to the problem slide, and focuses the relevant field. Warnings with an automatic fix (stray spaces on reference or point text, leading/trailing whitespace on scripture body) also show a \"Fix\" button — click it to resolve in place, or \"Fix all auto\" to clear every auto-fixable warning at once.",
+    ],
+  },
   {
     version: '3.14.0',
     date: '2026-06-18',
@@ -4454,88 +4461,106 @@ const LONG_SCRIPTURE_CHARS = 220;
 const hasEdgeSpace = (s) => typeof s === 'string' && s.length > 0 && s !== s.replace(/^[ \t]+|[ \t]+$/g, '');
 
 function preflightWarnings() {
-  const warnings = [];
+  // Each item: { msg, slideId?, field?, autoFix? }
+  const items = [];
   const cfg = state.config;
-  const F = cfg.features || DEFAULT_FEATURES();
+
+  function warn(msg, slideId = null, field = null, autoFix = null) {
+    items.push({ msg, slideId, field, autoFix });
+  }
 
   for (const slide of state.slides) {
     const label = slide.label || slide.type;
-    if (slide.type === 'scripture') {
-      if (!slide.reference?.trim())
-        warnings.push(`Scripture "${label}" has no reference`);
-      else if (hasEdgeSpace(slide.reference))
-        warnings.push(`Scripture "${label}" reference has a stray space at the start or end`);
+    if (slide.type === ‘scripture’) {
+      if (!slide.reference?.trim()) {
+        warn(`Scripture “${label}” has no reference`, slide.id, ‘reference’);
+      } else if (hasEdgeSpace(slide.reference)) {
+        warn(
+          `Scripture “${label}” reference has a stray space at the start or end`,
+          slide.id, ‘reference’,
+          () => { slide.reference = slide.reference.trim(); saveState(); }
+        );
+      }
       const bodies = slide.bodies || [[]];
       if (bodies.every(b => !b?.some(s => s.text?.trim())))
-        warnings.push(`Scripture "${label}" has no body text`);
-      // Flag any single body slide that's long enough to be worth splitting
+        warn(`Scripture “${label}” has no body text`, slide.id, ‘body’);
       bodies.forEach((b, i) => {
-        const joined = (b || []).map(s => s.text || '').join('');
+        const joined = (b || []).map(s => s.text || ‘’).join(‘’);
+        const sfx = bodies.length > 1 ? ` (slide ${i + 1})` : ‘’;
         if (joined.length > LONG_SCRIPTURE_CHARS)
-          warnings.push(`Scripture "${label}"${bodies.length > 1 ? ` (slide ${i + 1})` : ''} is long (${joined.length} chars) — consider splitting it into two slides`);
-        if (hasEdgeSpace(joined))
-          warnings.push(`Scripture "${label}"${bodies.length > 1 ? ` (slide ${i + 1})` : ''} has a stray space at the start or end`);
+          warn(`Scripture “${label}”${sfx} is long (${joined.length} chars) — consider splitting it into two slides`, slide.id, ‘body’);
+        if (hasEdgeSpace(joined)) {
+          warn(`Scripture “${label}”${sfx} has a stray space at the start or end`, slide.id, ‘body’, () => {
+            if (!slide.bodies) return;
+            const bodyArr = slide.bodies[i];
+            if (!bodyArr || !bodyArr.length) return;
+            // Trim leading/trailing text from first/last non-empty span
+            const first = bodyArr.findIndex(s => s.text);
+            if (first >= 0) bodyArr[first] = { ...bodyArr[first], text: bodyArr[first].text.replace(/^[ \t]+/, ‘’) };
+            const last = bodyArr.map((s, j) => s.text ? j : -1).filter(j => j >= 0).pop();
+            if (last != null) bodyArr[last] = { ...bodyArr[last], text: bodyArr[last].text.replace(/[ \t]+$/, ‘’) };
+            saveState();
+          });
+        }
       });
     }
-    if (slide.type === 'point' && slide.mode !== 'revealing') {
-      if (!slide.bodyText?.trim())
-        warnings.push(`Point "${label}" has no body text`);
-      else if (hasEdgeSpace(slide.bodyText))
-        warnings.push(`Point "${label}" has a stray space at the start or end`);
+    if (slide.type === ‘point’ && slide.mode !== ‘revealing’) {
+      if (!slide.bodyText?.trim()) {
+        warn(`Point “${label}” has no body text`, slide.id, ‘bodyText’);
+      } else if (hasEdgeSpace(slide.bodyText)) {
+        warn(
+          `Point “${label}” has a stray space at the start or end`,
+          slide.id, ‘bodyText’,
+          () => { slide.bodyText = slide.bodyText.trim(); saveState(); }
+        );
+      }
     }
-    if (slide.type === 'point' && slide.mode === 'revealing') {
+    if (slide.type === ‘point’ && slide.mode === ‘revealing’) {
       if (!(slide.bullets || []).some(b => bulletToText(b)?.trim()))
-        warnings.push(`Revealing point "${label}" has no bullets`);
+        warn(`Revealing point “${label}” has no bullets`, slide.id, ‘bullets’);
     }
   }
 
   if (cfg.includeResponseCard) {
     const r = cfg.responses || {};
     if (!r.r1?.trim() && !r.r2?.trim() && !r.r3?.trim())
-      warnings.push('Response card is enabled but all three response lines are empty');
+      warn(‘Response card is enabled but all three response lines are empty’, ‘rc’);
   }
 
   // ── Quote mismatch checks ──────────────────────────────────────────────────
   for (const slide of state.slides) {
     const label = slide.label || slide.type;
     const texts = [];
-
-    if (slide.type === 'scripture') {
+    if (slide.type === ‘scripture’) {
       const bodies = slide.bodies || [[]];
       for (const body of bodies) {
-        const joined = (body || []).map(s => s.text || '').join('');
-        if (joined.trim()) texts.push(joined);
+        const joined = (body || []).map(s => s.text || ‘’).join(‘’);
+        if (joined.trim()) texts.push({ text: joined, field: ‘body’ });
       }
-    } else if (slide.type === 'point' && slide.mode !== 'revealing') {
-      if (slide.bodyText?.trim()) texts.push(slide.bodyText);
-    } else if (slide.type === 'point' && slide.mode === 'revealing') {
+    } else if (slide.type === ‘point’ && slide.mode !== ‘revealing’) {
+      if (slide.bodyText?.trim()) texts.push({ text: slide.bodyText, field: ‘bodyText’ });
+    } else if (slide.type === ‘point’ && slide.mode === ‘revealing’) {
       for (const b of (slide.bullets || [])) {
         const bt = bulletToText(b);
-        if (bt?.trim()) texts.push(bt);
+        if (bt?.trim()) texts.push({ text: bt, field: ‘bullets’ });
       }
     }
-
-    for (const text of texts) {
-      // curly double quotes
+    for (const { text, field } of texts) {
       const openDouble  = (text.match(/“/g) || []).length;
       const closeDouble = (text.match(/”/g) || []).length;
       if (openDouble !== closeDouble)
-        warnings.push(`"${label}" has mismatched curly double quotes (“”) — ${openDouble} open, ${closeDouble} close`);
-
-      // curly single quotes / apostrophes — only flag if both kinds present (pure apostrophe use would be all ’)
+        warn(`”${label}” has mismatched curly double quotes (“”) — ${openDouble} open, ${closeDouble} close`, slide.id, field);
       const openSingle  = (text.match(/‘/g) || []).length;
       const closeSingle = (text.match(/’/g) || []).length;
       if (openSingle > 0 && openSingle !== closeSingle)
-        warnings.push(`"${label}" has mismatched curly single quotes (‘’) — ${openSingle} open, ${closeSingle} close`);
-
-      // straight double quotes — odd count means unpaired
-      const straightDouble = (text.match(/"/g) || []).length;
+        warn(`”${label}” has mismatched curly single quotes (‘’) — ${openSingle} open, ${closeSingle} close`, slide.id, field);
+      const straightDouble = (text.match(/”/g) || []).length;
       if (straightDouble % 2 !== 0)
-        warnings.push(`"${label}" has an odd number of straight double quotes (") — may be unpaired`);
+        warn(`”${label}” has an odd number of straight double quotes (“) — may be unpaired`, slide.id, field);
     }
   }
 
-  return warnings;
+  return items;
 }
 
 async function generate() {
@@ -5083,32 +5108,98 @@ function triggerDownloads(data) {
 }
 
 function showWarningDialog(warnings, opts = {}) {
-  const heading  = opts.heading  || 'Before you export';
-  const okLabel  = opts.okLabel  || 'Export Anyway';
+  const heading     = opts.heading     || 'Before you export';
+  const okLabel     = opts.okLabel     || 'Export Anyway';
   const cancelLabel = opts.cancelLabel || 'Go Back';
+
+  // Normalise: accept plain strings for backward compat
+  const items = warnings.map(w => typeof w === 'string' ? { msg: w } : w);
+
   return new Promise(resolve => {
     const overlay = document.createElement('div');
     overlay.className = 'warn-overlay';
-    overlay.innerHTML = `
-      <div class="warn-modal">
-        <div class="warn-hdr">
-          <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
-            <path d="M10 2L2 17h16L10 2z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" fill="none"/>
-            <path d="M10 8v4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-            <circle cx="10" cy="14.5" r=".75" fill="currentColor"/>
-          </svg>
-          <span>${esc(heading)}</span>
-        </div>
-        <ul class="warn-list">${warnings.map(w => `<li>${esc(w)}</li>`).join('')}</ul>
-        <div class="warn-actions">
-          <button class="warn-btn-cancel">${esc(cancelLabel)}</button>
-          <button class="warn-btn-ok">${esc(okLabel)}</button>
-        </div>
-      </div>`;
+
+    const hasAutoFix = items.some(it => it.autoFix && !it._fixed);
+
+    function renderItems() {
+      return items.map((it, i) => `
+        <li class="warn-item${it._fixed ? ' warn-item-fixed' : ''}" data-idx="${i}">
+          <span class="warn-msg">${esc(it.msg)}</span>
+          <span class="warn-item-acts">
+            ${it.autoFix && !it._fixed ? `<button class="warn-act warn-act-fix" data-idx="${i}">Fix</button>` : ''}
+            ${it.slideId && !it._fixed ? `<button class="warn-act warn-act-goto" data-idx="${i}">Go&nbsp;to&nbsp;↗</button>` : ''}
+          </span>
+        </li>`).join('');
+    }
+
+    function buildHtml() {
+      const anyFix = items.some(it => it.autoFix && !it._fixed);
+      return `
+        <div class="warn-modal">
+          <div class="warn-hdr">
+            <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
+              <path d="M10 2L2 17h16L10 2z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" fill="none"/>
+              <path d="M10 8v4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              <circle cx="10" cy="14.5" r=".75" fill="currentColor"/>
+            </svg>
+            <span>${esc(heading)}</span>
+          </div>
+          <ul class="warn-list" id="pf-warn-list">${renderItems()}</ul>
+          <div class="warn-actions">
+            <button class="warn-btn-cancel">${esc(cancelLabel)}</button>
+            ${anyFix ? `<button class="warn-btn-fixall">Fix all auto</button>` : ''}
+            <button class="warn-btn-ok">${esc(okLabel)}</button>
+          </div>
+        </div>`;
+    }
+
+    overlay.innerHTML = buildHtml();
     document.body.appendChild(overlay);
-    overlay.querySelector('.warn-btn-cancel').addEventListener('click', () => { overlay.remove(); resolve(false); });
-    overlay.querySelector('.warn-btn-ok').addEventListener('click',     () => { overlay.remove(); resolve(true);  });
-    overlay.addEventListener('click', e => { if (e.target === overlay) { overlay.remove(); resolve(false); } });
+
+    function refresh() {
+      overlay.innerHTML = buildHtml();
+      attachHandlers();
+    }
+
+    function goTo(item) {
+      overlay.remove();
+      resolve(false);
+      if (item.slideId === 'rc') {
+        state.activeId = 'rc';
+        render();
+      } else if (item.slideId) {
+        state.activeId = item.slideId;
+        render();
+        setTimeout(() => {
+          const fid = item.field === 'reference' ? 'f-reference'
+                    : item.field === 'bodyText'  ? 'f-bodyText'
+                    : null;
+          const el = fid ? document.getElementById(fid) : null;
+          if (el) { el.focus(); el.select?.(); el.scrollIntoView?.({ block: 'center' }); }
+        }, 80);
+      }
+    }
+
+    function attachHandlers() {
+      overlay.querySelector('.warn-btn-cancel')?.addEventListener('click', () => { overlay.remove(); resolve(false); });
+      overlay.querySelector('.warn-btn-ok')?.addEventListener('click',     () => { overlay.remove(); resolve(true); });
+      overlay.querySelector('.warn-btn-fixall')?.addEventListener('click', () => {
+        items.forEach(it => { if (it.autoFix && !it._fixed) { it.autoFix(); it._fixed = true; } });
+        refresh();
+      });
+      overlay.querySelectorAll('.warn-act-fix').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const it = items[Number(btn.dataset.idx)];
+          if (it?.autoFix) { it.autoFix(); it._fixed = true; refresh(); }
+        });
+      });
+      overlay.querySelectorAll('.warn-act-goto').forEach(btn => {
+        btn.addEventListener('click', () => goTo(items[Number(btn.dataset.idx)]));
+      });
+      overlay.addEventListener('click', e => { if (e.target === overlay) { overlay.remove(); resolve(false); } });
+    }
+
+    attachHandlers();
   });
 }
 
