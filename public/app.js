@@ -2,9 +2,16 @@
 
 // ─── Version & Changelog ──────────────────────────────────────────────────────
 
-const APP_VERSION = '3.12.0';
+const APP_VERSION = '3.13.0';
 
 const CHANGELOG = [
+  {
+    version: '3.13.0',
+    date: '2026-06-18',
+    changes: [
+      "Revealing points: Confidence monitor mode — \"Current bullet\" (default, same as before) shows only the active bullet in the speaker notes. \"Stacking\" accumulates all revealed bullets so the speaker sees a growing list; previous bullets appear in normal weight and the current bullet in bold.",
+    ],
+  },
   {
     version: '3.12.0',
     date: '2026-06-18',
@@ -3596,10 +3603,19 @@ function pointForm(slide) {
     </div>
   ` : '';
 
+  const followReveal = slide.followReveal || 'single';
+
   const revealingFields = mode === 'revealing' ? `
     <div class="field" id="field-title">
       <label>Series Title (optional header on prop)</label>
       <input type="text" id="f-title" spellcheck="true" value="${esc(slide.title || '')}" placeholder="e.g. The King Has Come">
+    </div>
+    <div class="field" id="field-follow-reveal">
+      <label>Confidence monitor</label>
+      <div class="segmented-control">
+        <button id="fr-single"   class="${followReveal === 'single'   ? 'active' : ''}">Current bullet</button>
+        <button id="fr-stacking" class="${followReveal === 'stacking' ? 'active' : ''}">Stacking</button>
+      </div>
     </div>
     <div class="field" id="field-bullets">
       <label>Bullets (one per slide)</label>
@@ -3895,6 +3911,16 @@ function attachFormHandlers(slide) {
   }
   if (modeR) {
     modeR.addEventListener('click', () => { slide.mode = 'revealing'; renderMain(); });
+  }
+
+  // ── Confidence monitor follow-reveal mode (revealing only) ──
+  const frSingle   = get('fr-single');
+  const frStacking = get('fr-stacking');
+  if (frSingle) {
+    frSingle.addEventListener('click', () => { slide.followReveal = 'single'; frSingle.classList.add('active'); frStacking.classList.remove('active'); saveState(); });
+  }
+  if (frStacking) {
+    frStacking.addEventListener('click', () => { slide.followReveal = 'stacking'; frStacking.classList.add('active'); frSingle.classList.remove('active'); saveState(); });
   }
 
   // ── Point single fields ──
@@ -4334,6 +4360,7 @@ function buildSpec() {
           title:                slide.title || '',
           bullets:              (slide.bullets || [[]]).filter(b => bulletToText(b)?.trim()),
           propBaseName:         slide.propBaseName || slide.label || 'point',
+          followReveal:         slide.followReveal || 'single',
           blankBefore:          !!slide.blankBefore,
           blankSpans:           slide.blankSpans || [],
           transition:           slide.transition || null,
