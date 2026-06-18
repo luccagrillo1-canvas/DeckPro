@@ -2,9 +2,20 @@
 
 // ─── Version & Changelog ──────────────────────────────────────────────────────
 
-const APP_VERSION = '3.9.0';
+const APP_VERSION = '3.10.0';
 
 const CHANGELOG = [
+  {
+    version: '3.10.0',
+    date: '2026-06-15',
+    changes: [
+      "Google Drive notes doc now persists — the link you load is remembered and reopens automatically after a reload or redeploy (Clear forgets it).",
+      "Response Card now appears in the Outline panel with its decision text and responses; click it to jump to the editor. (Its inputs live in the 'Response Card' item in the slide list.)",
+      "Preflight now warns when a scripture slide is long enough to be worth splitting into two.",
+      "Preflight now flags stray spaces at the start/end of a reference, scripture body, or point.",
+      "Revealing-point deck label now uses the prop header title when set, falling back to the first bullet.",
+    ],
+  },
   {
     version: '3.9.0',
     date: '2026-06-15',
@@ -914,6 +925,7 @@ const DEFAULT_STATE = () => ({
     bibleId:             '',
     bibleName:           '',
     bibleList:           [],  // cached [{id, name, abbreviation}]
+    gdriveUrl:           '',  // last-loaded Google Drive notes doc (persists across redeploys)
     outputMode:          'local',  // 'local' | 'download' | 'ask'
     responses: {
       decisionText: 'I have decided to follow Jesus today!',
@@ -3852,9 +3864,19 @@ function attachFormHandlers(slide) {
   }
 
   // ── Point revealing fields ──
+  // Deck label for a revealing point uses the prop header title if set,
+  // otherwise falls back to the first bullet.
+  const syncRevealingLabel = () => {
+    if (slide._labelManual) return;
+    const t = (slide.title || '').trim();
+    slide.label = t || bulletToText((slide.bullets || [[]])[0]) || '';
+    const lbl = get('f-label');
+    if (lbl) lbl.value = slide.label;
+    renderSidebar();
+  };
   const titleEl = get('f-title');
   if (titleEl) {
-    titleEl.addEventListener('input', () => { slide.title = titleEl.value; saveState(); });
+    titleEl.addEventListener('input', () => { slide.title = titleEl.value; syncRevealingLabel(); saveState(); });
   }
 
   // Bullet rich editors (CMD+B for bold, no toolbar)
@@ -3863,13 +3885,8 @@ function attachFormHandlers(slide) {
     div.addEventListener('input', () => {
       if (!slide.bullets) slide.bullets = [];
       slide.bullets[idx] = extractSpans(div);
-      // Auto-sync label from first bullet
-      if (idx === 0 && !slide._labelManual) {
-        slide.label = bulletToText(slide.bullets[0]);
-        const lbl = get('f-label');
-        if (lbl) lbl.value = slide.label;
-        renderSidebar();
-      }
+      // Auto-sync label (title → first bullet)
+      if (idx === 0) syncRevealingLabel();
       saveState();
     });
     div.addEventListener('keydown', e => {
@@ -4296,6 +4313,11 @@ function buildSpec() {
 
 // ─── Export ──────────────────────────────────────────────────────────────────────
 
+// A single scripture slide longer than this (characters) is worth splitting.
+const LONG_SCRIPTURE_CHARS = 220;
+// True if a string has leading or trailing whitespace we'd want flagged.
+const hasEdgeSpace = (s) => typeof s === 'string' && s.length > 0 && s !== s.replace(/^[ \t]+|[ \t]+$/g, '');
+
 function preflightWarnings() {
   const warnings = [];
   const cfg = state.config;
@@ -4306,13 +4328,25 @@ function preflightWarnings() {
     if (slide.type === 'scripture') {
       if (!slide.reference?.trim())
         warnings.push(`Scripture "${label}" has no reference`);
+      else if (hasEdgeSpace(slide.reference))
+        warnings.push(`Scripture "${label}" reference has a stray space at the start or end`);
       const bodies = slide.bodies || [[]];
       if (bodies.every(b => !b?.some(s => s.text?.trim())))
         warnings.push(`Scripture "${label}" has no body text`);
+      // Flag any single body slide that's long enough to be worth splitting
+      bodies.forEach((b, i) => {
+        const joined = (b || []).map(s => s.text || '').join('');
+        if (joined.length > LONG_SCRIPTURE_CHARS)
+          warnings.push(`Scripture "${label}"${bodies.length > 1 ? ` (slide ${i + 1})` : ''} is long (${joined.length} chars) — consider splitting it into two slides`);
+        if (hasEdgeSpace(joined))
+          warnings.push(`Scripture "${label}"${bodies.length > 1 ? ` (slide ${i + 1})` : ''} has a stray space at the start or end`);
+      });
     }
     if (slide.type === 'point' && slide.mode !== 'revealing') {
       if (!slide.bodyText?.trim())
         warnings.push(`Point "${label}" has no body text`);
+      else if (hasEdgeSpace(slide.bodyText))
+        warnings.push(`Point "${label}" has a stray space at the start or end`);
     }
     if (slide.type === 'point' && slide.mode === 'revealing') {
       if (!(slide.bullets || []).some(b => bulletToText(b)?.trim()))
@@ -5066,6 +5100,9 @@ function attachPdfHandlers() {
       document.getElementById('pdf-viewer').style.display    = 'flex';
       document.getElementById('notes-panel')?.classList.add('pdf-open');
       applyZoom();
+      // Persist the Drive URL so it survives a reload / redeploy
+      state.config.gdriveUrl = url;
+      saveState();
     } catch (e) {
       toast('error', 'Drive load failed', e.message);
     } finally {
@@ -5081,6 +5118,11 @@ function attachPdfHandlers() {
   gdriveInput?.addEventListener('keydown', e => {
     if (e.key === 'Enter') loadGdrivePdf(gdriveInput.value.trim());
   });
+  // Restore a previously-loaded Drive doc after a reload / redeploy
+  if (gdriveInput && state.config.gdriveUrl) {
+    gdriveInput.value = state.config.gdriveUrl;
+    loadGdrivePdf(state.config.gdriveUrl);
+  }
 
   document.getElementById('btn-pdf-zoom-in')?.addEventListener('click', () => {
     _pdfZoom = Math.min(_pdfZoom + 25, 200); applyZoom();
@@ -5096,6 +5138,10 @@ function attachPdfHandlers() {
     document.getElementById('pdf-drop-zone').style.display = 'flex';
     document.getElementById('notes-panel')?.classList.remove('pdf-open');
     if (fileIn) fileIn.value = '';
+    if (gdriveInput) gdriveInput.value = '';
+    // Forget the persisted Drive doc so it doesn't reload next launch
+    state.config.gdriveUrl = '';
+    saveState();
     _pdfZoom = 100;
   });
 }
@@ -5426,6 +5472,29 @@ function renderNotesPanel() {
       </div>
     `;
   }).join('');
+
+  // Response Card — appended to the outline so it's visible alongside the slides.
+  // Click to open its editor (the "Response Card" item in the queue).
+  const cfg = state.config;
+  if (cfg.includeResponseCard) {
+    const r = cfg.responses || {};
+    const lines = [r.decisionText, r.r1, r.r2, r.r3].filter(x => x && x.trim());
+    const rcBody = lines.length
+      ? lines.map(esc).join('<br>')
+      : `<span style="color:var(--muted);font-style:italic">No response text yet — click to add</span>`;
+    body.insertAdjacentHTML('beforeend', `
+      <div class="notes-entry notes-entry-rc" data-open-rc="1" style="cursor:pointer">
+        <div class="notes-entry-hdr">
+          <span class="notes-entry-num">RC</span>
+          <span class="notes-entry-label">Response Card</span>
+        </div>
+        <div class="notes-entry-body">${rcBody}</div>
+      </div>
+    `);
+    body.querySelector('[data-open-rc]')?.addEventListener('click', () => {
+      state.activeId = 'rc'; render();
+    });
+  }
 }
 
 // ─── Render ───────────────────────────────────────────────────────────────────
