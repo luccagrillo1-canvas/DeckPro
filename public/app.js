@@ -2,9 +2,16 @@
 
 // ─── Version & Changelog ──────────────────────────────────────────────────────
 
-const APP_VERSION = '3.10.0';
+const APP_VERSION = '3.11.0';
 
 const CHANGELOG = [
+  {
+    version: '3.11.0',
+    date: '2026-06-18',
+    changes: [
+      "Preferences → Book Names: choose a display form for ambiguous books — \"Acts\" can display as \"Acts of the Apostles\"; \"Song of Solomon\" and \"Song of Songs\" are interchangeable. The override applies at export and retroactively updates all scripture slides without changing what you typed in the reference field.",
+    ],
+  },
   {
     version: '3.10.0',
     date: '2026-06-15',
@@ -926,6 +933,7 @@ const DEFAULT_STATE = () => ({
     bibleName:           '',
     bibleList:           [],  // cached [{id, name, abbreviation}]
     gdriveUrl:           '',  // last-loaded Google Drive notes doc (persists across redeploys)
+    bookNames:           {},  // e.g. { acts: 'Acts of the Apostles', songOfSolomon: 'Song of Songs' }
     outputMode:          'local',  // 'local' | 'download' | 'ask'
     responses: {
       decisionText: 'I have decided to follow Jesus today!',
@@ -1991,6 +1999,25 @@ function renderConfigPanel(panel) {
         ` : ''}
       </div>
 
+      <div class="settings-section">
+        <h3>Book Names</h3>
+        <p style="color:var(--muted);font-size:12px;margin:0 0 10px">
+          Choose how ambiguous book names appear in the reference bar. Applied at export — changing the setting retroactively updates all slides.
+        </p>
+        ${BOOK_NAME_OPTIONS.map(({ key, label, choices }) => {
+          const cur = (cfg.bookNames || {})[key] || '';
+          return `
+            <div class="settings-row" style="margin-bottom:8px;align-items:center">
+              <label style="min-width:160px;font-size:13px">${esc(label)}</label>
+              <select class="bookname-select" data-key="${esc(key)}" style="flex:1">
+                <option value="">As typed</option>
+                ${choices.map(c => `<option value="${esc(c)}" ${cur === c ? 'selected' : ''}>${esc(c)}</option>`).join('')}
+              </select>
+            </div>
+          `;
+        }).join('')}
+      </div>
+
     </div>
   `;
 
@@ -2144,6 +2171,18 @@ function renderConfigPanel(panel) {
     } finally {
       btn.disabled = false; btn.textContent = 'Fetch Bibles';
     }
+  });
+
+  // Book name overrides
+  document.querySelectorAll('.bookname-select').forEach(sel => {
+    sel.addEventListener('change', e => {
+      if (!cfg.bookNames) cfg.bookNames = {};
+      const key = e.target.dataset.key;
+      const val = e.target.value;
+      if (val) cfg.bookNames[key] = val;
+      else delete cfg.bookNames[key];
+      saveState();
+    });
   });
 }
 
@@ -4199,6 +4238,23 @@ function buildFileName() {
     : `Message_${yy}.${mm}.${dd}_${series}${qrSuffix}`;
 }
 
+// ─── Book name normalization ──────────────────────────────────────────────────
+
+const BOOK_NAME_OPTIONS = [
+  { key: 'acts',          label: 'Acts',                             pattern: /^Acts\b/i,                      choices: ['Acts', 'Acts of the Apostles'] },
+  { key: 'songOfSolomon', label: 'Song of Solomon / Song of Songs',  pattern: /^Song of (Solomon|Songs?)\b/i,  choices: ['Song of Solomon', 'Song of Songs'] },
+];
+
+function applyBookNames(ref, bookNames) {
+  if (!ref || !bookNames) return ref;
+  let s = ref;
+  for (const { key, pattern } of BOOK_NAME_OPTIONS) {
+    const override = bookNames[key];
+    if (override) s = s.replace(pattern, override);
+  }
+  return s;
+}
+
 function buildSpec() {
   const { qrCode, includeResponseCard, outputFolder, responses } = state.config;
 
@@ -4223,10 +4279,11 @@ function buildSpec() {
               return acc.concat(body || []);
             }, [])
           : [];
+      const displayRef = applyBookNames(slide.reference || '', state.config.bookNames || {});
       return {
         type:          'scripture',
         label:         slide.label || slide.reference || 'Scripture',
-        reference:     slide.reference || '',
+        reference:     displayRef,
         bodies,
         propName:      slide.propName || slide.reference || 'scripture',
         blankBefore:   !!slide.blankBefore,
