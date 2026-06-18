@@ -1206,6 +1206,7 @@ function buildPointCues(spec, rs) {
   const boldYOff = rs.boldFontAdv?.yOffset ?? 0;
 
   if (spec.mode === 'revealing') {
+    const followReveal = spec.followReveal || 'single';
     return (spec.bullets || []).map((bullet, idx) => {
       const bulletText = rtf.bulletToText(bullet);
       const bodyRtf = rtf.rtfPointBody(bullet, rs);
@@ -1222,7 +1223,17 @@ function buildPointCues(spec, rs) {
 
       const propName = `${spec.propBaseName}_${idx + 1}`;
       const label    = idx === 0 ? spec.label : `${spec.label} (${idx + 1})`;
-      const notesRtf = rtf.rtfNotes([{ text: bulletText, bold: true }], rs);
+
+      let notesRtf;
+      if (followReveal === 'stacking' && idx > 0) {
+        const notesSpans = spec.bullets.slice(0, idx).flatMap(b => [
+          { text: rtf.bulletToText(b), bold: false },
+          { text: '\n', bold: false },
+        ]).concat([{ text: bulletText, bold: true }]);
+        notesRtf = rtf.rtfNotes(notesSpans, rs);
+      } else {
+        notesRtf = rtf.rtfNotes([{ text: bulletText, bold: true }], rs);
+      }
 
       return {
         uuid: uuid(),
