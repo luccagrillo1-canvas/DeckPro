@@ -511,6 +511,9 @@ function buildAllPropCues(propSpecs, style = {}) {
         return buildPointSinglePropCue(spec, cueRs);
       case 'point-revealing':
         return buildRevealingPointPropCue(spec, cueRs);
+      case 'manual':
+        // Blank cue — slot reserved, user builds the prop manually in Pro7
+        return makePropCue(spec.propName, [], cueRs._propTransition ?? cueRs._transition, cueRs, spec.slotUuid ?? null);
       default:
         throw new Error(`Unknown prop spec type: ${spec.type}`);
     }

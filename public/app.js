@@ -2,9 +2,16 @@
 
 // ─── Version & Changelog ──────────────────────────────────────────────────────
 
-const APP_VERSION = '3.13.0';
+const APP_VERSION = '3.14.0';
 
 const CHANGELOG = [
+  {
+    version: '3.14.0',
+    date: '2026-06-18',
+    changes: [
+      "Point slides: \"Custom prop\" toggle — when enabled, DeckPro reserves the prop slot but generates a blank cue instead of overwriting it. Use this to build a one-off prop manually in ProPresenter while keeping the queue action wired up correctly.",
+    ],
+  },
   {
     version: '3.13.0',
     date: '2026-06-18',
@@ -3396,7 +3403,7 @@ function slideTransitionRow(slide, features) {
   `;
 }
 
-function propSection(slide, features, { showTransition = true, idPrefix = 'fp' } = {}) {
+function propSection(slide, features, { showTransition = true, idPrefix = 'fp', showCustomProp = false } = {}) {
   if (features && !features.propName && !(showTransition && features?.propTransitionOverride)) return '';
   const parts = [];
   if (!features || features.propName) {
@@ -3405,6 +3412,14 @@ function propSection(slide, features, { showTransition = true, idPrefix = 'fp' }
       <div class="field">
         <label>Prop Name</label>
         <input type="text" id="f-propName" spellcheck="false" value="${esc(propVal)}" placeholder="Auto-set from reference">
+      </div>
+    `);
+  }
+  if (showCustomProp) {
+    parts.push(`
+      <div class="rc-toggle-row" id="custom-prop-row" style="margin-top:4px">
+        <div class="toggle${slide.customProp ? ' on' : ''}" id="custom-prop-toggle"></div>
+        <label style="font-size:13px">Custom prop — skip auto-generation, leave slot blank for manual Pro7 build</label>
       </div>
     `);
   }
@@ -3643,7 +3658,7 @@ function pointForm(slide) {
   // Prop section differs by mode
   const propPart = (() => {
     if (mode === 'single') {
-      return propSection(slide, F);
+      return propSection(slide, F, { showCustomProp: true });
     }
     // Revealing: prop base name + two separate transition overrides
     const parts = [];
@@ -3941,6 +3956,13 @@ function attachFormHandlers(slide) {
       saveState();
     });
   }
+
+  // Custom prop toggle (single mode)
+  document.getElementById('custom-prop-row')?.addEventListener('click', () => {
+    slide.customProp = !slide.customProp;
+    document.getElementById('custom-prop-toggle').classList.toggle('on', !!slide.customProp);
+    saveState();
+  });
 
   // ── Point revealing fields ──
   // Deck label for a revealing point uses the prop header title if set,
@@ -4376,6 +4398,7 @@ function buildSpec() {
         label:         slide.label || slide.bodyText || 'Point',
         bodyText:      slide.bodyText || '',
         propName:      slide.propName || slide.bodyText || 'point',
+        customProp:    !!slide.customProp,
         blankBefore:   !!slide.blankBefore,
         blankSpans:    slide.blankSpans || [],
         transition:    slide.transition || null,
