@@ -2,9 +2,16 @@
 
 // ─── Version & Changelog ──────────────────────────────────────────────────────
 
-const APP_VERSION = '3.11.0';
+const APP_VERSION = '3.12.0';
 
 const CHANGELOG = [
+  {
+    version: '3.12.0',
+    date: '2026-06-18',
+    changes: [
+      "Revealing points: \"Paste to reflow\" — expand the disclosure below the bullet list, paste a block of text (one bullet per line), click Split, and DeckPro populates all bullets at once instead of requiring copy-paste into each field individually.",
+    ],
+  },
   {
     version: '3.11.0',
     date: '2026-06-18',
@@ -3607,6 +3614,13 @@ function pointForm(slide) {
         `).join('')}
       </div>
       <button class="btn-add-bullet" id="btn-add-bullet" type="button">+ Add bullet</button>
+      <details class="reflow-details">
+        <summary class="reflow-summary">Paste to reflow…</summary>
+        <div class="reflow-body">
+          <textarea id="reflow-paste" rows="5" placeholder="Paste bullet text here — one line per bullet — then click Split"></textarea>
+          <button class="btn-sm" id="btn-reflow" type="button">Split into bullets</button>
+        </div>
+      </details>
     </div>
   ` : '';
 
@@ -3945,6 +3959,20 @@ function attachFormHandlers(slide) {
     addBulletBtn.addEventListener('click', () => {
       if (!slide.bullets) slide.bullets = [];
       slide.bullets.push([]);
+      renderMain();
+    });
+  }
+
+  // Reflow: paste multi-line text → split into bullets
+  const reflowBtn = get('btn-reflow');
+  if (reflowBtn) {
+    reflowBtn.addEventListener('click', () => {
+      const ta = get('reflow-paste');
+      if (!ta) return;
+      const lines = ta.value.split('\n').map(l => l.trim()).filter(Boolean);
+      if (!lines.length) return;
+      slide.bullets = lines.map(l => [{ text: l, bold: false }]);
+      ta.value = '';
       renderMain();
     });
   }
