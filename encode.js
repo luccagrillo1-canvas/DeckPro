@@ -595,14 +595,18 @@ function collectPropSpecs(slides) {
         const pName = slide.propName || slide.bodyText || 'point';
         const slot  = nextSlot();
         propUuidMap[pName] = slot.uuid;
-        propSpecs.push({
-          type: 'point-single',
-          propName: pName,
-          slotName: slot.slot,
-          slotUuid: slot.uuid,
-          bodyText: slide.bodyText || '',
-          propTransition: slide.propTransition || null,
-        });
+        if (slide.customProp) {
+          propSpecs.push({ type: 'manual', propName: pName, slotName: slot.slot, slotUuid: slot.uuid });
+        } else {
+          propSpecs.push({
+            type: 'point-single',
+            propName: pName,
+            slotName: slot.slot,
+            slotUuid: slot.uuid,
+            bodyText: slide.bodyText || '',
+            propTransition: slide.propTransition || null,
+          });
+        }
       }
     }
   }
