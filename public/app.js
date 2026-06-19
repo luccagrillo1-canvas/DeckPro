@@ -2,9 +2,16 @@
 
 // ─── Version & Changelog ──────────────────────────────────────────────────────
 
-const APP_VERSION = '3.18.0';
+const APP_VERSION = '3.19.0';
 
 const CHANGELOG = [
+  {
+    version: '3.19.0',
+    date: '2026-06-19',
+    changes: [
+      "Removed click-to-jump from the RC entry in the Outline panel.",
+    ],
+  },
   {
     version: '3.18.0',
     date: '2026-06-18',
@@ -5777,7 +5784,7 @@ function renderNotesPanel() {
       ? lines.map(esc).join('<br>')
       : `<span style="color:var(--muted);font-style:italic">No response text yet — click to add</span>`;
     body.insertAdjacentHTML('beforeend', `
-      <div class="notes-entry notes-entry-rc" data-open-rc="1" style="cursor:pointer">
+      <div class="notes-entry notes-entry-rc">
         <div class="notes-entry-hdr">
           <span class="notes-entry-num">RC</span>
           <span class="notes-entry-label">Response Card</span>
@@ -5785,9 +5792,6 @@ function renderNotesPanel() {
         <div class="notes-entry-body">${rcBody}</div>
       </div>
     `);
-    body.querySelector('[data-open-rc]')?.addEventListener('click', () => {
-      state.activeId = 'rc'; render();
-    });
   }
 }
 
