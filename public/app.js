@@ -2,9 +2,16 @@
 
 // ─── Version & Changelog ──────────────────────────────────────────────────────
 
-const APP_VERSION = '3.15.0';
+const APP_VERSION = '3.16.0';
 
 const CHANGELOG = [
+  {
+    version: '3.16.0',
+    date: '2026-06-18',
+    changes: [
+      "Preflight now detects likely verse-number artifacts in scripture body text: warns when any span contains only digits (e.g. \"1\" or \"14\" left over from Bible copy-paste) or when the body starts with a digit followed by a space.",
+    ],
+  },
   {
     version: '3.15.0',
     date: '2026-06-18',
@@ -4501,6 +4508,14 @@ function preflightWarnings() {
             if (last != null) bodyArr[last] = { ...bodyArr[last], text: bodyArr[last].text.replace(/[ \t]+$/, '') };
             saveState();
           });
+        }
+        // Detect lone digit spans (verse-number artifacts from Bible copy-paste)
+        const digitSpan = (b || []).find(s => /^\d+\s*$/.test(s.text || ''));
+        if (digitSpan) {
+          warn(`Scripture "${label}"${sfx} may contain a leftover verse number: "${digitSpan.text.trim()}" is a digit-only span`, slide.id, 'body');
+        } else if (/^\d+\s/.test(joined.trim())) {
+          const digit = (joined.trim().match(/^(\d+)\s/) || [])[1];
+          warn(`Scripture "${label}"${sfx} body starts with "${digit}" — may be a leftover verse number`, slide.id, 'body');
         }
       });
     }
