@@ -2,9 +2,16 @@
 
 // ─── Version & Changelog ──────────────────────────────────────────────────────
 
-const APP_VERSION = '3.19.0';
+const APP_VERSION = '3.20.0';
 
 const CHANGELOG = [
+  {
+    version: '3.20.0',
+    date: '2026-06-19',
+    changes: [
+      "Raised long-scripture preflight threshold from 220 to 380 characters.",
+    ],
+  },
   {
     version: '3.19.0',
     date: '2026-06-19',
@@ -4505,7 +4512,7 @@ function buildSpec() {
 // ─── Export ──────────────────────────────────────────────────────────────────────
 
 // A single scripture slide longer than this (characters) is worth splitting.
-const LONG_SCRIPTURE_CHARS = 220;
+const LONG_SCRIPTURE_CHARS = 380;
 // True if a string has leading or trailing whitespace we'd want flagged.
 const hasEdgeSpace = (s) => typeof s === 'string' && s.length > 0 && s !== s.replace(/^[ \t]+|[ \t]+$/g, '');
 
