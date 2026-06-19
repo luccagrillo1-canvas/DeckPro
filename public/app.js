@@ -2,9 +2,16 @@
 
 // ─── Version & Changelog ──────────────────────────────────────────────────────
 
-const APP_VERSION = '3.16.0';
+const APP_VERSION = '3.17.0';
 
 const CHANGELOG = [
+  {
+    version: '3.17.0',
+    date: '2026-06-18',
+    changes: [
+      "Live verse-number badge: the scripture body editor now shows a red warning inline when text starts with a digit (e.g. \"35 By this...\" from Bible copy-paste) or when any span is digit-only.",
+    ],
+  },
   {
     version: '3.16.0',
     date: '2026-06-18',
@@ -3557,6 +3564,7 @@ function scriptureForm(slide) {
       </div>
     ` : ''}
     ${richEditor(`f-body-${idx}`, body)}
+    <div class="digit-badge" id="digit-badge-${idx}"></div>
   `).join('');
 
   const blankSection = F.blankBefore ? `
@@ -3872,6 +3880,7 @@ function attachFormHandlers(slide) {
     slide.bodies.forEach((body, idx) => {
       attachRichEditor(`f-body-${idx}`, spans => {
         slide.bodies[idx] = spans;
+        updateDigitBadge(idx, spans);
         if (slide.fitWidth) {
           clearTimeout(_fitTimer);
           _fitTimer = setTimeout(() => {
@@ -3888,6 +3897,7 @@ function attachFormHandlers(slide) {
         }
       });
     });
+    slide.bodies.forEach((body, idx) => updateDigitBadge(idx, body));
 
     // Split button
     const splitBtn = get('btn-split-body');
@@ -4466,6 +4476,24 @@ function buildSpec() {
 const LONG_SCRIPTURE_CHARS = 220;
 // True if a string has leading or trailing whitespace we'd want flagged.
 const hasEdgeSpace = (s) => typeof s === 'string' && s.length > 0 && s !== s.replace(/^[ \t]+|[ \t]+$/g, '');
+
+function updateDigitBadge(idx, spans) {
+  const badge = document.getElementById('digit-badge-' + idx);
+  if (!badge) return;
+  const digitSpan = (spans || []).find(s => /^\d+\s*$/.test(s.text || ''));
+  const joined = (spans || []).map(s => s.text || '').join('');
+  const m = !digitSpan && joined.trim().match(/^(\d+)\s/);
+  if (digitSpan) {
+    badge.textContent = '\u26a0 "' + digitSpan.text.trim() + '" looks like a verse number';
+    badge.style.display = 'block';
+  } else if (m) {
+    badge.textContent = '\u26a0 starts with "' + m[1] + '" \u2014 may be a verse number';
+    badge.style.display = 'block';
+  } else {
+    badge.textContent = '';
+    badge.style.display = 'none';
+  }
+}
 
 function preflightWarnings() {
   // Each item: { msg, slideId?, field?, autoFix? }
