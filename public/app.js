@@ -2,9 +2,16 @@
 
 // ─── Version & Changelog ──────────────────────────────────────────────────────
 
-const APP_VERSION = '3.22.0';
+const APP_VERSION = '3.23.0';
 
 const CHANGELOG = [
+  {
+    version: '3.23.0',
+    date: '2026-06-19',
+    changes: [
+      "Book Names: numbered-book prefix style — choose between 1 / First / 1st for books like 1 Corinthians, 2 Timothy, 3 John, etc.",
+    ],
+  },
   {
     version: '3.22.0',
     date: '2026-06-19',
@@ -4398,14 +4405,31 @@ const BOOK_NAME_OPTIONS = [
   { key: 'songOfSolomon', label: 'Song of Solomon / Song of Songs',  pattern: /^Song of (Solomon|Songs?)\b/i,  choices: ['Song of Solomon', 'Song of Songs'] },
   { key: 'revelation',    label: 'Revelation / Revelations',         pattern: /^Revelations?\b/i,              choices: ['Revelation', 'Revelations'] },
   { key: 'psalm',         label: 'Psalm / Psalms',                   pattern: /^Psalms?\b/i,                   choices: ['Psalm', 'Psalms'] },
+  {
+    key: 'numberedBooks',
+    label: 'Numbered books (1 Cor, 2 Tim, 1 Peter…)',
+    pattern: /^(1(?:st)?|2(?:nd)?|3(?:rd)?|First|Second|Third|I{1,3})\s+/i,
+    choices: ['1 / 2 / 3', 'First / Second / Third', '1st / 2nd / 3rd'],
+    transform(ref, override) {
+      const PREFIXES = [['1', '2', '3'], ['First', 'Second', 'Third'], ['1st', '2nd', '3rd']];
+      const choiceIdx = ['1 / 2 / 3', 'First / Second / Third', '1st / 2nd / 3rd'].indexOf(override);
+      if (choiceIdx < 0) return ref;
+      return ref.replace(/^(1(?:st)?|2(?:nd)?|3(?:rd)?|First|Second|Third|I{1,3})\s+/i, (_, p) => {
+        const n = /^(1(?:st)?|first|i)$/i.test(p) ? 0 : /^(2(?:nd)?|second|ii)$/i.test(p) ? 1 : 2;
+        return PREFIXES[choiceIdx][n] + ' ';
+      });
+    },
+  },
 ];
 
 function applyBookNames(ref, bookNames) {
   if (!ref || !bookNames) return ref;
   let s = ref;
-  for (const { key, pattern } of BOOK_NAME_OPTIONS) {
+  for (const { key, pattern, transform } of BOOK_NAME_OPTIONS) {
     const override = bookNames[key];
-    if (override) s = s.replace(pattern, override);
+    if (!override) continue;
+    if (transform) s = transform(s, override);
+    else s = s.replace(pattern, override);
   }
   return s;
 }
