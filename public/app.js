@@ -2,9 +2,16 @@
 
 // ─── Version & Changelog ──────────────────────────────────────────────────────
 
-const APP_VERSION = '3.21.0';
+const APP_VERSION = '3.22.0';
 
 const CHANGELOG = [
+  {
+    version: '3.22.0',
+    date: '2026-06-19',
+    changes: [
+      "Renamed confidence monitor mode \"Current bullet\" to \"Sequential\".",
+    ],
+  },
   {
     version: '3.21.0',
     date: '2026-06-19',
@@ -3678,7 +3685,7 @@ function pointForm(slide) {
     <div class="field" id="field-follow-reveal">
       <label>Confidence monitor</label>
       <div class="segmented-control">
-        <button id="fr-single"   class="${followReveal === 'single'   ? 'active' : ''}">Current bullet</button>
+        <button id="fr-single"   class="${followReveal === 'single'   ? 'active' : ''}">Sequential</button>
         <button id="fr-stacking" class="${followReveal === 'stacking' ? 'active' : ''}">Stacking</button>
       </div>
     </div>
