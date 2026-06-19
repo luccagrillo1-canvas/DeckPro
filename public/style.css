@@ -3259,6 +3259,15 @@ details[open] .cm-swivel-summary::before { transform: rotate(90deg); }
 .scheme-import-modal .warn-hdr { color: var(--text); }
 .scheme-import-modal .warn-btn-ok { background: var(--blue); }
 .scheme-import-modal .warn-btn-ok:disabled { opacity: .4; cursor: default; }
+.digit-badge {
+  display: none;
+  color: #c0392b;
+  font-size: 11.5px;
+  font-weight: 600;
+  margin: -2px 0 6px 2px;
+  letter-spacing: .01em;
+}
+
 .scheme-import-help {
   font-size: 12.5px; color: var(--muted); line-height: 1.55; margin-bottom: 14px;
 }
