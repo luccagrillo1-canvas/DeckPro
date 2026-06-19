@@ -2,9 +2,16 @@
 
 // ─── Version & Changelog ──────────────────────────────────────────────────────
 
-const APP_VERSION = '3.20.0';
+const APP_VERSION = '3.21.0';
 
 const CHANGELOG = [
+  {
+    version: '3.21.0',
+    date: '2026-06-19',
+    changes: [
+      "Book Names: added Revelation / Revelations and Psalm / Psalms options.",
+    ],
+  },
   {
     version: '3.20.0',
     date: '2026-06-19',
@@ -4382,6 +4389,8 @@ function buildFileName() {
 const BOOK_NAME_OPTIONS = [
   { key: 'acts',          label: 'Acts',                             pattern: /^Acts\b/i,                      choices: ['Acts', 'Acts of the Apostles'] },
   { key: 'songOfSolomon', label: 'Song of Solomon / Song of Songs',  pattern: /^Song of (Solomon|Songs?)\b/i,  choices: ['Song of Solomon', 'Song of Songs'] },
+  { key: 'revelation',    label: 'Revelation / Revelations',         pattern: /^Revelations?\b/i,              choices: ['Revelation', 'Revelations'] },
+  { key: 'psalm',         label: 'Psalm / Psalms',                   pattern: /^Psalms?\b/i,                   choices: ['Psalm', 'Psalms'] },
 ];
 
 function applyBookNames(ref, bookNames) {
