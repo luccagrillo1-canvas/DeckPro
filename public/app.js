@@ -2,9 +2,16 @@
 
 // ─── Version & Changelog ──────────────────────────────────────────────────────
 
-const APP_VERSION = '3.17.0';
+const APP_VERSION = '3.18.0';
 
 const CHANGELOG = [
+  {
+    version: '3.18.0',
+    date: '2026-06-18',
+    changes: [
+      "Cmd+click in any rich-text body editor now toggles bold on the clicked word — workaround for Chromium removing multi-range selection (which Pro7 supports natively via AppKit). Click a word with Cmd held to bold it; Cmd+click again to un-bold.",
+    ],
+  },
   {
     version: '3.17.0',
     date: '2026-06-18',
@@ -3771,6 +3778,24 @@ function attachRichEditor(editorId, onSave) {
   }
 
   bodyEl.addEventListener('input', () => onSave(extractSpans(bodyEl)));
+
+  // cmd+click toggles bold on the clicked word — workaround for Chromium's
+  // intentional removal of multi-range selection (unlike native NSTextView in Pro7)
+  bodyEl.addEventListener('mousedown', e => {
+    if (!e.metaKey) return;
+    e.preventDefault();
+    bodyEl.focus();
+    const caretRange = document.caretRangeFromPoint(e.clientX, e.clientY);
+    if (!caretRange) return;
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(caretRange);
+    sel.modify('move', 'backward', 'word');
+    sel.modify('extend', 'forward', 'word');
+    document.execCommand('bold');
+    updateFmtBtns();
+    onSave(extractSpans(bodyEl));
+  });
 
   for (const [cmd, btn] of Object.entries(fmtBtns)) {
     if (!btn) continue;
