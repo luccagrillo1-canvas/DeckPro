@@ -2,9 +2,16 @@
 
 // ─── Version & Changelog ──────────────────────────────────────────────────────
 
-const APP_VERSION = '4.4.0';
+const APP_VERSION = '4.4.1';
 
 const CHANGELOG = [
+  {
+    version: '4.4.1',
+    date: '2026-06-29',
+    changes: [
+      "Text tab canvas preview resized to 530px — wider than the initial compact size but still leaves room for the grid below.",
+    ],
+  },
   {
     version: '4.4.0',
     date: '2026-06-29',
