@@ -1,13 +1,13 @@
 {
   "name": "deckpro",
   "productName": "DeckPro",
-  "version": "3.23.0",
+  "version": "4.4.0",
   "description": "ProPresenter 7 slide deck builder for Canvas Church",
   "main": "main.js",
   "scripts": {
     "start": "node server.js",
     "electron": "electron .",
-    "test": "node rtf.test.js",
+    "test": "node rtf.test.js && node builder.test.js && node verse.test.js && node encode.test.js && node golden.test.js && node fuzz.test.js",
     "preflight": "node scripts/preflight.js",
     "prebuild": "node scripts/preflight.js",
     "build": "electron-builder --mac",
@@ -20,10 +20,7 @@
     "productName": "DeckPro",
     "mac": {
       "category": "public.app-category.productivity",
-      "icon": "public/assets/DeckPro.icon",
-      "extendInfo": {
-        "CFBundleIconName": "AppIcon"
-      },
+      "icon": "public/assets/DeckPro.icns",
       "target": [
         {
           "target": "dmg",

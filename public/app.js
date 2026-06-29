@@ -2,9 +2,727 @@
 
 // ─── Version & Changelog ──────────────────────────────────────────────────────
 
-const APP_VERSION = '3.23.0';
+const APP_VERSION = '4.4.0';
 
 const CHANGELOG = [
+  {
+    version: '4.4.0',
+    date: '2026-06-29',
+    changes: [
+      "Text tab redesigned as a spreadsheet-style data grid: one row per element (Display 1 body/bold/title/point, Display 2 body/bold/title/point, Display 3 Slide Notes, Utility/Live/Queue), columns for font family, weight, color, size, B/I/U/S, capitalization, scale, H/V alignment, stroke, shadow, character spacing, line height, paragraph spacing, and margins. The layout canvas preview stays at the top and clicking a region highlights the matching row.",
+      "Inherit icon buttons (↺ use-global, ↑ push-to-global) now embed directly inside the font family dropdown in the Palette tab — no separate row needed.",
+      "Color picker in the Palette tab no longer closes mid-interaction when dragging within the picker.",
+    ],
+  },
+  {
+    version: '4.3.31',
+    date: '2026-06-29',
+    changes: [
+      "Inherit system overhaul: typography now flows Global → Scheme → Custom. Every font/color/size field shows a Global (blue) or Scheme (green) badge so you can see exactly where each value comes from.",
+      "New 'Palette' tab in Schemes: set Font 1 (body/regular), Font 2 (title/highlight), Bold, Neutral color, and Accent color — the 5 scheme-level slots that all text fields inherit from.",
+      "'Global' view in the scheme selector: read-only view of your house-style defaults. Values only change when you push from a scheme.",
+      "Push to Global now shows a confirmation dialog: how many schemes will pick up the change and how many have custom values that won't be touched.",
+      "Renamed internal typography keys: regularFont → font1, highlightFont → font2, regularColor → colorNeutral, highlightColor → colorAccent. Existing saved data migrates automatically.",
+      "Bold/ALT font is now its own palette slot (boldFont) independent of Font 1, with a global default of Montserrat-Black.",
+    ],
+  },
+  {
+    version: '4.3.30',
+    date: '2026-06-27',
+    changes: [
+      "New Schemes → Response Card tab: full control over the LED wall (display 2) response card. Each element — Title, Decision, Response 1–3 — is editable: name, position (X/Y/W/H), font, size, colour, and alignment. Decision and Response 1–3 text still comes from the Response Card item in your deck; Title and custom text are set here.",
+      "+ Add Element on the Response Card tab adds custom fields with their own name (also the ProPresenter object name), text, position, and styling — put whatever you want on the LED wall card.",
+      "Empty font/size/colour on an element inherit your scheme's prop fonts, so existing response cards are unaffected until you tweak them.",
+    ],
+  },
+  {
+    version: '4.3.29',
+    date: '2026-06-27',
+    changes: [
+      "Point text now uses the same multi-line editor as scripture (paste-friendly, supports line breaks) — just without the bold/italic formatting buttons, since point text is plain. The slide name and prop name stay single-line.",
+    ],
+  },
+  {
+    version: '4.3.28',
+    date: '2026-06-27',
+    changes: [
+      "Preflight now warns about hard returns (blank lines) before or after the text on scripture and point slides — the kind of trailing empty lines that sneak in from a copy-paste and push the text off-center. Comes with a one-click Fix. Intentional line breaks inside the text are left alone.",
+    ],
+  },
+  {
+    version: '4.3.27',
+    date: '2026-06-27',
+    changes: [
+      "Point text alignment now applies correctly on both the main screen and the LED wall prop. Center always worked, but Left/Right were ignored on the element (the box was hardcoded to center) — now the paragraph alignment matches the Advanced → Alignment you choose. Centered points are unchanged.",
+    ],
+  },
+  {
+    version: '4.3.26',
+    date: '2026-06-27',
+    changes: [
+      "Schemes → Text now has Live badge and Queue cards — set the font, size, and color of the \"live\" confidence-monitor badge and the upcoming-slide queue strip, just like the other text roles. Defaults are unchanged, so existing decks export identically until you tweak them.",
+    ],
+  },
+  {
+    version: '4.3.25',
+    date: '2026-06-27',
+    changes: [
+      "New Deck: the Speaker field is now a dropdown of your recurring speakers. Type a new name and on create you'll be asked \"Add as a permanent speaker?\" — say yes and it's remembered for next time.",
+      "Preferences → Speakers: manage your permanent speaker list (add / remove).",
+      "Removed the confusing \"Show on LED wall during blank\" toggle from the blank-before section. The Custom Confidence Monitor text box stays.",
+    ],
+  },
+  {
+    version: '4.3.24',
+    date: '2026-06-27',
+    changes: [
+      "File names now use a 2-digit year (Message_26.06.24_… instead of 2026.06.24).",
+      "Schemes → Motion: removed the retired ATEM gradient element from the build-order lists, and renamed \"this slide\" to \"body\" everywhere. Existing saved schemes are migrated automatically (gradient build steps dropped, \"this slide\" → \"body\").",
+    ],
+  },
+  {
+    version: '4.3.23',
+    date: '2026-06-27',
+    changes: [
+      "Props (LED wall) now honor Advanced → Stroke and Advanced → Shadow, matching the fix made for the main screen. The prop text-element builder had its own hardcoded stroke/shadow that the previous fix didn't reach; it now uses the same text-level stroke width/color and shadow as the main presentation. Prop text color already worked via the shared RTF fix.",
+    ],
+  },
+  {
+    version: '4.3.22',
+    date: '2026-06-26',
+    changes: [
+      "FIXED text stroke and shadow not applying in ProPresenter. The scheme's stroke (width/color) and shadow (color/offset/blur/opacity/angle) were being written to the element-level fields, but ProPresenter renders the TEXT outline and drop-shadow from different fields (text stroke width, stroke color in the RTF, and the text shadow). Now Advanced → Stroke and Advanced → Shadow on body, point, Start/End, and title text actually render. Verified end-to-end in ProPresenter (e.g. width-8 red stroke + offset-35 green shadow appear exactly as set).",
+    ],
+  },
+  {
+    version: '4.3.21',
+    date: '2026-06-26',
+    changes: [
+      "FIXED the real cause of text colors not applying in ProPresenter. The RTF expanded color table was misaligned (it included an extra leading white entry), so ProPresenter — which prefers the expanded table — read the wrong color slot: text came out white with the chosen color landing on the stroke instead. Now point text, Start/End text, scripture body, titles, and revealing points all honor their Advanced → Color setting. Verified end-to-end in ProPresenter across every slide type.",
+    ],
+  },
+  {
+    version: '4.3.20',
+    date: '2026-06-26',
+    changes: [
+      "Full scheme-field export audit (every field verified end-to-end via a new differential-export harness). Fixed several controls that were silently ignored on export:",
+      "Point text color (Advanced → Color) now applies on the main screen and LED wall — was always white.",
+      "Start/End (Utility) text color now applies — was always white.",
+      "Revealing-points text color now applies — was always white.",
+      "Title line height and 'spacing before' now apply to the reference bar — were ignored.",
+      "Bold and Strikethrough toggles in the font Advanced panel now actually work on export — previously had no effect.",
+      "Removed dead scheme fields with no export effect: titleText and titleShadow (title text color is controlled by Title → Advanced → Color), and the Bold-in-Body fonts (boldFont/propBoldFont) — emphasis renders as bold on the body font. Existing schemes are migrated automatically.",
+    ],
+  },
+  {
+    version: '4.3.19',
+    date: '2026-06-26',
+    changes: [
+      "Start/End element now uses the scheme Utility font size instead of hardcoded 45.",
+      "Response card body row now uses the scheme body font name and size.",
+      "Response card body RTF default size corrected to 44 to match scheme default.",
+    ],
+  },
+  {
+    version: '4.3.18',
+    date: '2026-06-26',
+    changes: [
+      "Body text color now respects the color field in Advanced — previously always white.",
+      "Title bar fill now uses the scheme Title Fill color (when Fill is enabled) instead of always being transparent.",
+      "Font Advanced margins now default to null so the Layout-tab body margins actually take effect on fresh schemes — previously the fontAdv 0 default silently shadowed them.",
+      "Body element font size attribute now uses the scheme body size instead of a hardcoded 44.",
+      "Title element font size attribute now uses the scheme title size instead of a hardcoded 40.",
+      "Response card body rows now pass the active scheme to the RTF generator — previously used hardcoded defaults.",
+    ],
+  },
+  {
+    version: '4.3.17',
+    date: '2026-06-26',
+    changes: [
+      "Removed dead scheme fields: notesBoldFont (never used), gradientX/Y/H (gradient handled by Pro7 macro since v4.0.2). No export behavior changes.",
+    ],
+  },
+  {
+    version: '4.3.16',
+    date: '2026-06-24',
+    changes: [
+      "Body bottom margin now respects the DeckPro value instead of being hardcoded to 60.",
+      "Point layout controls added to Schemes (was missing).",
+      "Scheme colors no longer bleed into every other scheme — each scheme's color is now isolated.",
+      "Queue mode now exports the selected option (reference-only vs list) instead of always using list.",
+      "Reference Bar renamed to Title; Start / End renamed to Utility throughout.",
+      "Response Card main slide now shows the title text 'Response Card'.",
+      "Response Card title and body fonts now carry the scheme styles.",
+      "Response Card title no longer gets accidental scaling.",
+      "Response Card Hold now uses Utility formatting.",
+      "Response Card prop now exports correctly.",
+      "Queue and live element margins now respected from scheme values.",
+    ],
+  },
+  {
+    version: '4.3.15',
+    date: '2026-06-24',
+    changes: [
+      "SLIDE # macro and stage display badges now appear on the blank-before row, not the content slide — matching where the trigger actually fires in the export.",
+    ],
+  },
+  {
+    version: '4.3.14',
+    date: '2026-06-24',
+    changes: [
+      "SLIDE # triggers now number cues by their actual output position, so SLIDE #2 targets the 2nd exported cue (the blank-before, if present) — not the parent scripture or point slide.",
+    ],
+  },
+  {
+    version: '4.3.13',
+    date: '2026-06-24',
+    changes: [
+      "Custom confidence-monitor text now appears as a clean Overrides-style disclosure instead of a bulky boxed field.",
+    ],
+  },
+  {
+    version: '4.3.12',
+    date: '2026-06-24',
+    changes: [
+      "Removed the incorrect alternate name option for Revelation. DeckPro now keeps that one correct.",
+    ],
+  },
+  {
+    version: '4.3.11',
+    date: '2026-06-24',
+    changes: [
+      "Preferences no longer shows the raw Live Macros from Pro7 UUID list. Macros are managed in Schemes → Macros, where the picker belongs.",
+    ],
+  },
+  {
+    version: '4.3.10',
+    date: '2026-06-24',
+    changes: [
+      "Pro7 setup now has an Export Library dropdown, so teams with multiple ProPresenter libraries can choose exactly where DeckPro saves new .pro files. Auto-select still follows Pro7's active library.",
+    ],
+  },
+  {
+    version: '4.3.9',
+    date: '2026-06-24',
+    changes: [
+      "Machine Setup Pro7 Folder card now hides Auto-detect and Browse once a folder is confirmed — only Clear is shown. Clicking Clear brings the controls back.",
+    ],
+  },
+  {
+    version: '4.3.8',
+    date: '2026-06-24',
+    changes: [
+      "Machine Setup now has a Pro7 Folder field. Pick the folder that contains Configuration and Libraries, such as Documents/ProPresenter on machines with a custom ProPresenter library.",
+      "Export now derives both Configuration/Props and the active library from that Pro7 Folder, with Export Library available when you want to choose the destination yourself.",
+      "The Pro7 Folder card now has one Auto-detect button that scans, chooses the best ProPresenter folder, saves it, and turns the card green. Details shows the full path scan when you want reassurance.",
+    ],
+  },
+  {
+    version: '4.3.7',
+    date: '2026-06-24',
+    changes: [
+      "Machine Setup: first-run setup modal for new computers covers Pro7 connection, Pro7 library folder, API.Bible, macros/stage displays, and a path scan. Reopen it anytime from the ··· menu.",
+      "Settings persistence moved out of browser localStorage and into DeckPro's app-data state file, so API.Bible key, Pro7 port/password, speaker notes, and current deck state survive relaunches even though the app uses a private random local port.",
+      "Diagnostic bundles now include the machine setup scan, showing DeckPro's data folder, saved-state status, deck library location, and detected Pro7 workspace folders.",
+    ],
+  },
+  {
+    version: '4.3.6',
+    date: '2026-06-23',
+    changes: [
+      "Preferences → Pro7 Connection now has a Library Folder field. Click Browse to point DeckPro at the exact folder where Pro7 stores its library — no more auto-detection guesswork. Leave blank to keep using auto-detect.",
+    ],
+  },
+  {
+    version: '4.3.5',
+    date: '2026-06-23',
+    changes: [
+      "Fix: export now scans all Pro7 workspace locations (UserWorkspaces and Workspaces, including UUID-named subfolders) to find the active library — files no longer fall back to ~/Documents/ProPresenter on machines with a non-standard Pro7 folder layout.",
+    ],
+  },
+  {
+    version: '4.3.4',
+    date: '2026-06-23',
+    changes: [
+      "Fix: DeckPro now creates the UserWorkspaces folder automatically if it doesn't exist, so export works on machines where Pro7 hasn't created it yet.",
+    ],
+  },
+  {
+    version: '4.3.3',
+    date: '2026-06-23',
+    changes: [
+      "Fix: export and prop injection now work on machines where Pro7 uses the older Workspaces folder instead of UserWorkspaces (different Pro7 install versions). DeckPro checks both locations automatically.",
+    ],
+  },
+  {
+    version: '4.3.2',
+    date: '2026-06-23',
+    changes: [
+      "Fix: macro and stage display badges in the sidebar no longer change appearance (blue highlight / orange tint) when a deck item is selected.",
+    ],
+  },
+  {
+    version: '4.3.1',
+    date: '2026-06-23',
+    changes: [
+      "Fix: the stage layout picker now uses the same full search modal as the macro picker — search box, name + UUID rows, Refresh, and multi-select Add N when adding new entries. The old tiny popover is gone.",
+    ],
+  },
+  {
+    version: '4.3.0',
+    date: '2026-06-23',
+    changes: [
+      "Stage tab in Schemes is now a sandbox — no more hardcoded Screen / RC Layout / Message Layout roles. Click '+ Add Stage Display' to pick any Pro7 stage layout from the list, then assign it trigger types (same checkboxes as Macros) and/or specific Slide # positions. Each entry is fully independent with read-only name and UUID (Pick to change). Stage Screen (the physical target screen) is configurable via a single Pick row at the top of the tab.",
+      "Stage display paintbrush badges in the sidebar and chips next to slide names now respect the new trigger-based system — they appear on exactly the slides whose type or position matches the configured triggers.",
+      "Migration: existing role-based stage display entries (Message Layout / RC Layout) and the old global Stage Screen config are automatically converted to the new format on first load.",
+    ],
+  },
+  {
+    version: '4.2.5',
+    date: '2026-06-23',
+    changes: [
+      "Fix: macro dots in the sidebar were crashing renderSidebar (a temporal-dead-zone bug in macroBadgeHTML caused any slide with assigned macros to throw, leaving the queue blank). Sidebar now stays stable after toggling macro triggers in Schemes.",
+      "Slide # trigger: in Schemes → Macros, each macro now has a Slide # row below its type triggers. Type a slide number and press Enter to add it as a chip — that macro will fire whenever the deck reaches that exact slide position, regardless of type. Remove any chip with ×. The dot and chip badges in the sidebar and main panel both reflect position-based triggers.",
+    ],
+  },
+  {
+    version: '4.2.4',
+    date: '2026-06-23',
+    changes: [
+      "Response Card in the sidebar is now an expandable group. Click the arrow to unfurl three sub-items — RC Blank, RC Content, and RC Hold — each showing their own macro dots and stage display paintbrush badges inline.",
+      "Macro trigger 'Response Card' has been split into three separate triggers: RC Blank (slide 1), RC Content (slides 2–5), and RC Hold (slide 6). Existing macros assigned to Response Card are automatically migrated to RC Content.",
+    ],
+  },
+  {
+    version: '4.2.3',
+    date: '2026-06-23',
+    changes: [
+      "Sidebar: a paintbrush icon now appears next to macro dots on any slide that has a stage display entry attached from the scheme — muted by default, orange when the slide is selected.",
+      "Main panel: macro name chips and stage display chips (paintbrush + layout name, orange) appear inline next to the slide title when you open a slide — so you can see exactly what fires at a glance, without guessing from dots alone.",
+    ],
+  },
+  {
+    version: '4.2.2',
+    date: '2026-06-23',
+    changes: [
+      "Stage Display moved from Preferences → Advanced IDs into Schemes → Stage tab. Each scheme now carries its own stage display entries (Screen, RC Layout, Message Layout) — the same card-row style as Macros, with Add / Remove and a Pick button for layouts. Your existing Stage Display values are automatically migrated to your default scheme.",
+    ],
+  },
+  {
+    version: '4.2.1',
+    date: '2026-06-23',
+    changes: [
+      "Google Doc view: text is now readable — the document area uses a light paper background so black Google Doc text shows up clearly in DeckPro's dark UI.",
+      "Google Doc zoom: use the + / − buttons in the notes header to resize the document text from 60% to 200%. Handy when skimming a long sermon doc.",
+      "Speaker Notes tab is now the first tab in the notes panel (was Outline first).",
+      "Fixed: the app no longer binds to port 3000, so a leftover dev server can never intercept the UI. The Electron app picks a free port at launch and loads its own private server.",
+    ],
+  },
+  {
+    version: '4.2.0',
+    date: '2026-06-23',
+    changes: [
+      "Smart Notes: paste a Google Doc link and DeckPro now loads it as a real, readable document inside the Speaker Notes panel — your headings, bold, and highlight colors all come through — instead of a flat PDF. (PDFs still load as before.)",
+      "Suggested Slides tray (Auto mode): DeckPro scans the doc and suggests Scripture slides (detected from references like “Ephesians 5:18”, “2 Corinthians 3:18”, even “Sirach 38:4”) and Point slides (from headings). A heading followed by a bullet list defaults to Single but keeps a Revealing option on the card. Each suggestion shows a type chip, confidence, and a “⚠ in deck” duplicate warning. Click Add (scripture runs your Bible lookup automatically) or Ignore.",
+      "Manual mode (default): nothing is pulled automatically — select any text in the notes and choose Add as Scripture / Point / Confidence. Deterministic and fully under your control; the deck is never touched until you click Add.",
+      "Style Map (⚙ in the notes header): map this doc's heading levels and highlight colors to slide types — e.g. blue highlight → Scripture, yellow → Confidence note, a heading style → Ignore. Auto-discovers whatever styles are in your doc, so it adapts to anyone's conventions; mappings persist and re-scan instantly.",
+      "Style Map Content role: mark a highlight color as Content when you mean “this should become a slide.” DeckPro now figures out Scripture vs Point, and the new “Refs without highlight” option lets the Bible reference stay unhighlighted above the highlighted verse text.",
+    ],
+  },
+  {
+    version: '4.1.1',
+    date: '2026-06-23',
+    changes: [
+      "Fixed: Export button could get permanently stuck at 'Exporting…' if any error occurred before the request was sent (e.g. a corrupted slide span). The error is now caught and shown as a toast, and the button always resets.",
+    ],
+  },
+  {
+    version: '4.1.0',
+    date: '2026-06-22',
+    changes: [
+      "Macros are now per-scheme — add and remove macros in Schemes → Macros tab, not in Preferences. Each scheme carries its own macro list, so different looks can trigger different macros. Existing macros are automatically migrated to your default scheme.",
+      "Stage Display (Preferences → Advanced IDs) redesigned to match the Macros card-row style — screen, RC layout, and message layout each appear as their own labeled card with editable name and UUID fields.",
+    ],
+  },
+  {
+    version: '4.0.9',
+    date: '2026-06-22',
+    changes: [
+      "Tooltip delay increased from 320ms to 700ms — they no longer flash on accidental hover.",
+      "Tooltip content centralized: all tooltip text now lives in a single TOOLTIPS object at the top of the source, making it easy to audit and edit everything in one place.",
+      "Fixed Bold (B) tooltip — it previously said Montserrat-Black (that's the Emphasis/ALT button). Bold is the bold weight of the current scheme font.",
+    ],
+  },
+  {
+    version: '4.0.8',
+    date: '2026-06-22',
+    changes: [
+      "Stage Display layouts can now be picked directly from Pro7 (Preferences → Stage Display). When connected, click Pick next to the RC Layout or Message Layout field to choose from live stage layouts — name and UUID fill in automatically. Screen name and UUID remain manual (they identify your physical display).",
+    ],
+  },
+  {
+    version: '4.0.7',
+    date: '2026-06-21',
+    changes: [
+      "Feature Visibility (Preferences) is now an expandable section with grouped checkboxes under headers \u2014 Slide fields, Overrides, and Scripture tools \u2014 and gained new toggles: hide the whole Overrides section, the Fit Width / Strip buttons, and the Verses (Bible formatting) button. Hiding a field only simplifies the editor; it never changes exports.",
+    ],
+  },
+  {
+    version: '4.0.6',
+    date: '2026-06-21',
+    changes: [
+      "Queue format options (Preferences \u2192 Queue). The upcoming-slide strip can now show: Reference only \u2014 e.g. \u201cEphesians 5:18\u201d (new default, cleaner than the old full labels); Reference + first phrase; or the Full label list. Scripture entries show the clean reference instead of the truncated slide name.",
+    ],
+  },
+  {
+    version: '4.0.5',
+    date: '2026-06-21',
+    changes: [
+      "Tooltips everywhere (first pass): hover almost any control \u2014 Fit Width, Strip, Verses, the Overrides section, Prop Name, Blank Before, Show-during-blank, Stage Layout / Transition / Macro overrides, Point Single vs Revealing, the B / I / U / ALT buttons, Reference, and the scheme toolbar \u2014 to see a short title plus a plain-English explanation. More to come.",
+    ],
+  },
+  {
+    version: '4.0.4',
+    date: '2026-06-21',
+    changes: [
+      "Response Card confidence-monitor notes are now a customizable template (Response Card panel \u2192 Notes). Write whatever you want and drop in merge tags \u2014 {decision}, {r1}, {r2}, {r3} \u2014 that auto-fill from your decision text and responses, mail-merge style. Defaults to the previous format; Reset to default restores it.",
+    ],
+  },
+  {
+    version: '4.0.3',
+    date: '2026-06-21',
+    changes: [
+      "Macro Override (in a slide's Overrides) now lets you select from the macros you've already configured \u2014 a clean list with colored dots, like the Schemes macro list \u2014 instead of re-opening the Pro7 import picker. Pick one, or \u201cNone\u201d to clear.",
+    ],
+  },
+  {
+    version: '4.0.2',
+    date: '2026-06-21',
+    changes: [
+      "The dark gradient overlay is no longer generated on any slide \u2014 it's handled by a Pro7 macro now, so DeckPro leaves it alone. Removed the matching Gradient row from the Layout tab.",
+      "Schemes: the default scheme now re-locks automatically when you leave the Schemes panel, so it can't be changed by accident \u2014 unlock it again any time you need to edit.",
+    ],
+  },
+  {
+    version: '4.0.1',
+    date: '2026-06-21',
+    changes: [
+      "The Start slide is now labelled \u201cStart of Notes\u201d to match \u201cEnd of Notes\u201d (existing decks migrate automatically).",
+      "Schemes \u2192 Layout now uses your Display Names: the \u201cMain Canvas\u201d / \u201cProp Canvas\u201d section headers and preview labels show your Display 1 / Display 2 names instead.",
+      "Help: keyboard shortcuts are no longer duplicated under Overview \u2014 they live in the dedicated Shortcuts tab (Overview now just points there).",
+    ],
+  },
+  {
+    version: '4.0.0',
+    date: '2026-06-21',
+    changes: [
+      "DeckPro v4 \u2014 a stability and hardening milestone. Headlines below; everything from the 3.4x series is rolled in.",
+      "Macros, reworked: a clean Macros section (import any macro from Pro7, no built-ins), triggers assigned per slide-type in Schemes, per-slide Macro Override, and sidebar dots that show every macro on a slide (hover for the name).",
+      "Bible verse numbers: a Verses button adds the real verse number in front of each verse, superscript or inline \u2014 pulled from actual verse boundaries, so embedded numbers in the text are never mistaken for verse markers.",
+      "Per-slide Overrides: stage layout, transition, prop transition, and macro override grouped in one collapsible section on every slide.",
+      "Polish: hover-anywhere tooltips (no icons), insert-line drag-to-reorder, Response Card decision-text lock, generic input placeholders, Preferences-above-Schemes menu order.",
+      "Export correctness fixes that were silently wrong before: per-slide macro overrides now actually fire; stage-layout override works on points; Custom slides export as a blank slot instead of vanishing; image slides honor blank-before; B/I/U buttons work.",
+      "No silent failures: save/load/library/storage problems now warn you instead of failing quietly, and a corrupt saved deck is backed up rather than discarded.",
+      "Under the hood: an automated test suite (RTF, builder, verse chain, protobuf round-trip, golden-master exports, and a fuzzer that throws hundreds of random decks at the pipeline) gates every build, plus Help \u2192 Export Diagnostic Bundle for troubleshooting. Verified end-to-end against real ProPresenter.",
+    ],
+  },
+  {
+    version: '3.49.0',
+    date: '2026-06-21',
+    changes: [
+      "New: Help menu (···) → Export Diagnostic Bundle. Saves a JSON snapshot for troubleshooting \u2014 app version, platform, settings (with your API key and Pro7 password excluded; only a yes/no flag that they are set), deck and scheme summary, macro setup, Pro7/library status, recent export history, and the last captured errors. Hand it over when reporting a problem instead of screenshots.",
+    ],
+  },
+  {
+    version: '3.48.8',
+    date: '2026-06-21',
+    changes: [
+      "Fix: image slides now honor the \u201cBlank slide before this one\u201d toggle. It was exposed in the UI and saved, but the export pipeline ignored it for images (it worked for scripture and point). Now an image with blank-before gets its blank cue.",
+      "Added a fuzz tester to the suite \u2014 it pushes hundreds of random decks (weird punctuation, emoji, empty bodies, 100-slide decks, random overrides) through the export pipeline and asserts it never throws, never drops a slide, and always produces valid ProPresenter output.",
+    ],
+  },
+  {
+    version: '3.48.7',
+    date: '2026-06-21',
+    changes: [
+      "No more silent failures on save: if local storage is full or blocked, DeckPro now warns you (once) that changes are not being saved \u2014 instead of quietly losing work.",
+      "If a saved deck can't be read on startup, DeckPro now keeps a backup copy and tells you, rather than silently replacing it with a blank deck.",
+      "Changing the library location now surfaces an error toast if it fails, instead of doing nothing.",
+      "Added golden-master export tests (5 known-good decks compared field-by-field) to the npm test suite \u2014 release hardening so export regressions can't slip through unnoticed.",
+    ],
+  },
+  {
+    version: '3.48.6',
+    date: '2026-06-21',
+    changes: [
+      "Fix: the B / I / U formatting buttons now work \u2014 clicking one no longer collapses your text selection before the format is applied. (The buttons were missing the focus guard the ALT button already had.) \u2318B/\u2318I/\u2318U keyboard shortcuts continue to work too.",
+    ],
+  },
+  {
+    version: '3.48.5',
+    date: '2026-06-21',
+    changes: [
+      "Fix: sidebar macro indicators now show every macro assigned to a slide type, not just the first \u2014 a slide triggering multiple macros (e.g. message content + no logo + gradient on Scripture) now shows a colored dot for each. Hover a dot to see the macro name.",
+    ],
+  },
+  {
+    version: '3.48.4',
+    date: '2026-06-21',
+    changes: [
+      "Fix (v4 audit pass 3): Response Card decision-text Unlock/Lock now works \u2014 it called a function that did not exist, so unlocking silently did nothing.",
+      "Fix: picking or clearing a per-slide Macro Override now refreshes the editor immediately (same missing-function bug \u2014 the panel did not update after choosing a macro).",
+      "Fix: editing a Start/End slide label now updates the deck sidebar live.",
+    ],
+  },
+  {
+    version: '3.48.3',
+    date: '2026-06-21',
+    changes: [
+      "Fix (v4 audit pass 2): per-slide Macro Override now actually fires on export \u2014 it was being silently dropped before reaching ProPresenter for every slide type.",
+      "Fix: Stage Layout Override on Point slides now exports (was dropped for points; scripture/blank/image already worked).",
+      "Fix: Custom slides no longer vanish on export \u2014 they now export as a blank slide carrying their label, instead of being silently discarded at two layers.",
+      "Added an automated regression test suite (builder, verse-number chain, protobuf round-trip) run via npm test to protect the export pipeline going forward.",
+    ],
+  },
+  {
+    version: '3.48.2',
+    date: '2026-06-21',
+    changes: [
+      "Internal cleanup (v4 audit pass 1): removed dead code \u2014 unused functions (syncStyleButton, blankBeforeRow, spansToText, plainFromSpans, loadDecks, validateFont, and the unreachable download/output-mode dialog), the vestigial outputMode config, and orphaned CSS for UI that no longer exists. No behavior change.",
+    ],
+  },
+  {
+    version: '3.48.1',
+    date: '2026-06-21',
+    changes: [
+      "··· menu: Preferences now appears above Schemes.",
+      "View menu: renamed \u201cSettings\u201d to \u201cPreferences\u201d so it matches the rest of the app.",
+    ],
+  },
+  {
+    version: '3.48.0',
+    date: '2026-06-21',
+    changes: [
+      "Bible formatting: new \u201cVerses\u201d button above the scripture body opens a popover to add verse numbers in front of each verse, with a superscript / inline toggle.",
+      "Verse numbers are pulled from the real verse boundaries returned by API.Bible (not guessed per slide), so multi-verse slides number each verse correctly and embedded numbers in the text are left alone.",
+      "Setting is a global default \u2014 set it once and every Bible lookup follows it. Toggling re-fetches the current verse; turning it off strips the numbers.",
+      "Verse numbers render as superscript in the exported slide, prop, and slide notes; the digit-artifact warnings ignore intentional verse numbers.",
+    ],
+  },
+  {
+    version: '3.47.1',
+    date: '2026-06-21',
+    changes: [
+      "Fix: app icon no longer appears blank in the Dock — the build now uses the complete DeckPro.icns (all sizes up to 1024px) instead of a broken Icon Composer .icon file whose only layer was hidden. Also removed the CFBundleIconName=AppIcon override that made macOS look for a non-existent asset-catalog icon.",
+    ],
+  },
+  {
+    version: '3.47.0',
+    date: '2026-06-21',
+    changes: [
+      "Tooltips: hover any label with a tip to see a description (no extra icons — the label itself is the trigger).",
+      "Drag to reorder: indicator is now an insertion line between slides rather than a highlighted target slot.",
+      "Scripture slides: Verse # toggle prefixes each slide with its verse number (auto-extracted from reference). Sup toggle makes it superscript in the export.",
+      "Overrides section: stage layout, transition, and macro override are now grouped in a collapsible Overrides disclosure at the bottom of each slide editor.",
+      "Macro Override: each slide can fire a specific macro on advance, independent of scheme trigger settings.",
+      "Response Card decision text is now locked by default. Click it to unlock with a confirmation prompt; a Lock button re-locks it.",
+    ],
+  },
+  {
+    version: '3.46.4',
+    date: '2026-06-21',
+    changes: [
+      "Guide: added Keyboard Shortcuts tab listing all ⌘ shortcuts by category.",
+      "Placeholder text in input fields is now generic (no sermon-specific examples).",
+      "Scheme preview and Test Scheme now use Sirach 38:4 and Tobit 6:2-4 instead of John 3:16 / 2 Cor 3:18.",
+    ],
+  },
+  {
+    version: '3.46.2',
+    date: '2026-06-21',
+    changes: [
+      'View menu: Settings (Preferences) now appears above Schemes.',
+    ],
+  },
+  {
+    version: '3.46.1',
+    date: '2026-06-20',
+    changes: [
+      'Fix: macro color dots now show distinct colors per macro — uses stored Pro7 color, or falls back to a stable hash color derived from the macro UUID so every macro is visually distinct even when offline.',
+      'Macro picker: multi-select — tick multiple macros then click "Add N" to import them all at once.',
+      'Macro picker: colored dot per macro using Pro7 color, "added" badge for duplicates, stronger dark modal.',
+      'Macros in Preferences and Schemes now show a colored dot icon matching the Pro7 macro color.',
+      'Sidebar macro badges are now dynamic — only appear when a macro is actually assigned to that slide type in Schemes.',
+      'No-duplicate enforcement on import — already-added macros are greyed out and skipped.',
+      'Schemes → Macros tab has a vertical separator to show it is a global setting, not scheme-specific.',
+      'Removed "connect above to import from Pro7" subtitle from the Macros heading.',
+    ],
+  },
+  {
+    version: '3.45.0',
+    date: '2026-06-20',
+    changes: [
+      'Fix: macro picker now shows macro names correctly — Pro7 API nests the name at m.id.name, not m.name.',
+    ],
+  },
+  {
+    version: '3.44.0',
+    date: '2026-06-20',
+    changes: [
+      'Macros overhaul: removed all built-in hardcoded macro UUIDs (Start, Content, Blank, Logo, No Logo) from Preferences and from the export pipeline.',
+      'Preferences → Advanced IDs → Macros: clean slate — import any macro from Pro7 via "+ Add Macro". Name and UUID are auto-filled and read-only.',
+      'Macro triggers are now assigned exclusively in the Schemes panel → Macros tab.',
+      'Export: macros only fire if you\'ve configured them in Preferences and assigned triggers in Schemes — nothing fires by default.',
+    ],
+  },
+  {
+    version: '3.43.0',
+    date: '2026-06-20',
+    changes: [
+      'Fix: Macro UUIDs section in Preferences → Advanced IDs now correctly shows "Content" again (was accidentally renamed to "Scripture" in v3.40.0).',
+      'Fix: "+ Add Macro" picker now always opens — previously it silently added a blank row when Pro7 was not connected; now the picker appears with a "connect to Pro7 first" message.',
+    ],
+  },
+  {
+    version: '3.42.0',
+    date: '2026-06-20',
+    changes: [
+      'Preferences → Display Names: labels changed to Display 1 / 2 / 3 — enter your custom name in the field next to each.',
+    ],
+  },
+  {
+    version: '3.41.0',
+    date: '2026-06-20',
+    changes: [
+      'Fix: macro picker now correctly displays macro names — Pro7 REST API returns plain strings, not protobuf-wrapped objects; picker now handles both formats.',
+      'Fix: Delay and Duration columns in Motion → Build Order are now legible — Duration column widened to fit decimal values like 0.6.',
+    ],
+  },
+  {
+    version: '3.40.0',
+    date: '2026-06-20',
+    changes: [
+      'Point font now has independent size controls for Main Screen and LED Wall — set them in Schemes → Text → Point.',
+      'Reference Bar font card split into Main Screen and LED Wall columns with separate font, weight, size, color, and Advanced per display.',
+      'Motion build order tab renamed from "Content" to "Scripture".',
+    ],
+  },
+  {
+    version: '3.39.0',
+    date: '2026-06-20',
+    changes: [
+      'Fix: clicking the ALT toolbar button now correctly toggles off ALT formatting on selected text — the button\'s mousedown no longer blurs the editor and collapses the selection before the toggle runs.',
+      'Fix: color hex inputs (font color, stroke, shadow) now accept 6-digit hex without a leading # — swatch updates live as you type.',
+    ],
+  },
+  {
+    version: '3.38.0',
+    date: '2026-06-20',
+    changes: [
+      'Schemes → Macros tab redesigned: instead of a duplicate macro editor, it now shows macros already configured in Preferences and lets you toggle which slide types trigger each one. Head to Preferences to add/remove macros, then assign triggers here.',
+    ],
+  },
+  {
+    version: '3.37.0',
+    date: '2026-06-20',
+    changes: [
+      'Macro picker: "+ Add Macro" now opens a searchable list of macros pulled live from Pro7 — pick one and it\'s added with the correct name and UUID pre-filled. Refresh button re-pulls the list without leaving the picker.',
+    ],
+  },
+  {
+    version: '3.36.0',
+    date: '2026-06-20',
+    changes: [
+      'Fix: ALT formatting can now be toggled off on scripture slides (and any slide) — ⌘+click on an already-formatted word correctly unwraps it instead of double-wrapping.',
+    ],
+  },
+  {
+    version: '3.35.0',
+    date: '2026-06-20',
+    changes: [
+      'Fix: selected slide item in dark mode no longer shows a light background — active state now uses a subtle orange tint matching the app\'s dark palette.',
+    ],
+  },
+  {
+    version: '3.34.0',
+    date: '2026-06-20',
+    changes: [
+      'Macros tab in Schemes: custom macros now live in a dedicated Macros tab alongside Text / Layout / Motion / Preview — add macros, assign slide type triggers, and see them at a glance without digging into Preferences. Changes apply globally.',
+    ],
+  },
+  {
+    version: '3.33.0',
+    date: '2026-06-20',
+    changes: [
+      'Display Names: "Main Screen" added as a third configurable display name alongside LED Wall and Confidence Monitor — renames consistently across scheme panel, font tooltips, and all style cards.',
+      'Blanks toggle: active state is now solid orange instead of blue.',
+      'Stage Layout dropdown renamed to "Stage Layout Override".',
+    ],
+  },
+  {
+    version: '3.32.0',
+    date: '2026-06-20',
+    changes: [
+      'Custom Macros: add any number of macros in Preferences → Advanced IDs → Custom Macros. Give each one a name, UUID, and choose which slide types it fires on (Start, End, Scripture, Point, Blank, Blank Before, Image, Response Card). Macros are appended to matching cues at export.',
+    ],
+  },
+  {
+    version: '3.31.0',
+    date: '2026-06-19',
+    changes: [
+      'ALT fmt: orange brackets no longer persist after releasing the drag — they only show while painting words.',
+    ],
+  },
+  {
+    version: '3.30.0',
+    date: '2026-06-19',
+    changes: [
+      'Display Names: rename "LED Wall" and "Confidence Monitor" to anything you like in Preferences → Display Names. Your names appear consistently everywhere — slide forms, scheme panel, feature toggles, help text.',
+    ],
+  },
+  {
+    version: '3.29.0',
+    date: '2026-06-19',
+    changes: [
+      'ALT drag fix: drag now snaps word-by-word, selection highlight turns orange (no blue) as you paint, brackets track in real time.',
+    ],
+  },
+  {
+    version: '3.28.0',
+    date: '2026-06-19',
+    changes: [
+      'ALT formatting: ⌘+click (no opt required) to toggle a word; hold and drag to paint across multiple words. Orange [brackets] in the editor mark alt-formatted text. Live bracket indicators follow your drag. Preflight: digit-prefix and digit-span warnings now have auto-fix buttons.',
+    ],
+  },
+  {
+    version: '3.27.0',
+    date: '2026-06-19',
+    changes: [
+      'Fix: auto-manage ProPresenter now requires the toggle to be explicitly ON — it no longer activates for users whose saved state predates the setting. Renamed ··· menu item from "Settings" to "Preferences".',
+    ],
+  },
+  {
+    version: '3.26.0',
+    date: '2026-06-19',
+    changes: [
+      'LED wall / prop display during blank: new toggle in the blank-before section — when on, the blank cue triggers NO LOGO + the following slide’s prop instead of LOGO, so the LED wall shows the coming content while the main screen is dark.',
+      'Removed Fit Width button from point slides (kept on scripture).',
+    ],
+  },
+  {
+    version: '3.25.0',
+    date: '2026-06-19',
+    changes: [
+      'Verse-number inline red highlight: digit artifacts now glow red inline in the editor. Detection extended to catch digit + curly-quote patterns (e.g. 25“You…).',
+    ],
+  },
+  {
+    version: '3.24.0',
+    date: '2026-06-19',
+    changes: [
+      "Alternate (emphasis) formatting: new \"A\" button in the rich-text toolbar applies the scheme Bold-in-Body font (e.g. Montserrat-Black). Bold (B) is now plain bold weight on the body font. \u2318\u2325+click a word to toggle emphasis. Existing bold text auto-migrated to emphasis on first load.",
+    ],
+  },
   {
     version: '3.23.0',
     date: '2026-06-19',
@@ -23,7 +741,7 @@ const CHANGELOG = [
     version: '3.21.0',
     date: '2026-06-19',
     changes: [
-      "Book Names: added Revelation / Revelations and Psalm / Psalms options.",
+      "Book Names: added Psalm / Psalms option.",
     ],
   },
   {
@@ -883,6 +1601,45 @@ const CHANGELOG = [
   },
 ];
 
+// ─── Tooltip content ─────────────────────────────────────────────────────────
+// Single source of truth for all tooltip text. HTML uses data-tip-key="key".
+// Dynamic tips that require runtime values keep data-tip in the template instead.
+const TOOLTIPS = {
+  // Preferences — Queue
+  'queue':                    'Queue\nThe strip on the confidence monitor that lists what\'s coming up next.',
+  'queue-format':             'Queue format\nHow each upcoming item is shown in the queue strip.',
+  // Preferences — Schemes panel
+  'feature-visibility':       'Feature Visibility\nHide advanced fields so the slide editor is simpler when handing off to other users. Turning one off just hides it — it doesn\'t change exports.',
+  'scheme-new':               'New Scheme\nCreate a blank scheme from defaults.',
+  'scheme-dupe':              'Duplicate\nCopy this scheme into a new editable one — the usual way to make your own look.',
+  'scheme-import':            'Import from Pro7\nBuild a scheme from a presentation you styled inside ProPresenter — fonts, sizes, colours and positions are read back in.',
+  // Response Card
+  'decision-text':            'Decision Text\nThe main commitment statement shown on the Response Card slide.',
+  // Rich-text toolbar
+  'bold':                     'Bold\nBold weight of the body font for the selected words. Shortcut: ⌘B.',
+  'italic':                   'Italic\nItalicizes the selected words. Shortcut: ⌘I.',
+  'underline':                'Underline\nUnderlines the selected words. Shortcut: ⌘U.',
+  'alt':                      'Emphasis (ALT)\nUses the bold/emphasis style for selected words. By default that inherits Regular font and colour. ⌘+click a word, or hold ⌘ and drag across several.',
+  // Slide overrides
+  'overrides':                'Overrides\nPer-slide settings that override the scheme defaults for just this slide: stage layout, transitions, and which macro fires.',
+  'macro-override':           'Macro Override\nFires a specific macro when this slide is advanced to, on top of (or instead of) the scheme trigger settings.',
+  'stage-layout-override':    'Stage Layout Override\nSwitches the Pro7 stage display to a specific layout when this slide is advanced to.',
+  'transition-override':      'Transition Override\nUse a different slide transition for just this slide instead of the scheme default.',
+  'prop-name':                'Prop Name\nThe name of the prop slot in Pro7. Auto-set from the reference or point text — edit it to match an existing prop.',
+  'prop-transition-override': 'Prop Transition Override\nUse a different prop / LED wall transition for just this slide instead of the scheme default.',
+  // Shared slide fields
+  'blank-before':             'Blank Before\nInserts an empty slide before this one so the previous content clears before this slide appears.',
+  // Scripture
+  'reference':                'Reference\nBook, chapter and verse — e.g. John 3:16 or Tobit 6:2-4. Press Enter to look it up.',
+  'fit-width':                'Fit Width\nAuto-sizes the text box to the content so short lines aren\'t stretched across the screen. Mutually exclusive with Strip.',
+  'strip':                    'Strip\nRemoves hard line breaks on the main screen so the verse flows as one block. The prop / LED wall keeps its line breaks.',
+  'bible-formatting':         'Bible Formatting\nAdd the verse number in front of each verse, and choose superscript or inline.',
+  'split':                    'Split\nBreaks this scripture into a second slide so a long passage is shown across two slides instead of one crowded one.',
+  // Point
+  'point-single':             'Point — Single\nOne static prop that stays up while you talk. Use for a single point or statement.',
+  'point-revealing':          'Point — Revealing\nOne prop per bullet, revealed one at a time. Use for a list that builds as you go.',
+};
+
 // ─── State ────────────────────────────────────────────────────────────────────
 
 const DEFAULT_FEATURES = () => ({
@@ -891,6 +1648,9 @@ const DEFAULT_FEATURES = () => ({
   propName:             true,  // prop name field
   transitionOverride:   true,  // per-slide main presentation transition override
   propTransitionOverride: true, // per-slide prop transition override
+  overrides:            true,  // the Overrides disclosure on each slide
+  bodyTools:            true,  // Fit Width / Strip buttons on scripture
+  verseFormatting:      true,  // Verses (Bible formatting) button
 });
 
 const FONT_ADV_DEFAULTS = () => ({
@@ -899,41 +1659,106 @@ const FONT_ADV_DEFAULTS = () => ({
   alignment: '', bold: false, italic: false, underline: false, strikethrough: false,
   capitalization: '', color: '',
   verticalAlignment: '',
-  marginLeft: 0, marginTop: 0, marginRight: 0, marginBottom: 0,
+  marginLeft: null, marginTop: null, marginRight: null, marginBottom: null,
   strokeEnabled: false, strokeWidth: 1, strokeColor: '',
   shadowEnabled: false, shadowOpacity: 75, shadowColor: '', shadowAngle: 315, shadowOffset: 5, shadowBlur: 5,
   scaleBehavior: '',
 });
+
+// Response Card elements for the LED wall prop (display 2). Base 5 (title +
+// decision + 3 responses) plus any user-added custom elements. Each is fully
+// editable: name (= Pro7 object name), text, position (x/y/w/h) and style
+// (font/size/color/align). Empty font/size/color inherit the scheme prop fonts.
+// Decision/R1–R3 text comes from the Response Card deck item, not here.
+function DEFAULT_RC_ELEMENTS() {
+  return [
+    { id: 'rc-title',    role: 'title',    name: 'Response Card', text: 'Response Card', x: 325, y: 856, w: 2550, h: 400, font: '', size: 0, color: '', align: 'center' },
+    { id: 'rc-decision', role: 'decision', name: 'Decision',      text: '',              x: 400, y: 150, w: 2600, h: 150, font: '', size: 0, color: '', align: 'center' },
+    { id: 'rc-r1',       role: 'r1',       name: 'Response 1',     text: '',              x: 400, y: 330, w: 2600, h: 150, font: '', size: 0, color: '', align: 'center' },
+    { id: 'rc-r2',       role: 'r2',       name: 'Response 2',     text: '',              x: 400, y: 510, w: 2600, h: 150, font: '', size: 0, color: '', align: 'center' },
+    { id: 'rc-r3',       role: 'r3',       name: 'Response 3',     text: '',              x: 400, y: 690, w: 2600, h: 150, font: '', size: 0, color: '', align: 'center' },
+  ];
+}
+
+const DEFAULT_GLOBAL_TYPOGRAPHY = () => ({
+  font1:        'Montserrat-Medium',
+  font2:        'Montserrat-ExtraBold',
+  boldFont:     'Montserrat-Black',
+  colorNeutral: '#ffffff',
+  colorAccent:  '#ffffff',
+  ...DEFAULT_GLOBAL_SIZES,
+});
+
+const DEFAULT_GLOBAL_SIZES = {
+  bodySize: 44,
+  pointSize: 44,
+  titleSize: 60,
+  startEndSize: 45,
+  propBodySize: 80,
+  propPointSize: 80,
+  propTitleSize: 110,
+  notesSize: 50,
+  liveSize: 42,
+  queueSize: 32,
+};
+const SIZE_FIELDS = Object.keys(DEFAULT_GLOBAL_SIZES);
+const SIZE_FIELD_SET = new Set(SIZE_FIELDS);
+const SIZE_FIELD_TO_TYPO_KEY = Object.fromEntries(SIZE_FIELDS.map(k => [k, k]));
+const TYPOGRAPHY_KEYS = ['font1', 'font2', 'boldFont', 'colorNeutral', 'colorAccent', ...SIZE_FIELDS];
+const COLOR_TYPO_KEYS = new Set(['colorNeutral', 'colorAccent']);
+const REGULAR_FONT_FIELDS   = ['bodyFont', 'propBodyFont', 'pointFont', 'propPointFont', 'startEndFont', 'notesFont', 'liveFont', 'queueFont'];
+const HIGHLIGHT_FONT_FIELDS = ['titleFont', 'propTitleFont'];
+const BOLD_FONT_FIELDS      = ['boldFont', 'propBoldFont'];
+const REGULAR_ADV_FIELDS    = ['bodyFontAdv', 'propBodyFontAdv', 'pointFontAdv', 'propPointFontAdv', 'startEndFontAdv', 'notesFontAdv', 'liveFontAdv', 'queueFontAdv'];
+const HIGHLIGHT_ADV_FIELDS  = ['titleFontAdv', 'propTitleFontAdv'];
+const BOLD_ADV_FIELDS       = ['boldFontAdv', 'propBoldFontAdv'];
+const FONT_FIELD_TO_TYPO_KEY = Object.fromEntries([
+  ...REGULAR_FONT_FIELDS.map(k => [k, 'font1']),
+  ...HIGHLIGHT_FONT_FIELDS.map(k => [k, 'font2']),
+  ...BOLD_FONT_FIELDS.map(k => [k, 'boldFont']),
+]);
+const ADV_FIELD_TO_TYPO_KEY = Object.fromEntries([
+  ...REGULAR_ADV_FIELDS.map(k => [k, 'colorNeutral']),
+  ...HIGHLIGHT_ADV_FIELDS.map(k => [k, 'colorAccent']),
+  ...BOLD_ADV_FIELDS.map(k => [k, 'colorNeutral']),
+]);
+const DEFAULT_SCHEME_TYPOGRAPHY = () => Object.fromEntries(TYPOGRAPHY_KEYS.map(k => [k, null]));
 
 const DEFAULT_STYLE_SCHEME = () => ({
   id:          'default',
   name:        'Default',
   isDefault:   true,
   isLocked:    true,
+  typography:  DEFAULT_SCHEME_TYPOGRAPHY(),
+  macros:            [],  // per-scheme macro list (name, uuid, color, triggers)
+  stageDisplays:     [],  // per-scheme stage display entries [{id, name, uuid, triggers}]
+  rcElements:        DEFAULT_RC_ELEMENTS(),  // display-2 response card elements
   _ptSizes:    true,
   fillEnabled: false,
   bodyFill:    '#2196f2',
   titleFill:   '#a9391a',
-  titleText:   '#f6d046',
-  titleShadow: '#ff2600',
   // Fonts
   bodyFont:     'Montserrat-Medium',
   propBodyFont: 'Montserrat-SemiBold',
-  boldFont:     'Montserrat-ExtraBold',   // bold spans inside body text (main screen)
-  propBoldFont: 'Montserrat-ExtraBold',   // bold spans inside body text (LED wall)
   pointFont:    'Montserrat-ExtraBold',   // point text (main screen)
   propPointFont:'Montserrat-ExtraBold',   // point text (LED wall)
   titleFont:    'Montserrat-ExtraBold',
+  propTitleFont:'Montserrat-ExtraBold',
   startEndFont: 'Montserrat-ExtraBold',
   notesFont:     'Montserrat-Medium',
-  notesBoldFont: 'Montserrat-Black',
+  liveFont:      'HelveticaNeue',  // "live" confidence-monitor badge
+  queueFont:     'HelveticaNeue',  // upcoming-slide queue sidebar
   // Sizes (pt — backend doubles for RTF automatically)
   bodySize:      44,
+  pointSize:     44,
   titleSize:     60,
   startEndSize:  45,
   propBodySize:  80,
+  propPointSize: 80,
   propTitleSize: 110,
   notesSize:     50,
+  liveSize:      42,
+  queueSize:     32,
   // Transitions — main presentation
   transitionType:     'fade',
   transitionDuration: 0.6,
@@ -946,10 +1771,10 @@ const DEFAULT_STYLE_SCHEME = () => ({
   // Main screen element bounds
   bodyX: 0, bodyY: 729.98, bodyW: 1920, bodyH: 350.02,
   bodyMarginLeft: 0, bodyMarginTop: 0, bodyMarginRight: 0, bodyMarginBottom: 60,
+  pointX: 0, pointY: 729.98, pointW: 1920, pointH: 350.02,
   titleX: -0.18, titleY: 880, titleW: 1920.18, titleH: 50.51,
   autoTitleY: true, titleAutoGap: 16,
   startEndX: 0, startEndY: 900.14, startEndW: 1920, startEndH: 179.86,
-  gradientX: 0, gradientY: 351.77, gradientH: 728.23,
   liveX: 1736.73, liveY: 1096.71, liveW: 183.27, liveH: 71.56,
   queueX: 0, queueY: 0, queueW: 400, queueH: 1080,
   // Prop element bounds (scaled to 3200×1280)
@@ -964,14 +1789,16 @@ const DEFAULT_STYLE_SCHEME = () => ({
   pointFontAdv:    FONT_ADV_DEFAULTS(),
   propPointFontAdv:FONT_ADV_DEFAULTS(),
   titleFontAdv:    FONT_ADV_DEFAULTS(),
+  propTitleFontAdv:FONT_ADV_DEFAULTS(),
   startEndFontAdv: FONT_ADV_DEFAULTS(),
   notesFontAdv:    FONT_ADV_DEFAULTS(),
+  liveFontAdv:     FONT_ADV_DEFAULTS(),
+  queueFontAdv:    FONT_ADV_DEFAULTS(),
   // Build order per slide type
   buildOrders: {
     content: [
-      { id: 'bo-c1', element: 'body',          dir: 'out', start: 'START_AFTER_PREVIOUS', delay: 60, transition: 'dissolve', duration: 0.6, enabled: true },
-      { id: 'bo-c2', element: 'title',         dir: 'out', start: 'START_WITH_PREVIOUS',  delay: 0,  transition: 'dissolve', duration: 0.6, enabled: true },
-      { id: 'bo-c3', element: 'atem_gradient', dir: 'out', start: 'START_WITH_PREVIOUS',  delay: 0,  transition: 'dissolve', duration: 0.6, enabled: true },
+      { id: 'bo-c1', element: 'body',  dir: 'out', start: 'START_AFTER_PREVIOUS', delay: 60, transition: 'dissolve', duration: 0.6, enabled: true },
+      { id: 'bo-c2', element: 'title', dir: 'out', start: 'START_WITH_PREVIOUS',  delay: 0,  transition: 'dissolve', duration: 0.6, enabled: true },
     ],
     point:   [],
     blank:   [],
@@ -981,13 +1808,6 @@ const DEFAULT_STYLE_SCHEME = () => ({
   },
 });
 
-const DEFAULT_MACROS = () => ({
-  START:   '7C586E48-986E-4932-9219-7D6A64BE5B6C',
-  CONTENT: '8C15C594-8EE3-431C-B35C-B70B6AB91548',
-  BLANK:   '3AC673FE-0841-4391-81F7-F2042F312E1C',
-  LOGO:    '8CB7C31F-4B7E-41EE-96A5-D86F7CC8A71B',
-  NO_LOGO: 'DF162F4C-DA5D-4DE2-8379-3F369BC4BA07',
-});
 
 const DEFAULT_STAGESCREEN = () => ({
   screenName:         'Stage Screen 1',
@@ -1008,30 +1828,44 @@ const DEFAULT_STATE = () => ({
     outputFolder:        '',
     pro7Port:            1025,
     pro7Password:        '',
-    autoManagePro7:      true,
-    macros:              DEFAULT_MACROS(),
+    autoManagePro7:      false,
+    pro7RootFolder:      '',
+    pro7LibraryFolder:   '',
+    setupComplete:       false,
+    theme:               '',
     features:            DEFAULT_FEATURES(),
     stageScreen:         DEFAULT_STAGESCREEN(),
     bibleApiKey:         '',
     bibleId:             '',
     bibleName:           '',
     bibleList:           [],  // cached [{id, name, abbreviation}]
+    verseNumbers:        false, // prefix each verse with its number on lookup
+    verseSuper:          true,  // render verse numbers as superscript
+    queueMode:           'ref', // queue strip: 'list' | 'ref' | 'refPhrase'
     gdriveUrl:           '',  // last-loaded Google Drive notes doc (persists across redeploys)
+    notesMode:           'manual', // Smart Notes: 'manual' (you pick) | 'auto' (scan & suggest)
+    notesIgnored:        [],   // suggestion keys the user dismissed (don't re-suggest)
+    notesTrayOpen:       true,  // Suggested Slides tray expanded/collapsed
+    notesStyleMap:       {},   // signal (heading tag / highlight color) → role mapping
+    notesUseNearbyRefs:  true, // pair highlighted Content with a nearby unhighlighted scripture ref above it
     bookNames:           {},  // e.g. { acts: 'Acts of the Apostles', songOfSolomon: 'Song of Songs' }
-    outputMode:          'local',  // 'local' | 'download' | 'ask'
+    speakers:            [],  // permanent/recurring speakers offered in the New Deck dropdown
+    displayNames:        { mainScreen: 'Main Screen', ledWall: 'LED Wall', monitor: 'Confidence Monitor' },
     responses: {
       decisionText: 'I have decided to follow Jesus today!',
       r1: '',
       r2: '',
       r3: '',
+      notesTemplate: '{decision}\n1 — {r1}\n2 — {r2}\n3 — {r3}',
     },
   },
+  globalTypography: DEFAULT_GLOBAL_TYPOGRAPHY(),
   styleSchemes:  [DEFAULT_STYLE_SCHEME()],
   activeSchemeId: 'default',
   showBlanks: true,
   slides: [
-    { id: 'start', type: 'start', label: 'START',        fixed: true },
-    { id: 'end',   type: 'end',   label: 'End of Notes', fixed: true },
+    { id: 'start', type: 'start', label: 'Start of Notes', fixed: true },
+    { id: 'end',   type: 'end',   label: 'End of Notes',   fixed: true },
   ],
   activeId: 'start',
   currentDeckId: null,
@@ -1039,8 +1873,132 @@ const DEFAULT_STATE = () => ({
 
 let state = DEFAULT_STATE();
 
+function deepClone(obj) {
+  return JSON.parse(JSON.stringify(obj));
+}
+
+function normalizeHexColor(value, fallback = '#ffffff') {
+  if (!value) return fallback;
+  const raw = String(value).trim();
+  if (/^#[0-9a-fA-F]{6}$/.test(raw)) return raw.toLowerCase();
+  if (/^[0-9a-fA-F]{6}$/.test(raw)) return ('#' + raw).toLowerCase();
+  return fallback;
+}
+
+function advColor(adv, fallback = '#ffffff') {
+  return normalizeHexColor(adv?.color, fallback);
+}
+
+function ensureGlobalTypography(seedScheme = null) {
+  const seed = seedScheme || (state.styleSchemes || []).find(s => s?.isDefault) || (state.styleSchemes || [])[0] || {};
+  const base = {
+    font1:        seed.bodyFont  || 'Montserrat-Medium',
+    font2:        seed.titleFont || 'Montserrat-ExtraBold',
+    boldFont:     'Montserrat-Black',
+    colorNeutral: advColor(seed.bodyFontAdv,  '#ffffff'),
+    colorAccent:  advColor(seed.titleFontAdv, '#ffffff'),
+    ...Object.fromEntries(SIZE_FIELDS.map(k => [k, Number(seed[k]) || DEFAULT_GLOBAL_SIZES[k]])),
+  };
+  state.globalTypography = {
+    ...DEFAULT_GLOBAL_TYPOGRAPHY(),
+    ...base,
+    ...(state.globalTypography || {}),
+  };
+  state.globalTypography.colorNeutral = normalizeHexColor(state.globalTypography.colorNeutral);
+  state.globalTypography.colorAccent  = normalizeHexColor(state.globalTypography.colorAccent);
+  for (const key of SIZE_FIELDS) state.globalTypography[key] = Number(state.globalTypography[key]) || DEFAULT_GLOBAL_SIZES[key];
+  return state.globalTypography;
+}
+
+function ensureSchemeTypography(scheme, global = ensureGlobalTypography()) {
+  if (!scheme) return {};
+  const existing = scheme.typography || {};
+  // Migrate old key names from before v4.3.31
+  if (existing.regularFont   !== undefined) { existing.font1        = existing.font1        ?? existing.regularFont;    delete existing.regularFont; }
+  if (existing.highlightFont !== undefined) { existing.font2        = existing.font2        ?? existing.highlightFont;  delete existing.highlightFont; }
+  if (existing.regularColor  !== undefined) { existing.colorNeutral = existing.colorNeutral ?? existing.regularColor;   delete existing.regularColor; }
+  if (existing.highlightColor!== undefined) { existing.colorAccent  = existing.colorAccent  ?? existing.highlightColor; delete existing.highlightColor; }
+  const typography = {};
+  for (const key of TYPOGRAPHY_KEYS) {
+    if (Object.prototype.hasOwnProperty.call(existing, key)) {
+      typography[key] = SIZE_FIELD_SET.has(key)
+        ? (existing[key] == null ? null : Number(existing[key]) || null)
+        : (existing[key] || null);
+    } else {
+      // Legacy seed: first-time migration from old per-field scheme values
+      let raw;
+      if      (key === 'font1')        raw = scheme.bodyFont  || '';
+      else if (key === 'font2')        raw = scheme.titleFont || '';
+      else if (key === 'boldFont')     raw = '';
+      else if (key === 'colorNeutral') raw = advColor(scheme.bodyFontAdv,  '');
+      else if (key === 'colorAccent')  raw = advColor(scheme.titleFontAdv, '');
+      else if (SIZE_FIELD_SET.has(key)) raw = scheme[key];
+      else raw = '';
+      const inherited = SIZE_FIELD_SET.has(key)
+        ? Number(raw) === Number(global[key])
+        : COLOR_TYPO_KEYS.has(key)
+          ? normalizeHexColor(raw, global[key]) === normalizeHexColor(global[key])
+          : raw === global[key];
+      typography[key] = inherited ? null : (SIZE_FIELD_SET.has(key) ? Number(raw) || null : raw || null);
+    }
+  }
+  scheme.typography = typography;
+  return typography;
+}
+
+function resolveSchemeTypography(scheme, global = ensureGlobalTypography()) {
+  const overrides = ensureSchemeTypography(scheme, global);
+  return {
+    font1:        overrides.font1        || global.font1,
+    font2:        overrides.font2        || global.font2,
+    boldFont:     overrides.boldFont     || global.boldFont,
+    colorNeutral: normalizeHexColor(overrides.colorNeutral || global.colorNeutral),
+    colorAccent:  normalizeHexColor(overrides.colorAccent  || global.colorAccent),
+    ...Object.fromEntries(SIZE_FIELDS.map(k => [k, Number(overrides[k] ?? global[k]) || DEFAULT_GLOBAL_SIZES[k]])),
+  };
+}
+
+function setAdvColor(style, key, color) {
+  style[key] = { ...FONT_ADV_DEFAULTS(), ...(style[key] || {}), color: normalizeHexColor(color) };
+}
+
+function applyTypographyToStyle(scheme, global = ensureGlobalTypography()) {
+  const style = deepClone(scheme || DEFAULT_STYLE_SCHEME());
+  const t = resolveSchemeTypography(style, global);
+  for (const key of REGULAR_FONT_FIELDS)   style[key] = t.font1;
+  for (const key of HIGHLIGHT_FONT_FIELDS)  style[key] = t.font2;
+  for (const key of BOLD_FONT_FIELDS)       style[key] = t.boldFont;
+  for (const key of SIZE_FIELDS)            style[key] = t[key];
+  for (const key of REGULAR_ADV_FIELDS)     setAdvColor(style, key, t.colorNeutral);
+  for (const key of HIGHLIGHT_ADV_FIELDS)   setAdvColor(style, key, t.colorAccent);
+  for (const key of BOLD_ADV_FIELDS)        setAdvColor(style, key, t.colorNeutral);
+  return style;
+}
+
+function styleForExport(scheme) {
+  const resolved = applyTypographyToStyle(scheme || activeStyleScheme());
+  const {
+    id: _sid,
+    name: _sname,
+    isDefault: _sd,
+    isLocked: _sl,
+    typography: _typo,
+    ...style
+  } = resolved;
+  return style;
+}
+
+function dn(key) {
+  const n = (state.config.displayNames || {})[key];
+  if (n) return n;
+  if (key === 'mainScreen') return 'Main Screen';
+  if (key === 'ledWall')    return 'LED Wall';
+  if (key === 'monitor')    return 'Confidence Monitor';
+  return key;
+}
+
 // ─── Pro7 runtime state (not persisted) ──────────────────────────────────────
-const pro7rt = { connected: false, version: null, liveMacros: null };
+const pro7rt = { connected: false, version: null, liveMacros: null, liveStageLayouts: null };
 let   _fontList      = null;  // cached system font list (PostScript names)
 let   _fontFamilyMap = null;  // family → [{ style, postscript }]
 
@@ -1092,9 +2050,63 @@ function applyRedo() {
   updateUndoButtons();
 }
 
+let _saveFailed = false;
+let _stateFileSaveFailed = false;
+let _stateFileSaveTimer = null;
+
+async function persistStateToFile() {
+  try {
+    const res = await fetch('/api/state', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ state }),
+    });
+    if (!res.ok) throw new Error('State save failed');
+    _stateFileSaveFailed = false;
+  } catch (e) {
+    if (!_stateFileSaveFailed) {
+      _stateFileSaveFailed = true;
+      toast('error', 'Settings are not saving', 'DeckPro could not write its app-data state file. Your changes may not survive relaunch.');
+    }
+  }
+}
+
+function scheduleStateFileSave() {
+  clearTimeout(_stateFileSaveTimer);
+  _stateFileSaveTimer = setTimeout(persistStateToFile, 250);
+}
+
+function saveStateBeforeUnload() {
+  const body = JSON.stringify({ state });
+  try {
+    if (navigator.sendBeacon) {
+      navigator.sendBeacon('/api/state', new Blob([body], { type: 'application/json' }));
+      return;
+    }
+  } catch (_) {}
+  try {
+    fetch('/api/state', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body,
+      keepalive: true,
+    });
+  } catch (_) {}
+}
+
 function saveState() {
   pushUndo();
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (_) {}
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    _saveFailed = false;
+  } catch (e) {
+    // Don't fail silently — a save failure means the user's work isn't persisted.
+    if (!_saveFailed) {
+      _saveFailed = true;
+      toast('error', 'Not saving locally', 'Local storage is full or blocked, so changes are not being saved. Export now to keep your work.');
+    }
+  }
+  scheduleStateFileSave();
   const el = document.getElementById('saved-indicator');
   if (el) {
     el.classList.add('show');
@@ -1106,19 +2118,15 @@ function saveState() {
   _autosaveTimer = setTimeout(autosaveDeck, 1500);
 }
 
-function loadState() {
+function applySavedState(saved) {
+  if (!saved || typeof saved !== 'object') return false;
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return;
-    const saved = JSON.parse(raw);
     state = Object.assign(DEFAULT_STATE(), saved);
     // Merge config separately so new keys get defaults
     const defaultCfg = DEFAULT_STATE().config;
     state.config = Object.assign(defaultCfg, saved.config || {});
     // Ensure nested responses object gets defaults
     state.config.responses = Object.assign(defaultCfg.responses, (saved.config || {}).responses || {});
-    // Ensure macros get defaults for any new keys
-    state.config.macros = Object.assign(DEFAULT_MACROS(), (saved.config || {}).macros || {});
     // Feature flags
     state.config.features = Object.assign(DEFAULT_FEATURES(), (saved.config || {}).features || {});
     // Stage screen config
@@ -1126,58 +2134,148 @@ function loadState() {
     // Restore style schemes — support old 'stylePresets' key for migration
     const savedSchemes = saved.styleSchemes || saved.stylePresets;
     if (Array.isArray(savedSchemes) && savedSchemes.length) {
-      const SIZE_FIELDS = ['bodySize', 'titleSize', 'startEndSize', 'propBodySize', 'propTitleSize'];
-      const DEF = DEFAULT_STYLE_SCHEME();
+      const LEGACY_PT_SIZE_FIELDS = ['bodySize', 'pointSize', 'titleSize', 'startEndSize', 'propBodySize', 'propPointSize', 'propTitleSize'];
       state.styleSchemes = savedSchemes.map(p => {
+        const DEF = DEFAULT_STYLE_SCHEME();
         // Migrate old half-point values to pt
-        let out = p;
+        let out = deepClone(p);
         if (!p._ptSizes) {
-          out = { ...p, _ptSizes: true };
-          for (const f of SIZE_FIELDS) if (out[f]) out[f] = Math.round(out[f] / 2);
+          out = { ...out, _ptSizes: true };
+          for (const f of LEGACY_PT_SIZE_FIELDS) if (out[f]) out[f] = Math.round(out[f] / 2);
         }
         // Merge with defaults so all new fields get values
         const merged = { ...DEF, ...out };
+        merged._needsTypographyMigration = !out.typography;
         // Merge nested fontAdv objects too
-        for (const k of ['bodyFontAdv','propBodyFontAdv','boldFontAdv','titleFontAdv','startEndFontAdv','notesFontAdv']) {
+        for (const k of ['bodyFontAdv','propBodyFontAdv','boldFontAdv','titleFontAdv','propTitleFontAdv','startEndFontAdv','notesFontAdv','liveFontAdv','queueFontAdv']) {
           merged[k] = { ...FONT_ADV_DEFAULTS(), ...(out[k] || {}) };
         }
         // Seed slide-notes font fields for schemes saved before notes were customizable
         if (!out.notesFont)     merged.notesFont     = DEF.notesFont;
-        if (!out.notesBoldFont) merged.notesBoldFont = DEF.notesBoldFont;
         if (!out.notesSize)     merged.notesSize     = DEF.notesSize;
-        // Seed the prop bold font from the main bold font on first load
-        if (!out.propBoldFont)    merged.propBoldFont    = merged.boldFont;
+        // Seed point sizes added in v3.40.0
+        if (!out.pointSize)     merged.pointSize     = merged.bodySize;
+        if (!out.propPointSize) merged.propPointSize = merged.propBodySize;
+        // Seed point layout split from body layout
+        if (out.pointX === undefined) merged.pointX = merged.bodyX;
+        if (out.pointY === undefined) merged.pointY = merged.bodyY;
+        if (out.pointW === undefined) merged.pointW = merged.bodyW;
+        if (out.pointH === undefined) merged.pointH = merged.bodyH;
+        // Seed prop title font split added in v3.40.0
+        if (!out.propTitleFont)    merged.propTitleFont    = merged.titleFont;
+        if (!out.propTitleFontAdv) merged.propTitleFontAdv = JSON.parse(JSON.stringify(merged.titleFontAdv));
+        else                       merged.propTitleFontAdv = { ...FONT_ADV_DEFAULTS(), ...out.propTitleFontAdv };
+        // boldFont / propBoldFont were removed (emphasis renders as plain \b on the
+        // body font). Carry the bold *advanced* styling forward as an internal
+        // fallback for point styling on schemes saved before the point-font split.
         if (!out.propBoldFontAdv) merged.propBoldFontAdv = JSON.parse(JSON.stringify(merged.boldFontAdv));
         else                      merged.propBoldFontAdv = { ...FONT_ADV_DEFAULTS(), ...out.propBoldFontAdv };
-        // Seed the split point fonts from the bold fonts for schemes saved before the split
+        // Seed the split point fonts from the old bold fonts for pre-split schemes
         // (preserves existing point-text styling — point used to share the bold font).
-        if (!out.pointFont)         merged.pointFont         = merged.boldFont;
+        if (!out.pointFont)         merged.pointFont         = out.boldFont || merged.pointFont;
         if (!out.pointFontAdv)      merged.pointFontAdv      = JSON.parse(JSON.stringify(merged.boldFontAdv));
         else                        merged.pointFontAdv      = { ...FONT_ADV_DEFAULTS(), ...out.pointFontAdv };
-        if (!out.propPointFont)     merged.propPointFont     = merged.propBoldFont;
+        if (!out.propPointFont)     merged.propPointFont     = out.propBoldFont || out.boldFont || merged.propPointFont;
         if (!out.propPointFontAdv)  merged.propPointFontAdv  = JSON.parse(JSON.stringify(merged.propBoldFontAdv));
         else                        merged.propPointFontAdv  = { ...FONT_ADV_DEFAULTS(), ...out.propPointFontAdv };
+        // Drop the removed orphan fields if an old scheme carried them.
+        delete merged.titleText; delete merged.titleShadow;
+        delete merged.boldFont;  delete merged.propBoldFont;
         // Ensure isDefault is set correctly by scheme id
         merged.isDefault = (merged.id === 'default');
         // For migrated saves without isLocked, lock only the default scheme
         if (p.isLocked === undefined) merged.isLocked = merged.isDefault;
         // Merge buildOrders — fill any missing tab keys with defaults
-        merged.buildOrders = { ...DEF.buildOrders, ...(out.buildOrders || {}) };
-        // Migrate old 'this slide' element references to 'body' in build orders
+        merged.buildOrders = deepClone({ ...DEF.buildOrders, ...(out.buildOrders || {}) });
+        // Migrate old 'this slide' → 'body', and drop the retired 'atem_gradient'
+        // build-order entries (the gradient is now a Pro7 macro, not an element).
         for (const tabKey of Object.keys(merged.buildOrders)) {
           if (Array.isArray(merged.buildOrders[tabKey])) {
-            merged.buildOrders[tabKey] = merged.buildOrders[tabKey].map(entry =>
-              entry.element === 'this slide' ? { ...entry, element: 'body' } : entry
-            );
+            merged.buildOrders[tabKey] = merged.buildOrders[tabKey]
+              .filter(entry => entry.element !== 'atem_gradient')
+              .map(entry => entry.element === 'this slide' ? { ...entry, element: 'body' } : entry);
           }
         }
-        return merged;
+        return deepClone(merged);
       });
+    }
+    const seedGlobalScheme = state.styleSchemes.find(s => s.isDefault) || state.styleSchemes[0] || DEFAULT_STYLE_SCHEME();
+    const _rawGT = saved.globalTypography ? { ...saved.globalTypography } : null;
+    // Migrate old key names (pre-v4.3.31)
+    if (_rawGT) {
+      if (_rawGT.regularFont   !== undefined) { _rawGT.font1        = _rawGT.font1        ?? _rawGT.regularFont;    delete _rawGT.regularFont; }
+      if (_rawGT.highlightFont !== undefined) { _rawGT.font2        = _rawGT.font2        ?? _rawGT.highlightFont;  delete _rawGT.highlightFont; }
+      if (_rawGT.regularColor  !== undefined) { _rawGT.colorNeutral = _rawGT.colorNeutral ?? _rawGT.regularColor;   delete _rawGT.regularColor; }
+      if (_rawGT.highlightColor!== undefined) { _rawGT.colorAccent  = _rawGT.colorAccent  ?? _rawGT.highlightColor; delete _rawGT.highlightColor; }
+    }
+    state.globalTypography = _rawGT
+      ? { ...DEFAULT_GLOBAL_TYPOGRAPHY(), ..._rawGT }
+      : {
+          font1:        seedGlobalScheme.bodyFont  || 'Montserrat-Medium',
+          font2:        seedGlobalScheme.titleFont || 'Montserrat-ExtraBold',
+          boldFont:     'Montserrat-Black',
+          colorNeutral: advColor(seedGlobalScheme.bodyFontAdv,  '#ffffff'),
+          colorAccent:  advColor(seedGlobalScheme.titleFontAdv, '#ffffff'),
+          ...Object.fromEntries(SIZE_FIELDS.map(k => [k, Number(seedGlobalScheme[k]) || DEFAULT_GLOBAL_SIZES[k]])),
+        };
+    state.globalTypography.colorNeutral = normalizeHexColor(state.globalTypography.colorNeutral);
+    state.globalTypography.colorAccent  = normalizeHexColor(state.globalTypography.colorAccent);
+    for (const key of SIZE_FIELDS) state.globalTypography[key] = Number(state.globalTypography[key]) || DEFAULT_GLOBAL_SIZES[key];
+    for (const scheme of state.styleSchemes) {
+      if (scheme._needsTypographyMigration) delete scheme.typography;
+      ensureSchemeTypography(scheme, state.globalTypography);
+      delete scheme._needsTypographyMigration;
     }
     // Support old 'activeStyleId' key for migration
     state.activeSchemeId = saved.activeSchemeId || saved.activeStyleId
       || (state.styleSchemes[0]?.id ?? 'default');
     state.showBlanks = saved.showBlanks ?? true;
+    // Migrate global customMacros → per-scheme macros (v4.0.10+)
+    if (Array.isArray(saved.config?.customMacros) && saved.config.customMacros.length) {
+      const defaultScheme = state.styleSchemes.find(s => s.isDefault) || state.styleSchemes[0];
+      if (defaultScheme && !defaultScheme.macros?.length) {
+        defaultScheme.macros = saved.config.customMacros;
+      }
+    }
+
+    // Migrate global stageScreen → per-scheme stageDisplays + stageScreenConfig (v4.2.2+)
+    const _ss = saved.config?.stageScreen;
+    if (_ss) {
+      for (const scheme of state.styleSchemes) {
+        if (!scheme.stageDisplays?.length) {
+          scheme.stageDisplays = [
+            { id: uid(), name: _ss.rcLayoutName      || '', uuid: _ss.rcLayoutUuid      || '', triggers: ['rcBlank', 'rcContent', 'rcHold'] },
+            { id: uid(), name: _ss.messageLayoutName || '', uuid: _ss.messageLayoutUuid || '', triggers: ['scripture', 'point', 'blank', 'image', 'custom'] },
+          ].filter(d => d.name || d.uuid);
+        }
+      }
+    }
+
+    // Migrate legacy 'rc' macro trigger → 'rcContent' (v4.2.4+)
+    for (const scheme of state.styleSchemes) {
+      for (const macro of (scheme.macros || [])) {
+        if (Array.isArray(macro.triggers) && macro.triggers.includes('rc')) {
+          macro.triggers = macro.triggers.map(t => t === 'rc' ? 'rcContent' : t);
+        }
+      }
+    }
+
+    // Migrate role-based stageDisplays → trigger-based (v4.3.0+)
+    for (const scheme of state.styleSchemes) {
+      if (!scheme.stageDisplays?.length) continue;
+      let screenEntry = null;
+      scheme.stageDisplays = scheme.stageDisplays.map(d => {
+        if (!d.role) return d; // already trigger-based
+        if (d.role === 'screen') { screenEntry = d; return null; }
+        const triggers = d.role === 'msgLayout'
+          ? ['scripture', 'point', 'blank', 'image', 'custom']
+          : d.role === 'rcLayout'
+          ? ['rcBlank', 'rcContent', 'rcHold']
+          : (d.triggers || []);
+        return { id: d.id, name: d.name || '', uuid: d.uuid || '', triggers };
+      }).filter(Boolean);
+    }
+
     // Migrate old string[] bullets → spans[][] for revealing points
     for (const sl of (state.slides || [])) {
       if (sl.type === 'point' && sl.mode === 'revealing' && Array.isArray(sl.bullets)) {
@@ -1187,11 +2285,63 @@ function loadState() {
       }
     }
 
+    // Migrate pre-v3.24.0 bold:true spans to alt:true.
+    // Before v3.24.0, bold meant the scheme emphasis font (Montserrat-Black).
+    // Now bold = plain \b; alt = emphasis font. Any span with bold but no alt key is old-style.
+    function migrateBoldToAlt(spans) {
+      if (!Array.isArray(spans)) return spans;
+      return spans.map(s => (s.bold && s.alt === undefined) ? { ...s, bold: false, alt: true } : s);
+    }
+    for (const sl of (state.slides || [])) {
+      if (sl.bodies) sl.bodies = sl.bodies.map(b => migrateBoldToAlt(b));
+      if (sl.body)   sl.body   = migrateBoldToAlt(sl.body);
+      if (sl.spans)  sl.spans  = migrateBoldToAlt(sl.spans);
+      if (sl.blankSpans) sl.blankSpans = migrateBoldToAlt(sl.blankSpans);
+      if (sl.type === 'point' && sl.mode === 'revealing' && Array.isArray(sl.bullets)) {
+        sl.bullets = sl.bullets.map(b => Array.isArray(b) ? migrateBoldToAlt(b) : b);
+      }
+    }
+
     if (!state.slides.find(s => s.type === 'start'))
-      state.slides.unshift({ id: 'start', type: 'start', label: 'START', fixed: true });
+      state.slides.unshift({ id: 'start', type: 'start', label: 'Start of Notes', fixed: true });
     if (!state.slides.find(s => s.type === 'end'))
       state.slides.push({ id: 'end', type: 'end', label: 'End of Notes', fixed: true });
-  } catch (_) {}
+    // Migrate the old default start label "START" → "Start of Notes" (match End of Notes)
+    const startSlide = state.slides.find(s => s.type === 'start');
+    if (startSlide && (startSlide.label === 'START' || !startSlide.label)) {
+      startSlide.label = 'Start of Notes';
+      if (startSlide.text === 'START') startSlide.text = 'Start of Notes';
+    }
+    return true;
+  } catch (e) {
+    setTimeout(() => toast('error', 'Could not restore your last state',
+      'The saved app data was unreadable, so DeckPro started fresh.'), 400);
+    return false;
+  }
+}
+
+async function loadState() {
+  try {
+    const res = await fetch('/api/state');
+    const data = await res.json();
+    if (data.ok && data.state && applySavedState(data.state)) return;
+  } catch (_) {
+    // Running from a plain static preview or an older build — fall back below.
+  }
+
+  let raw = null;
+  try {
+    raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return;
+    if (applySavedState(JSON.parse(raw))) scheduleStateFileSave();
+  } catch (e) {
+    // Don't silently discard a deck we couldn't parse — preserve a backup and tell the user.
+    if (raw) {
+      try { localStorage.setItem(STORAGE_KEY + '_corrupt_backup', raw); } catch (_) {}
+      setTimeout(() => toast('error', 'Could not restore your last deck',
+        'The saved data was unreadable, so a fresh deck was started. A backup copy was kept in case it can be recovered.'), 400);
+    }
+  }
 }
 
 function syncHeaderInputs() {
@@ -1243,6 +2393,139 @@ function esc(s) {
     .replace(/"/g, '&quot;');
 }
 
+// ─── Confirm modal helper ─────────────────────────────────────
+
+function showConfirmModal(title, body, confirmLabel, onConfirm) {
+  document.getElementById('g-confirm-overlay')?.remove();
+  const ov = document.createElement('div');
+  ov.id = 'g-confirm-overlay';
+  ov.className = 'g-confirm-overlay';
+  ov.innerHTML = '<div class="g-confirm-modal">' +
+    '<p class="g-confirm-title">' + esc(title) + '</p>' +
+    '<p class="g-confirm-body">' + esc(body) + '</p>' +
+    '<div class="g-confirm-btns">' +
+    '<button class="btn g-confirm-cancel">Cancel</button>' +
+    '<button class="btn g-confirm-ok">' + esc(confirmLabel) + '</button>' +
+    '</div></div>';
+  document.body.appendChild(ov);
+  ov.querySelector('.g-confirm-cancel').addEventListener('click', () => ov.remove());
+  ov.querySelector('.g-confirm-ok').addEventListener('click', () => { ov.remove(); onConfirm(); });
+  ov.addEventListener('click', e => { if (e.target === ov) ov.remove(); });
+}
+
+// ─── Tooltip system ───────────────────────────────────────────
+
+let _tipTarget = null;
+let _tipTimeout = null;
+
+// ─── Diagnostics ──────────────────────────────────────────────────────────────
+
+const _recentErrors = [];
+function recordError(kind, msg, extra) {
+  _recentErrors.push({ at: new Date().toISOString(), kind, msg: String(msg || '').slice(0, 500), extra: extra ? String(extra).slice(0, 500) : undefined });
+  if (_recentErrors.length > 25) _recentErrors.shift();
+}
+function initDiagnostics() {
+  window.addEventListener('error', e => recordError('error', e.message, e.filename ? `${e.filename}:${e.lineno}` : ''));
+  window.addEventListener('unhandledrejection', e => recordError('promise', e.reason && e.reason.message ? e.reason.message : e.reason));
+  const origErr = console.error.bind(console);
+  console.error = (...args) => { try { recordError('console', args.map(a => (a && a.message) || a).join(' ')); } catch (_) {} origErr(...args); };
+}
+
+async function buildDiagnosticBundle() {
+  const cfg = state.config || {};
+  // Settings minus secrets.
+  const { bibleApiKey, pro7Password, ...safeConfig } = cfg;
+  const slides = state.slides || [];
+  const typeCounts = slides.reduce((m, s) => { m[s.type] = (m[s.type] || 0) + 1; return m; }, {});
+  const schemes = state.styleSchemes || [];
+  const bundle = {
+    app: 'DeckPro',
+    version: APP_VERSION,
+    generatedAt: new Date().toISOString(),
+    platform: { userAgent: navigator.userAgent, platform: navigator.platform, language: navigator.language },
+    secretsPresent: { bibleApiKey: !!bibleApiKey, pro7Password: !!pro7Password },
+    config: safeConfig,
+    deck: {
+      slideCount: slides.length,
+      typeCounts,
+      activeId: state.activeId,
+      showBlanks: state.showBlanks,
+    },
+    schemes: { count: schemes.length, activeSchemeId: state.activeSchemeId, names: schemes.map(s => s.name) },
+    macros: (activeStyleScheme().macros || []).map(m => ({ name: m.name, hasUuid: !!m.uuid, triggers: m.triggers || [] })),
+    pro7: { connected: !!(typeof pro7rt !== 'undefined' && pro7rt.connected), liveMacroCount: (typeof pro7rt !== 'undefined' && pro7rt.liveMacros ? pro7rt.liveMacros.length : 0), schemeMacros: (activeStyleScheme()?.macros || []).length },
+    library: (typeof _libStatus !== 'undefined' && _libStatus) ? { libraryDir: _libStatus.libraryDir, deckCount: _libStatus.deckCount } : null,
+    exportHistory: (typeof loadGenHistory === 'function' ? loadGenHistory() : []).slice(0, 10).map(h => ({ name: h.fileName || h.name, at: h.at || h.date, ok: h.ok !== false })),
+    recentErrors: _recentErrors,
+  };
+  try {
+    const res = await fetch('/api/setup/doctor');
+    const data = await res.json();
+    if (data.ok) bundle.machineSetup = data;
+  } catch (_) {}
+  return bundle;
+}
+
+async function exportDiagnosticBundle() {
+  let json;
+  try { json = JSON.stringify(await buildDiagnosticBundle(), null, 2); }
+  catch (e) { toast('error', 'Could not build diagnostics', e.message); return; }
+  try {
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+    const a = Object.assign(document.createElement('a'), { href: url, download: `deckpro-diagnostic-${ts}.json` });
+    document.body.appendChild(a); a.click();
+    setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 1000);
+    toast('success', 'Diagnostic bundle saved', 'Secrets (API key, password) are excluded.');
+  } catch (e) {
+    toast('error', 'Could not save diagnostics', e.message);
+  }
+}
+
+function initTooltip() {
+  const tip = document.createElement('div');
+  tip.id = 'g-tip';
+  tip.className = 'g-tip';
+  document.body.appendChild(tip);
+
+  document.addEventListener('mouseover', e => {
+    const el = e.target.closest('[data-tip],[data-tip-key]');
+    if (!el || el === _tipTarget) return;
+    _tipTarget = el;
+    clearTimeout(_tipTimeout);
+    _tipTimeout = setTimeout(() => {
+      const key  = el.getAttribute('data-tip-key');
+      let text = key ? (TOOLTIPS[key] || key) : el.getAttribute('data-tip');
+      if (!text) return;
+      text = text.replace(/\\n/g, '\n'); // accept a literal "\n" in the attribute as a line break
+      // Optional title: text before the first newline (or an explicit data-tip-title)
+      const title = el.getAttribute('data-tip-title')
+        || (text.includes('\n') ? text.slice(0, text.indexOf('\n')) : '');
+      const body  = title && !el.getAttribute('data-tip-title')
+        ? text.slice(text.indexOf('\n') + 1)
+        : text;
+      tip.innerHTML = (title ? `<span class="g-tip-title">${esc(title)}</span>` : '') + esc(body);
+      tip.classList.add('visible');
+      const r = el.getBoundingClientRect();
+      const tw = tip.offsetWidth;
+      let left = r.left + r.width / 2 - tw / 2;
+      left = Math.max(8, Math.min(left, window.innerWidth - tw - 8));
+      tip.style.left = left + 'px';
+      tip.style.top  = (r.top - tip.offsetHeight - 8) + 'px';
+    }, 700);
+  });
+
+  document.addEventListener('mouseout', e => {
+    const el = e.target.closest('[data-tip],[data-tip-key]');
+    if (!el) return;
+    _tipTarget = null;
+    clearTimeout(_tipTimeout);
+    tip.classList.remove('visible');
+  });
+}
+
 // ─── Rich-text helpers ────────────────────────────────────────────────────────
 
 function extractSpans(el) {
@@ -1252,23 +2535,33 @@ function extractSpans(el) {
       if (node.textContent) spans.push({ text: node.textContent, ...fmt });
     } else if (node.nodeType === 1) {
       if (node.tagName === 'BR') { spans.push({ text: '\n', ...fmt }); return; }
-      const bold      = fmt.bold      || node.tagName === 'B' || node.tagName === 'STRONG'
-                        || node.style.fontWeight === 'bold' || node.style.fontWeight === '700';
+      if (node.tagName === 'SUP' || (node.classList && node.classList.contains('vnum'))) {
+        const t = node.textContent;
+        if (t) spans.push({ text: t, verseNum: true, super: node.tagName === 'SUP', alt: false, bold: false, italic: false, underline: false });
+        return;
+      }
+      if (node.tagName === 'SPAN' && node.classList.contains('digit-warn')) {
+        for (const child of node.childNodes) walk(child, fmt);
+        return;
+      }
+      const alt       = fmt.alt       || (node.tagName === 'SPAN' && node.classList.contains('alt-fmt'));
+      const bold      = !alt && (fmt.bold      || node.tagName === 'B' || node.tagName === 'STRONG'
+                        || node.style.fontWeight === 'bold' || node.style.fontWeight === '700');
       const italic    = fmt.italic    || node.tagName === 'I' || node.tagName === 'EM'
                         || node.style.fontStyle === 'italic';
       const underline = fmt.underline || node.tagName === 'U'
                         || node.style.textDecoration === 'underline'
                         || node.style.textDecorationLine === 'underline';
-      for (const child of node.childNodes) walk(child, { bold, italic, underline });
+      for (const child of node.childNodes) walk(child, { alt, bold, italic, underline });
     }
   }
-  walk(el, { bold: false, italic: false, underline: false });
+  walk(el, { alt: false, bold: false, italic: false, underline: false });
   return spans.reduce((acc, s) => {
     const last = acc[acc.length - 1];
-    if (last && last.bold === s.bold && last.italic === s.italic && last.underline === s.underline)
+    if (last && !last.verseNum && !s.verseNum && last.alt === s.alt && last.bold === s.bold && last.italic === s.italic && last.underline === s.underline)
       last.text += s.text;
     else
-      acc.push({ text: s.text, bold: !!s.bold, italic: !!s.italic, underline: !!s.underline });
+      acc.push({ text: s.text, alt: !!s.alt, bold: !!s.bold, italic: !!s.italic, underline: !!s.underline, ...(s.verseNum ? { verseNum: true, super: !!s.super } : {}) });
     return acc;
   }, []);
 }
@@ -1281,6 +2574,10 @@ function bulletToText(bullet) {
 
 function spansToHtml(spans) {
   return (spans || []).map(s => {
+    if (s.verseNum) {
+      const inner = esc(s.text);
+      return s.super ? `<sup class="vnum">${inner}</sup>` : `<span class="vnum">${inner}</span>`;
+    }
     let html = esc(s.text);
     if (s.underline) html = `<u>${html}</u>`;
     if (s.italic)    html = `<em>${html}</em>`;
@@ -1289,18 +2586,28 @@ function spansToHtml(spans) {
   }).join('');
 }
 
-function plainFromSpans(spans) {
-  return (spans || []).map(s => s.text).join('');
-}
+const DIGIT_PREFIX_RE = /^(\d+)(?:\s|["'\u201c\u201d\u2018\u2019])/;
 
 // Like spansToHtml but converts \n spans → <br> for the preview canvas
 function spansToHtmlPreview(spans) {
-  return (spans || []).map(s => {
+  return (spans || []).map((s, i) => {
     if (s.text === '\n') return '<br>';
+    if (s.verseNum) {
+      const inner = esc(s.text);
+      return s.super ? `<sup class="vnum">${inner}</sup>` : `<span class="vnum">${inner}</span>`;
+    }
     let html = esc(s.text).replace(/\n/g, '<br>');
+    if (i === 0) {
+      const dm = s.text.match(DIGIT_PREFIX_RE);
+      if (dm) {
+        const rest = esc(s.text.slice(dm[1].length)).replace(/\n/g, '<br>');
+        html = `<span class="digit-warn">${esc(dm[1])}</span>${rest}`;
+      }
+    }
     if (s.underline) html = `<u>${html}</u>`;
     if (s.italic)    html = `<em>${html}</em>`;
     if (s.bold)      html = `<strong>${html}</strong>`;
+    if (s.alt)       html = `<span class="alt-fmt">${html}</span>`;
     return html;
   }).join('');
 }
@@ -1322,7 +2629,7 @@ function computeOptimalBodyWidth(spans, rs) {
   const schemeMaxW = Math.min(rs?.bodyW || canvasW, canvasW);
   const padding  = 80; // breathing room added after fitting
 
-  const hasExplicit = spans.some(s => s.text.includes('\n'));
+  const hasExplicit = spans.some(s => s.text?.includes('\n'));
 
   // Hidden measurement container — 1:1 canvas coordinate space
   const msr   = document.createElement('div');
@@ -1406,7 +2713,30 @@ function computeOptimalBodyWidth(spans, rs) {
   }
 }
 
+// ─── Macro color helpers ───────────────────────────────────────────────────────
+
+function pro7ColorToCss(c) {
+  if (!c) return null;
+  return `rgba(${Math.round((c.red||0)*255)},${Math.round((c.green||0)*255)},${Math.round((c.blue||0)*255)},${c.alpha??1})`;
+}
+
+function macroDisplayColor(m) {
+  if (m.color) return m.color;
+  if (pro7rt.liveMacros?.length) {
+    const live = pro7rt.liveMacros.find(l => (l.id?.uuid ?? l.id ?? '') === m.uuid);
+    const css = pro7ColorToCss(live?.color);
+    if (css) return css;
+  }
+  // Stable hash color from UUID so each macro is visually distinct even offline
+  let h = 0;
+  const s = m.uuid || m.id || '';
+  for (let i = 0; i < s.length; i++) h = (Math.imul(31, h) + s.charCodeAt(i)) | 0;
+  return `hsl(${(h >>> 0) % 360},65%,55%)`;
+}
+
 // ─── Sidebar ──────────────────────────────────────────────────────────────────
+
+let rcGroupExpanded = false;
 
 const ICON = {
   start:     { cls: 'si-start',     text: 'S'  },
@@ -1418,33 +2748,83 @@ const ICON = {
   custom:    { cls: 'si-custom',    text: 'C' },
 };
 
-// Macro badge: { cls, icon } — icon = 'circle' | 'circle-slash' | null (text only)
-const SLIDE_MACRO_BADGE = {
-  start:     { text: 'START', cls: 'macro-start' },
-  end:       { text: '',      cls: 'macro-logo',     icon: 'circle' },
-  blank:     { text: '',      cls: 'macro-logo',     icon: 'circle' },
-  scripture: { text: '',      cls: 'macro-nologoreplace', icon: 'circle-slash' },
-  point:     { text: '',      cls: 'macro-nologoreplace', icon: 'circle-slash' },
-  image:     { text: '',      cls: 'macro-nologoreplace', icon: 'circle-slash' },
-  custom:    { text: '',      cls: 'macro-logo',          icon: 'circle' },
-};
+// Stage display entries matching any of the given trigger keys (type + pos) — mirrors getSlideMacroBadges.
+function getSlideStageDisplays(...triggerKeys) {
+  const displays = activeStyleScheme().stageDisplays || [];
+  return displays.filter(d =>
+    (d.name || d.uuid) && triggerKeys.some(k => (d.triggers || []).includes(k))
+  );
+}
+
+// Sidebar: paintbrush dot badges for stage displays firing on these triggers.
+function stageDisplayBadgesHTML(...triggerKeys) {
+  const BRUSH = `<svg class="sd-brush-icon" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M7 1.5L8.5 3 4 7.5 2 8l.5-2L7 1.5Z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/></svg>`;
+  return getSlideStageDisplays(...triggerKeys)
+    .map(d => `<span class="si-badge si-badge-stage" title="Stage: ${esc(d.name || d.uuid)}">${BRUSH}</span>`)
+    .join('');
+}
+
+// Main panel: paintbrush + name chips for stage displays firing on these triggers.
+function stageDisplayChipsHTML(...triggerKeys) {
+  const BRUSH = `<svg class="slide-chip-icon" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M7 1.5L8.5 3 4 7.5 2 8l.5-2L7 1.5Z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/></svg>`;
+  return getSlideStageDisplays(...triggerKeys)
+    .map(d => `<span class="slide-macro-chip slide-stage-chip" title="Stage: ${esc(d.name || d.uuid)}">${BRUSH}${esc(d.name || d.uuid)}</span>`)
+    .join('');
+}
+
+// Returns `pos:N` key for a slide (1-indexed position in state.slides).
+function slidePosKey(slide) { return `pos:${state.slides.indexOf(slide) + 1}`; }
+
+// Inline text chips shown in the main panel heading — accepts multiple trigger keys (type + pos).
+function macroChipsHTML(...triggerKeys) {
+  const macros = activeStyleScheme().macros || [];
+  return macros
+    .filter(m => triggerKeys.some(k => (m.triggers || []).includes(k)))
+    .map(m => `<span class="slide-macro-chip" style="${m.color ? `border-color:${m.color}` : ''}" title="${esc(m.name)}">${esc(m.name)}</span>`)
+    .join('');
+}
+
+// All macros assigned to any of the given trigger keys (type + pos).
+function getSlideMacroBadges(...triggerKeys) {
+  const macros = activeStyleScheme().macros || [];
+  return macros
+    .filter(m => triggerKeys.some(k => (m.triggers || []).includes(k)))
+    .map(m => ({ cls: 'macro-assigned', icon: 'dot', color: macroDisplayColor(m), title: m.name }));
+}
+
+function macroBadgesHTML(badges) {
+  return (badges || []).map(macroBadgeHTML).join('');
+}
 
 function macroBadgeHTML(badge) {
   if (!badge) return '';
-  const icon = badge.icon === 'circle'
-    ? '<span class="badge-icon badge-circle"></span>'
-    : badge.icon === 'circle-slash'
-      ? '<span class="badge-icon badge-circle-slash"></span>'
-      : '';
+  const titleAttr = badge.title ? ` title="${esc(badge.title)}"` : '';
+  let icon = '';
+  if (badge.icon === 'dot')
+    icon = `<span class="badge-icon badge-macro-dot"${titleAttr}${badge.color ? ` style="background:${badge.color}"` : ''}></span>`;
+  else if (badge.icon === 'circle')       icon = '<span class="badge-icon badge-circle"></span>';
+  else if (badge.icon === 'circle-slash') icon = '<span class="badge-icon badge-circle-slash"></span>';
   return `<span class="si-badge si-badge-macro ${badge.cls}">${icon}${badge.text ? esc(badge.text) : ''}</span>`;
 }
 
-function makeSidebarItem({ id, cls, iconCls, iconText, label, fixed, draggable, onClick, onDelete, onDuplicate, macroBadge, transBadge, propTransBadge }) {
+// Paintbrush + layout name tag for per-slide stage layout overrides.
+function stageBadgeHTML(slide) {
+  const layout = slide?.stageLayout?.layoutName;
+  if (!layout) return '';
+  return `<span class="si-badge si-tag si-tag-stage" title="Stage Layout Override: ${esc(layout)}">
+    <svg class="si-tag-icon" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M9.5 2L12 4.5 5.5 11 2 12l1-3.5L9.5 2Z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/>
+      <path d="M8 3.5l2.5 2.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+    </svg>${esc(layout)}</span>`;
+}
+
+function makeSidebarItem({ id, cls, iconCls, iconText, label, fixed, draggable, onClick, onDelete, onDuplicate, macroBadges, stageBadges, transBadge, propTransBadge }) {
   const item = document.createElement('div');
   item.className = `slide-item${cls ? ' ' + cls : ''}${fixed ? ' fixed' : ''}`;
   item.dataset.id = id;
   if (draggable) item.draggable = true;
-  const badges = macroBadgeHTML(macroBadge)
+  const badges = macroBadgesHTML(macroBadges)
+               + (stageBadges || '')
                + (transBadge     ? `<span class="si-badge si-badge-trans">${esc(transBadge)}</span>`           : '')
                + (propTransBadge ? `<span class="si-badge si-badge-prop-trans">${esc(propTransBadge)}</span>` : '');
   item.innerHTML = `
@@ -1476,20 +2856,26 @@ function renderSidebar() {
   const toggleBtn = document.getElementById('btn-show-blanks');
   if (toggleBtn) toggleBtn.classList.toggle('active', state.showBlanks);
 
-  for (const slide of state.slides) {
+  for (let _si = 0; _si < state.slides.length; _si++) {
+    const slide = state.slides[_si];
     // Hide blank slides from sidebar when showBlanks is false
     if (!state.showBlanks && slide.type === 'blank') continue;
 
-    const ic            = ICON[slide.type] || { cls: '', text: '?' };
-    const macroBadge    = SLIDE_MACRO_BADGE[slide.type] || null;
+    const ic             = ICON[slide.type] || { cls: '', text: '?' };
+    const posKey         = `pos:${_si + 1}`;
+    const hasBB          = slide.blankBefore && ['scripture', 'point', 'image'].includes(slide.type);
+    // pos:N badge goes on the blank-before row (it is the Nth output cue); exclude it from the content slide
+    const macroBadges    = getSlideMacroBadges(slide.type, ...(hasBB ? [] : [posKey]));
     const transBadge     = slide.transition?.type     ? slide.transition.type.toUpperCase()     : null;
     const propTransBadge = slide.propTransition?.type ? slide.propTransition.type.toUpperCase() : null;
 
     // Blank-before indicator row (before content slides with blankBefore: true)
-    if (slide.blankBefore && ['scripture', 'point', 'image'].includes(slide.type)) {
+    if (hasBB) {
       const indicator = document.createElement('div');
       indicator.className = 'si-blank-indicator' + (!state.showBlanks ? ' hidden' : '');
-      indicator.innerHTML = `<span class="si-blank-icon"><span class="badge-circle"></span></span><span class="si-blank-label">blank</span><div class="slide-badges" style="margin-left:auto">${macroBadgeHTML(SLIDE_MACRO_BADGE['blank'])}</div>`;
+      const bbBadges = getSlideMacroBadges('blankBefore', posKey);
+      const bbStageBadges = stageDisplayBadgesHTML('blankBefore', posKey);
+      indicator.innerHTML = `<span class="si-blank-icon"><span class="badge-circle"></span></span><span class="si-blank-label">blank</span><div class="slide-badges" style="margin-left:auto">${macroBadgesHTML(bbBadges)}${bbStageBadges}</div>`;
       queue.appendChild(indicator);
     }
 
@@ -1504,7 +2890,8 @@ function renderSidebar() {
       onClick:     () => selectSlide(slide.id),
       onDelete:    slide.fixed ? null : () => deleteSlide(slide.id),
       onDuplicate: slide.fixed ? null : () => duplicateSlide(slide.id),
-      macroBadge,
+      macroBadges,
+      stageBadges: stageDisplayBadgesHTML(slide.type, ...(hasBB ? [] : [posKey])),
       transBadge,
       propTransBadge,
     });
@@ -1517,20 +2904,65 @@ function renderSidebar() {
     item.addEventListener('dragleave', onDragLeave);
     item.addEventListener('drop',      onDrop);
 
-    // Inject RC item just before END
+    // Inject RC group just before END
     if (slide.type === 'end') {
-      const rcItem = makeSidebarItem({
-        id:       'rc',
-        cls:      state.activeId === 'rc' ? 'active' : '',
-        iconCls:  'si-rc',
-        iconText: 'RC',
-        label:    'Response Card',
-        fixed:    true,
+      const RC_SUBITEMS = [
+        { id: 'rcBlank',   label: 'RC Blank',   trigger: 'rcBlank'   },
+        { id: 'rcContent', label: 'RC Content',  trigger: 'rcContent' },
+        { id: 'rcHold',    label: 'RC Hold',     trigger: 'rcHold'    },
+      ];
+      const rcIsActive = state.activeId === 'rc';
+
+      const rcGroup = document.createElement('div');
+      rcGroup.className = 'rc-group';
+
+      // Header row
+      const rcHeader = makeSidebarItem({
+        id:        'rc',
+        cls:       rcIsActive ? 'active' : '',
+        iconCls:   'si-rc',
+        iconText:  'RC',
+        label:     'Response Card',
+        fixed:     true,
         draggable: false,
-        onClick:  () => { state.activeId = 'rc'; render(); },
-        macroBadge: { text: '', cls: 'macro-blank', icon: 'circle' },
+        onClick:   () => { state.activeId = 'rc'; render(); },
+        macroBadges: [],
+        stageBadges: '',
       });
-      queue.appendChild(rcItem);
+      // Unfurl arrow button (toggle expand, stops click from opening RC panel)
+      const ARROW_SVG = `<svg viewBox="0 0 8 8" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2 3l2 2 2-2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+      const arrowBtn = document.createElement('button');
+      arrowBtn.className = `rc-unfurl-btn${rcGroupExpanded ? ' open' : ''}`;
+      arrowBtn.title = rcGroupExpanded ? 'Collapse' : 'Expand';
+      arrowBtn.innerHTML = ARROW_SVG;
+      arrowBtn.addEventListener('click', e => {
+        e.stopPropagation();
+        rcGroupExpanded = !rcGroupExpanded;
+        renderSidebar();
+      });
+      rcHeader.querySelector('.si-left')?.prepend(arrowBtn);
+      rcGroup.appendChild(rcHeader);
+
+      // Sub-items (only when expanded)
+      if (rcGroupExpanded) {
+        for (const sub of RC_SUBITEMS) {
+          const subItem = makeSidebarItem({
+            id:        sub.id,
+            cls:       'rc-subitem',
+            iconCls:   'si-rc',
+            iconText:  'RC',
+            label:     sub.label,
+            fixed:     true,
+            draggable: false,
+            onClick:   () => { state.activeId = 'rc'; render(); },
+            macroBadges: getSlideMacroBadges(sub.trigger),
+            stageBadges: stageDisplayBadgesHTML(sub.trigger),
+          });
+          rcGroup.appendChild(subItem);
+        }
+      }
+
+      queue.appendChild(rcGroup);
     }
 
     queue.appendChild(item);
@@ -1549,26 +2981,34 @@ function onDragStart(e) {
 
 function onDragEnd(e) {
   e.currentTarget.style.opacity = '';
-  document.querySelectorAll('.slide-item.drag-over')
-    .forEach(el => el.classList.remove('drag-over'));
+  document.querySelectorAll('.slide-item.drag-before, .slide-item.drag-after')
+    .forEach(el => { el.classList.remove('drag-before'); el.classList.remove('drag-after'); });
   dragId = null;
 }
 
 function onDragOver(e) {
   e.preventDefault();
   e.dataTransfer.dropEffect = 'move';
-  if (e.currentTarget.dataset.id !== dragId)
-    e.currentTarget.classList.add('drag-over');
+  const el = e.currentTarget;
+  if (el.dataset.id === dragId) return;
+  const rect = el.getBoundingClientRect();
+  const isBefore = e.clientY < rect.top + rect.height / 2;
+  el.classList.toggle('drag-before', isBefore);
+  el.classList.toggle('drag-after', !isBefore);
 }
 
 function onDragLeave(e) {
-  e.currentTarget.classList.remove('drag-over');
+  e.currentTarget.classList.remove('drag-before');
+  e.currentTarget.classList.remove('drag-after');
 }
 
 function onDrop(e) {
   e.preventDefault();
-  const targetId = e.currentTarget.dataset.id;
-  e.currentTarget.classList.remove('drag-over');
+  const el = e.currentTarget;
+  const targetId = el.dataset.id;
+  const insertBefore = el.classList.contains('drag-before');
+  el.classList.remove('drag-before');
+  el.classList.remove('drag-after');
   if (!dragId || dragId === targetId) return;
 
   const fromIdx = state.slides.findIndex(s => s.id === dragId);
@@ -1578,8 +3018,9 @@ function onDrop(e) {
   const [moved] = state.slides.splice(fromIdx, 1);
 
   let toIdx = state.slides.findIndex(s => s.id === targetId);
-  if (target.type === 'start')  toIdx = 1;
+  if (target.type === 'start') toIdx = 1;
   else if (target.type === 'end') toIdx = state.slides.length - 1;
+  else if (!insertBefore) toIdx = toIdx + 1;
   toIdx = Math.max(1, Math.min(toIdx, state.slides.length - 1));
 
   state.slides.splice(toIdx, 0, moved);
@@ -1588,19 +3029,9 @@ function onDrop(e) {
 
 // ─── Main panel ───────────────────────────────────────────────────────────────
 
-function syncStyleButton() {
-  const scheme = (state.styleSchemes || []).find(p => p.id === state.activeSchemeId)
-    || (state.styleSchemes || [])[0];
-  const lbl = document.getElementById('btn-style-label');
-  if (lbl) lbl.textContent = scheme?.name || 'Default';
-  document.getElementById('btn-style')?.classList.toggle('active', state.activeId === 'style');
-  document.getElementById('btn-settings')?.classList.toggle('active', state.activeId === 'settings');
-}
-
 function renderMain() {
   const panel = document.getElementById('main-panel');
 
-  syncStyleButton();
 
   if (state.activeId === 'settings') { renderConfigPanel(panel);      return; }
   if (state.activeId === 'style')    { renderStylePanel(panel);        return; }
@@ -1687,10 +3118,10 @@ function attachTransitionHandlers(idPrefix, get, save) {
 let _boActiveTab = 'content';
 
 const BO_ELEMENTS = {
-  content:  ['this slide', 'title', 'live', 'atem_gradient'],
-  point:    ['body', 'live', 'atem_gradient'],
-  blank:    ['this slide'],
-  startEnd: ['this slide'],
+  content:  ['body', 'title', 'live'],
+  point:    ['body', 'live'],
+  blank:    ['body'],
+  startEnd: ['body'],
 };
 
 const BO_STARTS = [
@@ -1770,9 +3201,9 @@ function renderBuildTable(tab, scheme, locked) {
           <th class="bo-th-el">Element</th>
           <th class="bo-th-dir">Dir</th>
           <th class="bo-th-start">Start</th>
-          <th class="bo-th-num">Delay</th>
+          <th class="bo-th-delay">Delay</th>
           <th class="bo-th-trans">Transition</th>
-          <th class="bo-th-num">Dur</th>
+          <th class="bo-th-dur">Dur</th>
           <th class="bo-th-del"></th>
         </tr>
       </thead>
@@ -1923,6 +3354,485 @@ function attachBuildRowHandlers(getEntries, wrap, getScheme, panel, locked) {
 
 // ─── Config / global settings panel ──────────────────────────────────────────
 
+const CUSTOM_MACRO_TRIGGERS = [
+  ['start',       'Start'],
+  ['end',         'End'],
+  ['scripture',   'Scripture'],
+  ['point',       'Point'],
+  ['blank',       'Blank'],
+  ['blankBefore', 'Blank Before'],
+  ['image',       'Image'],
+  ['rcBlank',     'RC Blank'],
+  ['rcContent',   'RC Content'],
+  ['rcHold',      'RC Hold'],
+];
+
+
+
+function showMacroPicker(onSelect, singleSelect = false) {
+  document.getElementById('macro-picker-overlay')?.remove();
+  const liveMacros = pro7rt.liveMacros || [];
+  const existing   = new Set((activeStyleScheme().macros || []).map(m => m.uuid));
+  const selected   = new Set(); // UUIDs currently ticked
+
+  const mName  = (m) => (m.id?.name?.string ?? m.id?.name ?? m.name?.string ?? m.name ?? '');
+  const mUuid  = (m) => (m.id?.uuid?.string ?? m.id?.uuid ?? '');
+  const mColor = (m) => {
+    const c = m.color;
+    if (!c) return null;
+    return `rgba(${Math.round((c.red||0)*255)},${Math.round((c.green||0)*255)},${Math.round((c.blue||0)*255)},${c.alpha??1})`;
+  };
+
+  const overlay = document.createElement('div');
+  overlay.className = 'macro-picker-overlay';
+  overlay.id = 'macro-picker-overlay';
+  overlay.innerHTML = `
+    <div class="macro-picker-modal">
+      <div class="macro-picker-header">
+        <input type="text" class="macro-picker-search" placeholder="Search macros…" autocomplete="off" spellcheck="false">
+        <button class="macro-picker-close" title="Cancel">×</button>
+      </div>
+      <div class="macro-picker-list"></div>
+      <div class="macro-picker-footer">
+        <span class="macro-picker-count">${liveMacros.length} macros from Pro7</span>
+        <div style="display:flex;gap:6px;align-items:center">
+          <button class="macro-picker-refresh">Refresh</button>
+          <button class="macro-picker-add" disabled>Add 0</button>
+        </div>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+
+  const search   = overlay.querySelector('.macro-picker-search');
+  const list     = overlay.querySelector('.macro-picker-list');
+  const closeBtn = overlay.querySelector('.macro-picker-close');
+  const refresh  = overlay.querySelector('.macro-picker-refresh');
+  const count    = overlay.querySelector('.macro-picker-count');
+  const addBtn   = overlay.querySelector('.macro-picker-add');
+
+  function updateAddBtn() {
+    addBtn.disabled = selected.size === 0;
+    addBtn.textContent = selected.size === 0 ? 'Add 0' : `Add ${selected.size}`;
+  }
+
+  function renderRows(filter = '') {
+    const f = filter.trim().toLowerCase();
+    if (!liveMacros.length) {
+      list.innerHTML = `<div class="macro-picker-empty">No macros found — make sure Pro7 is connected.</div>`;
+      return;
+    }
+    const filtered = liveMacros.filter(m => {
+      const name = mName(m).toLowerCase();
+      const uuid = mUuid(m).toLowerCase();
+      return !f || name.includes(f) || uuid.includes(f);
+    });
+    if (!filtered.length) {
+      list.innerHTML = `<div class="macro-picker-empty">No matches for "${esc(filter)}".</div>`;
+      return;
+    }
+    list.innerHTML = filtered.map(m => {
+      const name  = mName(m);
+      const uuid  = mUuid(m);
+      const color = mColor(m);
+      const isExisting = existing.has(uuid);
+      const isSel = selected.has(uuid);
+      const dot = color ? `<span class="mpi-dot" style="background:${color}"></span>` : `<span class="mpi-dot mpi-dot-default"></span>`;
+      return `<div class="macro-picker-row${isSel ? ' selected' : ''}${isExisting ? ' existing' : ''}" data-name="${esc(name)}" data-uuid="${esc(uuid)}" data-color="${esc(color||'')}">
+        <span class="mpi-check">${isSel ? '✓' : ''}</span>
+        ${dot}
+        <span class="macro-picker-row-name">${esc(name)}</span>
+        <code class="macro-picker-row-uuid">${esc(uuid)}</code>
+        ${isExisting ? '<span class="mpi-existing">added</span>' : ''}
+      </div>`;
+    }).join('');
+  }
+
+  renderRows();
+  setTimeout(() => search.focus(), 40);
+
+  search.addEventListener('input', () => renderRows(search.value));
+
+  list.addEventListener('click', e => {
+    const row = e.target.closest('.macro-picker-row');
+    if (!row || row.classList.contains('existing')) return;
+    const uuid = row.dataset.uuid;
+    if (singleSelect) {
+      // Immediately confirm selection
+      const m = liveMacros.find(m2 => mUuid(m2) === uuid);
+      overlay.remove();
+      onSelect(m ? [{ name: mName(m), uuid, color: mColor(m) }] : []);
+      return;
+    }
+    if (selected.has(uuid)) selected.delete(uuid); else selected.add(uuid);
+    row.classList.toggle('selected', selected.has(uuid));
+    row.querySelector('.mpi-check').textContent = selected.has(uuid) ? '\u2713' : '';
+    updateAddBtn();
+  });
+
+  addBtn.addEventListener('click', () => {
+    const result = [...selected].map(uuid => {
+      const m = liveMacros.find(m => mUuid(m) === uuid);
+      return m ? { name: mName(m), uuid, color: mColor(m) } : null;
+    }).filter(Boolean);
+    overlay.remove();
+    onSelect(result);
+  });
+
+  refresh.addEventListener('click', async () => {
+    refresh.textContent = 'Refreshing…';
+    refresh.disabled = true;
+    await fetchPro7Macros(true);
+    liveMacros.length = 0;
+    liveMacros.push(...(pro7rt.liveMacros || []));
+    count.textContent = `${liveMacros.length} macros from Pro7`;
+    refresh.textContent = 'Refresh';
+    refresh.disabled = false;
+    renderRows(search.value);
+  });
+
+  closeBtn.addEventListener('click', () => overlay.remove());
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+}
+
+// attachMacrosPanelHandlers removed — macros are now per-scheme, managed in Schemes → Macros tab
+
+function attachSchemesMacrosTab(containerId) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+
+  const getScheme = () => state.styleSchemes.find(s => s.id === state.activeSchemeId) || state.styleSchemes[0];
+
+  function rerender() {
+    const macros = getScheme()?.macros || [];
+    el.querySelector('.smac-list').innerHTML = macros.length ? macros.map((m, idx) => `
+      <div class="smac-row custom-macro-row">
+        <div class="custom-macro-fields">
+          <span class="cm-dot" style="background:${macroDisplayColor(m)}"></span>
+          <span class="cm-name-ro">${esc(m.name)}</span>
+          <code class="cm-uuid-ro">${esc(m.uuid || '')}</code>
+          <button class="btn-custom-del smac-del" data-idx="${idx}" title="Remove">×</button>
+        </div>
+        <div class="smac-chips">
+          ${CUSTOM_MACRO_TRIGGERS.map(([key, label]) =>
+            `<button class="cm-chip${(m.triggers || []).includes(key) ? ' active' : ''}" data-idx="${idx}" data-trigger="${key}">${label}</button>`
+          ).join('')}
+        </div>
+        <div class="smac-pos-row">
+          <span class="smac-pos-label">Slide #</span>
+          ${(m.triggers || []).filter(t => /^pos:\d+$/.test(t)).map(t =>
+            `<span class="smac-pos-chip" data-idx="${idx}" data-pos="${t}">#${t.slice(4)}<button class="smac-pos-rm" data-idx="${idx}" data-pos="${t}">×</button></span>`
+          ).join('')}
+          <input type="number" class="smac-pos-input" min="1" max="999" placeholder="add #" data-idx="${idx}">
+        </div>
+      </div>`).join('')
+    : `<p class="cm-empty">No macros for this scheme — click + Add Macro to import from Pro7.</p>`;
+  }
+
+  el.innerHTML = `
+    <div style="display:flex;justify-content:flex-end;margin-bottom:8px">
+      <button class="btn-sm" id="smac-add-btn">+ Add Macro</button>
+    </div>
+    <div class="smac-list"></div>
+  `;
+  rerender();
+
+  el.querySelector('#smac-add-btn').addEventListener('click', () => {
+    showMacroPicker((selected) => {
+      const scheme = getScheme();
+      if (!scheme) return;
+      if (!scheme.macros) scheme.macros = [];
+      for (const { name, uuid, color } of selected) {
+        if (!scheme.macros.some(m => m.uuid === uuid))
+          scheme.macros.push({ id: uid(), name, uuid, color, triggers: [] });
+      }
+      saveState();
+      rerender();
+    });
+  });
+
+  el.addEventListener('click', e => {
+    if (e.target.classList.contains('smac-del')) {
+      const idx = parseInt(e.target.dataset.idx, 10);
+      const scheme = getScheme();
+      if (!isNaN(idx) && scheme?.macros) { scheme.macros.splice(idx, 1); saveState(); rerender(); }
+    }
+    if (e.target.classList.contains('cm-chip')) {
+      const idx     = parseInt(e.target.dataset.idx, 10);
+      const trigger = e.target.dataset.trigger;
+      const scheme  = getScheme();
+      if (isNaN(idx) || !scheme?.macros?.[idx]) return;
+      const mTriggers = scheme.macros[idx].triggers || [];
+      const ti = mTriggers.indexOf(trigger);
+      if (ti === -1) mTriggers.push(trigger); else mTriggers.splice(ti, 1);
+      scheme.macros[idx].triggers = mTriggers;
+      saveState();
+      e.target.classList.toggle('active', mTriggers.includes(trigger));
+    }
+    if (e.target.classList.contains('smac-pos-rm')) {
+      const idx    = parseInt(e.target.dataset.idx, 10);
+      const posKey = e.target.dataset.pos;
+      const scheme = getScheme();
+      if (isNaN(idx) || !scheme?.macros?.[idx]) return;
+      const t = scheme.macros[idx].triggers || [];
+      scheme.macros[idx].triggers = t.filter(x => x !== posKey);
+      saveState(); rerender();
+    }
+  });
+
+  el.addEventListener('keydown', e => {
+    if (!e.target.classList.contains('smac-pos-input')) return;
+    if (e.key !== 'Enter') return;
+    const idx = parseInt(e.target.dataset.idx, 10);
+    const n   = parseInt(e.target.value, 10);
+    if (isNaN(idx) || isNaN(n) || n < 1) return;
+    const posKey = `pos:${n}`;
+    const scheme = getScheme();
+    if (!scheme?.macros?.[idx]) return;
+    const t = scheme.macros[idx].triggers || [];
+    if (!t.includes(posKey)) { t.push(posKey); scheme.macros[idx].triggers = t; saveState(); }
+    e.target.value = '';
+    rerender();
+  });
+}
+
+function attachSchemesStageTab(containerId) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+
+  const getScheme = () => state.styleSchemes.find(s => s.id === state.activeSchemeId) || state.styleSchemes[0];
+
+  const BRUSH_ICON = `<svg style="width:10px;height:10px;vertical-align:middle;margin-right:3px" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M7 1.5L8.5 3 4 7.5 2 8l.5-2L7 1.5Z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/></svg>`;
+
+  function rerender() {
+    const scheme = getScheme();
+    const entries = scheme?.stageDisplays || [];
+
+    el.querySelector('.sstage-list').innerHTML = entries.length ? entries.map((d, idx) => `
+      <div class="smac-row custom-macro-row">
+        <div class="custom-macro-fields">
+          <span class="cm-dot" style="background:var(--orange);opacity:.7">${BRUSH_ICON}</span>
+          <span class="cm-name-ro">${esc(d.name) || '<span style="color:var(--muted);font-style:italic;font-weight:400">no layout picked</span>'}</span>
+          <code class="cm-uuid-ro">${esc(d.uuid || '')}</code>
+          <button class="btn-sm sstage-pick" data-idx="${idx}">Pick</button>
+          <button class="btn-custom-del sstage-del" data-idx="${idx}" title="Remove">×</button>
+        </div>
+        <div class="smac-chips">
+          ${CUSTOM_MACRO_TRIGGERS.map(([key, label]) =>
+            `<button class="cm-chip${(d.triggers || []).includes(key) ? ' active' : ''}" data-idx="${idx}" data-trigger="${key}">${label}</button>`
+          ).join('')}
+        </div>
+        <div class="smac-pos-row">
+          <span class="smac-pos-label">Slide #</span>
+          ${(d.triggers || []).filter(t => /^pos:\d+$/.test(t)).map(t =>
+            `<span class="smac-pos-chip" data-idx="${idx}" data-pos="${t}">#${t.slice(4)}<button class="smac-pos-rm sstage-pos-rm" data-idx="${idx}" data-pos="${t}">×</button></span>`
+          ).join('')}
+          <input type="number" class="smac-pos-input sstage-pos-input" min="1" max="999" placeholder="add #" data-idx="${idx}">
+        </div>
+      </div>`).join('')
+    : `<p class="cm-empty">No stage displays — click + Add Stage Display to pick a layout from Pro7.</p>`;
+  }
+
+  el.innerHTML = `
+    <div style="display:flex;justify-content:flex-end;margin-bottom:8px">
+      <button class="btn-sm" id="sstage-add-btn">+ Add Stage Display</button>
+    </div>
+    <div class="sstage-list smac-list"></div>
+  `;
+  rerender();
+
+  // Add Stage Display button → multi-select picker
+  el.querySelector('#sstage-add-btn').addEventListener('click', () => {
+    showStageLayoutPicker(null, el.querySelector('#sstage-add-btn'), (results) => {
+      const scheme = getScheme();
+      if (!scheme || !results.length) return;
+      if (!scheme.stageDisplays) scheme.stageDisplays = [];
+      for (const { name, uuid } of results)
+        scheme.stageDisplays.push({ id: uid(), name, uuid, triggers: [] });
+      saveState(); rerender();
+    }, false);
+  });
+
+  // Trigger chip toggle
+  el.addEventListener('click', e => {
+    if (e.target.classList.contains('cm-chip') && e.target.closest('.sstage-list')) {
+      const idx     = parseInt(e.target.dataset.idx, 10);
+      const trigger = e.target.dataset.trigger;
+      const scheme  = getScheme();
+      if (isNaN(idx) || !scheme?.stageDisplays?.[idx]) return;
+      const t  = scheme.stageDisplays[idx].triggers || [];
+      const ti = t.indexOf(trigger);
+      if (ti === -1) t.push(trigger); else t.splice(ti, 1);
+      scheme.stageDisplays[idx].triggers = t;
+      saveState();
+      e.target.classList.toggle('active', t.includes(trigger));
+    }
+    if (e.target.classList.contains('sstage-del')) {
+      const idx = parseInt(e.target.dataset.idx, 10);
+      const scheme = getScheme();
+      if (!isNaN(idx) && scheme?.stageDisplays) { scheme.stageDisplays.splice(idx, 1); saveState(); rerender(); }
+    }
+    if (e.target.classList.contains('sstage-pick')) {
+      const idx = parseInt(e.target.dataset.idx, 10);
+      showStageLayoutPicker(null, e.target, (name, uuid) => {
+        const scheme = getScheme();
+        if (!isNaN(idx) && scheme?.stageDisplays?.[idx]) {
+          scheme.stageDisplays[idx].name = name;
+          scheme.stageDisplays[idx].uuid = uuid;
+          saveState(); rerender();
+        }
+      });
+    }
+    if (e.target.classList.contains('sstage-pos-rm')) {
+      const idx    = parseInt(e.target.dataset.idx, 10);
+      const posKey = e.target.dataset.pos;
+      const scheme = getScheme();
+      if (isNaN(idx) || !scheme?.stageDisplays?.[idx]) return;
+      scheme.stageDisplays[idx].triggers = (scheme.stageDisplays[idx].triggers || []).filter(x => x !== posKey);
+      saveState(); rerender();
+    }
+  });
+
+  // Slide # input → Enter to add pos trigger
+  el.addEventListener('keydown', e => {
+    if (!e.target.classList.contains('sstage-pos-input')) return;
+    if (e.key !== 'Enter') return;
+    const idx = parseInt(e.target.dataset.idx, 10);
+    const n   = parseInt(e.target.value, 10);
+    if (isNaN(idx) || isNaN(n) || n < 1) return;
+    const posKey = `pos:${n}`;
+    const scheme = getScheme();
+    if (!scheme?.stageDisplays?.[idx]) return;
+    const t = scheme.stageDisplays[idx].triggers || [];
+    if (!t.includes(posKey)) { t.push(posKey); scheme.stageDisplays[idx].triggers = t; saveState(); }
+    e.target.value = '';
+    rerender();
+  });
+}
+
+// Response Card element editor (display-2 / LED wall prop). Lists the base
+// elements (title, decision, R1–R3) plus custom ones, each fully editable:
+// name (= Pro7 object name), text, position (X/Y/W/H) and style (font/size/
+// color/align). Decision/R1–R3 text is filled from the Response Card deck item.
+function attachSchemesResponseCardTab(containerId) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  const getScheme = () => state.styleSchemes.find(s => s.id === state.activeSchemeId) || state.styleSchemes[0];
+  const FROM_DECK = ['decision', 'r1', 'r2', 'r3'];
+  const ROLE_LABEL = { title: 'Title', decision: 'Decision', r1: 'Response 1', r2: 'Response 2', r3: 'Response 3', custom: 'Custom' };
+  const families = (typeof _fontFamilyMap === 'object' && _fontFamilyMap) ? Object.keys(_fontFamilyMap).sort((a, b) => a.localeCompare(b)) : [];
+
+  function ensure() {
+    const s = getScheme();
+    if (s && !Array.isArray(s.rcElements)) s.rcElements = DEFAULT_RC_ELEMENTS();
+    return s;
+  }
+
+  function card(elObj, idx) {
+    const fromDeck = FROM_DECK.includes(elObj.role);
+    const isCustom = elObj.role === 'custom';
+    const curFam = parseFontPS(elObj.font || '').family;
+    const famOpts = `<option value=""${!elObj.font ? ' selected' : ''}>(inherit)</option>` +
+      families.map(f => `<option value="${esc(f)}"${f === curFam ? ' selected' : ''}>${esc(f)}</option>`).join('');
+    const styles = (_fontFamilyMap && _fontFamilyMap[curFam]) || [];
+    const styOpts = elObj.font
+      ? styles.map(({ style, postscript }) => `<option value="${esc(postscript)}"${postscript === elObj.font ? ' selected' : ''}>${esc(style)}</option>`).join('')
+      : '<option value="">—</option>';
+    const num = (fld, val) => `<input type="number" class="rc-inp sz-input" data-idx="${idx}" data-fld="${fld}" value="${val ?? 0}" step="1">`;
+    return `
+      <div class="tcard rc-el-card" data-idx="${idx}">
+        <div class="rc-el-hd" style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+          <span class="rc-el-role" style="font-size:11px;color:var(--muted);min-width:74px">${esc(ROLE_LABEL[elObj.role] || 'Element')}</span>
+          <input type="text" class="rc-inp" data-idx="${idx}" data-fld="name" value="${esc(elObj.name || '')}" placeholder="Element name" style="flex:1">
+          ${isCustom ? `<button class="btn-custom-del rc-el-del" data-idx="${idx}" title="Remove">×</button>` : ''}
+        </div>
+        <div class="rc-el-text" style="margin-bottom:6px">
+          ${fromDeck
+            ? `<input type="text" class="rc-inp" value="" placeholder="Text comes from the Response Card item" disabled style="width:100%;opacity:.6">`
+            : `<input type="text" class="rc-inp" data-idx="${idx}" data-fld="text" value="${esc(elObj.text || '')}" placeholder="Text" style="width:100%">`}
+        </div>
+        <div class="rc-el-style" style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:6px">
+          <select class="rc-sel" data-idx="${idx}" data-fld="fontFamily">${famOpts}</select>
+          <select class="rc-sel" data-idx="${idx}" data-fld="fontWeight" ${elObj.font ? '' : 'disabled'}>${styOpts}</select>
+          <input type="number" class="rc-inp sz-input" data-idx="${idx}" data-fld="size" value="${elObj.size || ''}" placeholder="auto" step="1" style="width:64px">
+          <input type="text" class="rc-inp color-hex" data-idx="${idx}" data-fld="color" value="${(elObj.color || '').replace(/^#/, '')}" placeholder="color" maxlength="6" style="width:74px">
+          <span class="segmented-control rc-align" data-idx="${idx}">
+            ${['left', 'center', 'right'].map(a => `<button data-idx="${idx}" data-align="${a}" class="${(elObj.align || 'center') === a ? 'active' : ''}">${a[0].toUpperCase()}</button>`).join('')}
+          </span>
+        </div>
+        <div class="rc-el-pos" style="display:flex;gap:6px;align-items:center">
+          <span style="font-size:11px;color:var(--muted)">X</span>${num('x', elObj.x)}
+          <span style="font-size:11px;color:var(--muted)">Y</span>${num('y', elObj.y)}
+          <span style="font-size:11px;color:var(--muted)">W</span>${num('w', elObj.w)}
+          <span style="font-size:11px;color:var(--muted)">H</span>${num('h', elObj.h)}
+        </div>
+      </div>`;
+  }
+
+  function rerender() {
+    const s = ensure();
+    const els = s?.rcElements || [];
+    el.querySelector('.rc-list').innerHTML = els.map((e, i) => card(e, i)).join('');
+  }
+
+  el.innerHTML = `
+    <p style="color:var(--muted);font-size:12px;margin:0 0 10px">
+      Elements on the LED wall (display 2) response card. Decision and Response 1–3 text come from the Response Card item in your deck; everything else is set here. Empty font/size/colour inherit your scheme's prop fonts.
+    </p>
+    <div class="rc-list"></div>
+    <div style="display:flex;justify-content:flex-end;margin-top:8px">
+      <button class="btn-sm" id="rc-add-btn">+ Add Element</button>
+    </div>
+  `;
+  rerender();
+
+  // Text/name/number/colour inputs — update in place (no re-render, keep focus)
+  el.addEventListener('input', e => {
+    const t = e.target;
+    if (!t.classList.contains('rc-inp')) return;
+    const idx = parseInt(t.dataset.idx, 10); const fld = t.dataset.fld;
+    const s = getScheme(); if (isNaN(idx) || !s?.rcElements?.[idx] || !fld) return;
+    if (['x', 'y', 'w', 'h', 'size'].includes(fld)) s.rcElements[idx][fld] = parseInt(t.value, 10) || 0;
+    else if (fld === 'color') s.rcElements[idx].color = t.value.trim() ? '#' + t.value.replace(/^#/, '') : '';
+    else s.rcElements[idx][fld] = t.value;
+    saveState();
+  });
+
+  // Font family/weight selects + align/add/remove — re-render
+  el.addEventListener('change', e => {
+    const t = e.target;
+    if (!t.classList.contains('rc-sel')) return;
+    const idx = parseInt(t.dataset.idx, 10); const s = getScheme();
+    if (isNaN(idx) || !s?.rcElements?.[idx]) return;
+    if (t.dataset.fld === 'fontFamily') {
+      const fam = t.value;
+      s.rcElements[idx].font = fam ? ((_fontFamilyMap?.[fam]?.[0]?.postscript) || fam) : '';
+    } else if (t.dataset.fld === 'fontWeight') {
+      s.rcElements[idx].font = t.value;
+    }
+    saveState(); rerender();
+  });
+
+  el.addEventListener('click', e => {
+    const align = e.target.closest('.rc-align button');
+    if (align) {
+      const idx = parseInt(align.dataset.idx, 10); const s = getScheme();
+      if (!isNaN(idx) && s?.rcElements?.[idx]) { s.rcElements[idx].align = align.dataset.align; saveState(); rerender(); }
+      return;
+    }
+    if (e.target.classList.contains('rc-el-del')) {
+      const idx = parseInt(e.target.dataset.idx, 10); const s = getScheme();
+      if (!isNaN(idx) && s?.rcElements) { s.rcElements.splice(idx, 1); saveState(); rerender(); }
+      return;
+    }
+    if (e.target.id === 'rc-add-btn') {
+      const s = ensure(); if (!s) return;
+      s.rcElements.push({ id: uid(), role: 'custom', name: `Custom ${s.rcElements.filter(x => x.role === 'custom').length + 1}`, text: '', x: 400, y: 1080, w: 2600, h: 150, font: '', size: 0, color: '', align: 'center' });
+      saveState(); rerender();
+    }
+  });
+}
+
 function renderConfigPanel(panel) {
   const cfg = state.config;
 
@@ -1931,14 +3841,6 @@ function renderConfigPanel(panel) {
       <h2>
         Preferences
       </h2>
-
-      <div class="settings-section">
-        <h3>Output</h3>
-        <div class="settings-row">
-          <label>Export mode</label>
-          <span style="font-size:13px;color:var(--muted)">Export to Pro7 (writes directly to ProPresenter library)</span>
-        </div>
-      </div>
 
       <div class="settings-section">
         <h3>Deck Library</h3>
@@ -1952,6 +3854,57 @@ function renderConfigPanel(panel) {
         </div>
         <div style="font-size:11.5px;color:var(--muted);margin-top:6px;line-height:1.5">
           Decks live in a local database with daily backups. Point the location at an iCloud Drive, Dropbox, or shared folder to use the same library on multiple computers — DeckPro joins an existing library if it finds one there.
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <h3>Display Names</h3>
+        <p style="color:var(--muted);font-size:12px;margin:0 0 10px">
+          Rename outputs to match your setup — these labels appear throughout the app.
+        </p>
+        <div class="settings-row" style="margin-bottom:8px;align-items:center">
+          <label style="min-width:100px;font-size:13px;color:var(--muted)">Display 1</label>
+          <input type="text" id="cfg-dn-mainScreen" value="${esc((cfg.displayNames || {}).mainScreen || 'Main Screen')}" placeholder="Main Screen" style="flex:1">
+        </div>
+        <div class="settings-row" style="margin-bottom:8px;align-items:center">
+          <label style="min-width:100px;font-size:13px;color:var(--muted)">Display 2</label>
+          <input type="text" id="cfg-dn-ledWall" value="${esc((cfg.displayNames || {}).ledWall || 'LED Wall')}" placeholder="LED Wall" style="flex:1">
+        </div>
+        <div class="settings-row" style="align-items:center">
+          <label style="min-width:100px;font-size:13px;color:var(--muted)">Display 3</label>
+          <input type="text" id="cfg-dn-monitor" value="${esc((cfg.displayNames || {}).monitor || 'Confidence Monitor')}" placeholder="Confidence Monitor" style="flex:1">
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <h3>Speakers</h3>
+        <p style="color:var(--muted);font-size:12px;margin:0 0 10px">
+          Recurring speakers offered in the New Deck dropdown. New names can be added there too.
+        </p>
+        <div id="speakers-chips" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">
+          ${(cfg.speakers || []).length
+            ? (cfg.speakers || []).map(s => `
+                <span class="speaker-chip" style="display:inline-flex;align-items:center;gap:6px;background:var(--panel-2,#2a2a2a);border:1px solid var(--border,#444);border-radius:14px;padding:3px 6px 3px 10px;font-size:12.5px">
+                  ${esc(s)}
+                  <button class="speaker-chip-x" data-speaker="${esc(s)}" title="Remove" style="border:none;background:none;color:var(--muted);cursor:pointer;font-size:14px;line-height:1;padding:0 2px">×</button>
+                </span>`).join('')
+            : '<span style="color:var(--muted);font-size:12px">No permanent speakers yet.</span>'}
+        </div>
+        <div class="settings-row" style="align-items:center">
+          <input type="text" id="cfg-speaker-add" placeholder="Add a speaker…" style="flex:1" spellcheck="true">
+          <button class="btn-browse" id="btn-speaker-add">Add</button>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <h3 data-tip-key="queue">Queue</h3>
+        <div class="field" style="margin-bottom:0">
+          <label data-tip-key="queue-format">Upcoming-slide format</label>
+          <select id="cfg-queue-mode" style="flex:1">
+            <option value="ref"${(cfg.queueMode || 'ref') === 'ref' ? ' selected' : ''}>Reference only — e.g. "Ephesians 5:18"</option>
+            <option value="refPhrase"${cfg.queueMode === 'refPhrase' ? ' selected' : ''}>Reference + first phrase</option>
+            <option value="list"${cfg.queueMode === 'list' ? ' selected' : ''}>Full label (list)</option>
+          </select>
         </div>
       </div>
 
@@ -1973,9 +3926,32 @@ function renderConfigPanel(panel) {
             ? `Connected${pro7rt.version ? ' — ' + esc(pro7rt.version) : ''}`
             : 'Not connected — check Pro7 is running and Network API is enabled in preferences'}
         </div>
-        ${pro7rt.connected && pro7rt.liveMacros ? `<div id="macro-live-panel"></div>` : ''}
-        <div class="rc-toggle-row" id="automanage-row" style="margin-top:12px">
-          <div class="toggle ${cfg.autoManagePro7 !== false ? 'on' : ''}" id="automanage-toggle"></div>
+        <div class="settings-row" style="margin-top:12px;align-items:center">
+          <label style="min-width:110px">Pro7 Folder</label>
+          <div class="folder-row" style="flex:1">
+            <input type="text" id="cfg-pro7-root" value="${esc(cfg.pro7RootFolder || '')}" readonly placeholder="Auto-detect" style="flex:1;min-width:0">
+            <button class="btn-browse" id="btn-pro7-root-browse">Browse…</button>
+            ${cfg.pro7RootFolder ? `<button class="btn-browse" id="btn-pro7-root-clear">Clear</button>` : ''}
+          </div>
+        </div>
+        <div style="font-size:11.5px;color:var(--muted);margin-top:4px;line-height:1.5;margin-bottom:10px">
+          Pick the folder that contains <strong>Configuration</strong> and <strong>Libraries</strong> — often <code>Documents/ProPresenter</code>.
+        </div>
+        <div class="settings-row" style="margin-top:8px;align-items:center">
+          <label style="min-width:110px">Export Library</label>
+          <div class="folder-row" style="flex:1">
+            <select id="cfg-pro7-library" style="flex:1;min-width:0">
+              <option value="">${cfg.pro7RootFolder ? 'Loading libraries...' : 'Choose Pro7 Folder first'}</option>
+            </select>
+            <button class="btn-browse" id="btn-pro7-library-browse">Browse…</button>
+            ${cfg.pro7LibraryFolder ? `<button class="btn-browse" id="btn-pro7-library-clear">Clear</button>` : ''}
+          </div>
+        </div>
+        <div style="font-size:11.5px;color:var(--muted);margin-top:4px;line-height:1.5;margin-bottom:10px">
+          Choose where DeckPro saves new .pro files. Auto-select follows Pro7's active library.
+        </div>
+        <div class="rc-toggle-row" id="automanage-row">
+          <div class="toggle ${cfg.autoManagePro7 === true ? 'on' : ''}" id="automanage-toggle"></div>
           <span>Auto-manage ProPresenter on export</span>
         </div>
         <div style="font-size:11.5px;color:var(--muted);margin-top:6px;line-height:1.5">
@@ -1983,76 +3959,44 @@ function renderConfigPanel(panel) {
         </div>
       </div>
 
-      <div class="settings-section">
-        <h3>Macro UUIDs <span style="font-size:11px;font-weight:500;color:var(--muted)">${pro7rt.connected ? '· Pro7 connected' : '· connect above to copy from Pro7'}</span></h3>
-        <div class="macro-uuid-table">
-          ${[
-            ['Start',   'START'],
-            ['Content', 'CONTENT'],
-            ['Blank',   'BLANK'],
-            ['Logo',    'LOGO'],
-            ['No Logo', 'NO_LOGO'],
-          ].map(([label, key]) => `
-            <span class="macro-uuid-label">${label}</span>
-            <input type="text" class="macro-uuid-input macro-uuid-field" data-key="${key}"
-              value="${esc((cfg.macros || {})[key] || DEFAULT_MACROS()[key])}"
-              placeholder="${esc(DEFAULT_MACROS()[key])}" spellcheck="false">
-          `).join('')}
+      <details class="settings-disclosure">
+        <summary class="settings-disclosure-summary" data-tip-key="feature-visibility">Feature Visibility</summary>
+        <div class="settings-disclosure-body">
+          <p style="color:var(--muted);font-size:12px;margin:0 0 12px">
+            Hide advanced fields for simpler handoffs to other users. Hiding a field doesn't change what's exported.
+          </p>
+          ${(() => {
+            const F = cfg.features || DEFAULT_FEATURES();
+            const sections = [
+              ['Slide fields', [
+                ['blankBefore',          'Blank slide before toggle'],
+                ['confidenceMonitor',    `${dn('monitor')} text fields`],
+                ['propName',             'Prop name fields'],
+              ]],
+              ['Overrides', [
+                ['overrides',            'Overrides section (per slide)'],
+                ['transitionOverride',   'Main transition override'],
+                ['propTransitionOverride','Prop transition override'],
+              ]],
+              ['Scripture tools', [
+                ['bodyTools',            'Fit Width / Strip buttons'],
+                ['verseFormatting',      'Verses (Bible formatting) button'],
+              ]],
+            ];
+            return sections.map(([title, rows]) => `
+              <div class="feature-vis-group">
+                <div class="feature-vis-title">${esc(title)}</div>
+                ${rows.map(([key, lbl]) => `
+                  <div class="feature-toggle-row" data-feature="${key}">
+                    <div class="toggle ${F[key] ? 'on' : ''}" id="ft-${key}"></div>
+                    <label>${esc(lbl)}</label>
+                  </div>
+                `).join('')}
+              </div>
+            `).join('');
+          })()}
         </div>
-        <button class="btn-sm" id="btn-macros-reset" style="margin-top:6px">Reset to defaults</button>
-      </div>
-
-      <div class="settings-section">
-        <h3>Stage Display</h3>
-        <p style="color:var(--muted);font-size:12px;margin:0 0 10px">
-          Screen name + UUID and layout names for stage layout actions. Copy UUIDs from Pro7 → Stage → right-click.
-        </p>
-        <div class="macro-uuid-table" style="grid-template-columns:110px 1fr">
-          <span class="macro-uuid-label">Screen name</span>
-          <input type="text" class="stage-field" data-key="screenName"
-            value="${esc((cfg.stageScreen || DEFAULT_STAGESCREEN()).screenName)}" spellcheck="false">
-          <span class="macro-uuid-label">Screen UUID</span>
-          <input type="text" class="stage-field" data-key="screenUuid"
-            value="${esc((cfg.stageScreen || DEFAULT_STAGESCREEN()).screenUuid)}" spellcheck="false">
-          <span class="macro-uuid-label">RC layout</span>
-          <input type="text" class="stage-field" data-key="rcLayoutName"
-            value="${esc((cfg.stageScreen || DEFAULT_STAGESCREEN()).rcLayoutName)}"
-            placeholder="RESPONSE CARD" spellcheck="false">
-          <span class="macro-uuid-label">RC layout UUID</span>
-          <input type="text" class="stage-field" data-key="rcLayoutUuid"
-            value="${esc((cfg.stageScreen || DEFAULT_STAGESCREEN()).rcLayoutUuid)}" spellcheck="false">
-          <span class="macro-uuid-label">Msg layout</span>
-          <input type="text" class="stage-field" data-key="messageLayoutName"
-            value="${esc((cfg.stageScreen || DEFAULT_STAGESCREEN()).messageLayoutName)}"
-            placeholder="26SPRING_stagedisplay_message" spellcheck="false">
-          <span class="macro-uuid-label">Msg layout UUID</span>
-          <input type="text" class="stage-field" data-key="messageLayoutUuid"
-            value="${esc((cfg.stageScreen || DEFAULT_STAGESCREEN()).messageLayoutUuid)}" spellcheck="false">
-        </div>
-        <button class="btn-sm" id="btn-stage-reset" style="margin-top:6px">Reset to defaults</button>
-      </div>
-
-      <div class="settings-section">
-        <h3>Feature Visibility</h3>
-        <p style="color:var(--muted);font-size:12px;margin:0 0 12px">
-          Hide advanced fields for simpler handoffs to other users.
-        </p>
-        ${[
-          ['blankBefore',          'Blank slide before toggle'],
-          ['confidenceMonitor',    'Confidence monitor text fields'],
-          ['propName',             'Prop name fields'],
-          ['transitionOverride',   'Main transition override'],
-          ['propTransitionOverride','Prop transition override'],
-        ].map(([key, lbl]) => {
-          const on = (cfg.features || DEFAULT_FEATURES())[key];
-          return `
-            <div class="feature-toggle-row" data-feature="${key}">
-              <div class="toggle ${on ? 'on' : ''}" id="ft-${key}"></div>
-              <label>${esc(lbl)}</label>
-            </div>
-          `;
-        }).join('')}
-      </div>
+      </details>
 
       <div class="settings-section">
         <h3>Bible Lookup (API.Bible)</h3>
@@ -2086,7 +4030,7 @@ function renderConfigPanel(panel) {
       <div class="settings-section">
         <h3>Book Names</h3>
         <p style="color:var(--muted);font-size:12px;margin:0 0 10px">
-          Choose how ambiguous book names appear in the reference bar. Applied at export — changing the setting retroactively updates all slides.
+          Choose how ambiguous book names appear in the title. Applied at export — changing the setting retroactively updates all slides.
         </p>
         ${BOOK_NAME_OPTIONS.map(({ key, label, choices }) => {
           const cur = (cfg.bookNames || {})[key] || '';
@@ -2127,7 +4071,9 @@ function renderConfigPanel(panel) {
       } else {
         toast('error', 'Could not change library location', r.error || '');
       }
-    } catch (_) {}
+    } catch (e) {
+      toast('error', 'Could not change library location', e.message || 'Unexpected error');
+    }
   });
   document.getElementById('btn-library-reset')?.addEventListener('click', async () => {
     const r = await libApi('/api/library/location', { method: 'POST', body: { reset: true } });
@@ -2141,9 +4087,60 @@ function renderConfigPanel(panel) {
     }
   });
 
+  // Pro7 root folder
+  document.getElementById('btn-pro7-root-browse')?.addEventListener('click', async () => {
+    try {
+      const res = await fetch('/api/browse-folder');
+      const data = await res.json();
+      if (!data.ok || !data.folder) return;
+      cfg.pro7RootFolder = normalizePro7RootFolder(data.folder);
+      if (!libraryBelongsToRoot(cfg.pro7LibraryFolder, cfg.pro7RootFolder)) cfg.pro7LibraryFolder = '';
+      saveState();
+      const inp = document.getElementById('cfg-pro7-root');
+      if (inp) inp.value = cfg.pro7RootFolder;
+      renderConfigPanel(document.getElementById('main-panel'));
+    } catch (e) {
+      toast('error', 'Could not select folder', e.message || '');
+    }
+  });
+  document.getElementById('btn-pro7-root-clear')?.addEventListener('click', () => {
+    cfg.pro7RootFolder = '';
+    cfg.pro7LibraryFolder = '';
+    saveState();
+    renderConfigPanel(document.getElementById('main-panel'));
+  });
+
+  // Pro7 export library
+  loadPro7LibrarySelect(document.getElementById('cfg-pro7-library'), cfg, cfg.pro7RootFolder);
+  document.getElementById('cfg-pro7-library')?.addEventListener('change', e => {
+    cfg.pro7LibraryFolder = e.target.value;
+    saveState();
+  });
+  document.getElementById('btn-pro7-library-browse')?.addEventListener('click', async () => {
+    try {
+      const res = await fetch('/api/browse-folder');
+      const data = await res.json();
+      if (!data.ok || !data.folder) return;
+      cfg.pro7LibraryFolder = data.folder;
+      saveState();
+      renderConfigPanel(document.getElementById('main-panel'));
+    } catch (e) {
+      toast('error', 'Could not select folder', e.message || '');
+    }
+  });
+  document.getElementById('btn-pro7-library-clear')?.addEventListener('click', () => {
+    cfg.pro7LibraryFolder = '';
+    saveState();
+    renderConfigPanel(document.getElementById('main-panel'));
+  });
+
   // Pro7 port + password
   document.getElementById('cfg-pro7port').addEventListener('change', e => {
     cfg.pro7Port = parseInt(e.target.value, 10) || 1025;
+    saveState();
+  });
+  document.getElementById('cfg-queue-mode')?.addEventListener('change', e => {
+    cfg.queueMode = e.target.value;
     saveState();
   });
   document.getElementById('cfg-pro7password').addEventListener('input', e => {
@@ -2153,7 +4150,7 @@ function renderConfigPanel(panel) {
 
   // Auto-manage ProPresenter on export
   document.getElementById('automanage-row')?.addEventListener('click', () => {
-    cfg.autoManagePro7 = !(cfg.autoManagePro7 !== false); // default-true semantics
+    cfg.autoManagePro7 = cfg.autoManagePro7 !== true;
     document.getElementById('automanage-toggle').classList.toggle('on', cfg.autoManagePro7);
     saveState();
   });
@@ -2164,10 +4161,7 @@ function renderConfigPanel(panel) {
     btn.disabled = true; btn.textContent = '…';
     await checkPro7(false);
     btn.disabled = false; btn.textContent = 'Check';
-    if (pro7rt.connected && pro7rt.liveMacros) renderMacroPicker();
   });
-
-  if (pro7rt.connected && pro7rt.liveMacros) setTimeout(() => renderMacroPicker(), 50);
 
   // Feature visibility toggles
   document.querySelectorAll('.feature-toggle-row').forEach(row => {
@@ -2180,36 +4174,43 @@ function renderConfigPanel(panel) {
     });
   });
 
-  // Macro UUID inputs
-  document.querySelectorAll('.macro-uuid-input').forEach(inp => {
-    inp.addEventListener('input', e => {
-      if (!cfg.macros) cfg.macros = DEFAULT_MACROS();
-      cfg.macros[e.target.dataset.key] = e.target.value.trim();
+  // Custom macros
+  // macros moved to Schemes → Macros tab (per-scheme)
+
+  // Display names
+  ['mainScreen', 'ledWall', 'monitor'].forEach(key => {
+    const defaults = { mainScreen: 'Main Screen', ledWall: 'LED Wall', monitor: 'Confidence Monitor' };
+    document.getElementById(`cfg-dn-${key}`)?.addEventListener('input', e => {
+      if (!cfg.displayNames) cfg.displayNames = { ...defaults };
+      cfg.displayNames[key] = e.target.value.trim() || defaults[key];
       saveState();
     });
-  });
-  document.getElementById('btn-macros-reset').addEventListener('click', () => {
-    cfg.macros = DEFAULT_MACROS();
-    document.querySelectorAll('.macro-uuid-field').forEach(inp => {
-      inp.value = DEFAULT_MACROS()[inp.dataset.key] || '';
-    });
-    saveState();
   });
 
-  // Stage screen inputs
-  document.querySelectorAll('.stage-field').forEach(inp => {
-    inp.addEventListener('input', e => {
-      if (!cfg.stageScreen) cfg.stageScreen = DEFAULT_STAGESCREEN();
-      cfg.stageScreen[e.target.dataset.key] = e.target.value.trim();
+  // Permanent speakers
+  const addSpeaker = () => {
+    const inp = document.getElementById('cfg-speaker-add');
+    const name = (inp?.value || '').trim();
+    if (!name) return;
+    if (!Array.isArray(cfg.speakers)) cfg.speakers = [];
+    if (!cfg.speakers.some(s => s.toLowerCase() === name.toLowerCase())) {
+      cfg.speakers.push(name);
+      cfg.speakers.sort((a, b) => a.localeCompare(b));
       saveState();
-    });
+    }
+    renderConfigPanel(document.getElementById('main-panel'));
+  };
+  document.getElementById('btn-speaker-add')?.addEventListener('click', addSpeaker);
+  document.getElementById('cfg-speaker-add')?.addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); addSpeaker(); }
   });
-  document.getElementById('btn-stage-reset')?.addEventListener('click', () => {
-    cfg.stageScreen = DEFAULT_STAGESCREEN();
-    document.querySelectorAll('.stage-field').forEach(inp => {
-      inp.value = DEFAULT_STAGESCREEN()[inp.dataset.key] || '';
+  document.querySelectorAll('.speaker-chip-x').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const name = btn.dataset.speaker;
+      cfg.speakers = (cfg.speakers || []).filter(s => s !== name);
+      saveState();
+      renderConfigPanel(document.getElementById('main-panel'));
     });
-    saveState();
   });
 
   // Bible API key
@@ -2267,6 +4268,395 @@ function renderConfigPanel(panel) {
       else delete cfg.bookNames[key];
       saveState();
     });
+  });
+}
+
+// ─── Machine Setup / Onboarding ──────────────────────────────────────────────
+
+function maybeShowMachineSetup() {
+  if (state.config.setupComplete === true) return;
+  setTimeout(() => showMachineSetup(false), 350);
+}
+
+function normalizePro7RootFolder(folder) {
+  if (!folder) return '';
+  const parts = String(folder).replace(/\/+$/, '').split('/');
+  const last = parts[parts.length - 1];
+  if (last === 'Props' && parts[parts.length - 2] === 'Configuration') parts.splice(parts.length - 2, 2);
+  else if (last === 'Configuration' || last === 'Libraries') parts.pop();
+  return parts.join('/') || '/';
+}
+
+function pathBaseName(p) {
+  const parts = String(p || '').replace(/\/+$/, '').split('/').filter(Boolean);
+  return parts[parts.length - 1] || '';
+}
+
+function libraryBelongsToRoot(libraryPath, rootPath) {
+  if (!libraryPath || !rootPath) return true;
+  const root = normalizePro7RootFolder(rootPath).replace(/\/+$/, '');
+  return String(libraryPath).startsWith(`${root}/Libraries/`);
+}
+
+function setupStatusPill(ok, text) {
+  return `<span class="setup-pill ${ok ? 'ok' : 'warn'}">${esc(text)}</span>`;
+}
+
+async function fetchSetupScan() {
+  const res = await fetch('/api/setup/doctor');
+  const data = await res.json();
+  if (!data.ok) throw new Error(data.error || 'Scan failed');
+  return data;
+}
+
+function setupCandidateScore(c) {
+  let score = 0;
+  if (c.propsConfigExists) score += 50;
+  if ((c.libraries || []).length) score += 30;
+  if (c.root === 'Documents') score += 15;
+  if (c.root === 'UserWorkspaces') score += 10;
+  return score;
+}
+
+function bestPro7Candidate(data) {
+  const candidates = (data.pro7?.candidates || []).filter(c => c.exists);
+  return candidates.sort((a, b) => setupCandidateScore(b) - setupCandidateScore(a))[0] || null;
+}
+
+function setupScanText(data, cfg) {
+  const candidates = (data.pro7?.candidates || []).filter(c => c.exists);
+  return [
+    `DeckPro data: ${data.deckpro.dataDir}`,
+    `Saved state: ${data.deckpro.stateFileExists ? 'yes' : 'not written yet'}`,
+    `Deck library: ${data.deckpro.libraryDir}`,
+    `Selected Pro7 folder: ${cfg.pro7RootFolder || 'auto-detect'}`,
+    `Pro7 folders found: ${candidates.length}`,
+    ...candidates.slice(0, 6).map(c =>
+      `- ${c.path}${c.libraries?.length ? ` (${c.libraries.join(', ')})` : ''}${c.propsConfigExists ? ' · Props ready' : ''}`
+    ),
+  ].join('\n');
+}
+
+function pro7CandidateForRoot(data, rootPath) {
+  const candidates = (data.pro7?.candidates || []).filter(c => c.exists);
+  const root = normalizePro7RootFolder(rootPath);
+  if (root) {
+    const match = candidates.find(c => normalizePro7RootFolder(c.path) === root);
+    return match || null;
+  }
+  return bestPro7Candidate(data);
+}
+
+function pro7LibraryOptionsForScan(data, rootPath) {
+  const candidate = pro7CandidateForRoot(data, rootPath);
+  if (!candidate) return [];
+  if (Array.isArray(candidate.libraryOptions) && candidate.libraryOptions.length) {
+    return candidate.libraryOptions.map(lib => ({
+      name: lib.name || pathBaseName(lib.path),
+      path: lib.path,
+      active: !!lib.active,
+    })).filter(lib => lib.path);
+  }
+  return (candidate.libraries || []).map(name => ({
+    name,
+    path: `${candidate.librariesDir}/${name}`,
+    active: candidate.activeLibrary === `${candidate.librariesDir}/${name}`,
+  })).filter(lib => lib.path);
+}
+
+function fillPro7LibrarySelect(select, cfg, data, rootPath) {
+  if (!select) return;
+  const root = normalizePro7RootFolder(rootPath || cfg.pro7RootFolder || '');
+  if (!root) {
+    select.innerHTML = '<option value="">Choose Pro7 Folder first</option>';
+    select.disabled = true;
+    return;
+  }
+
+  const options = pro7LibraryOptionsForScan(data, root);
+  const selected = cfg.pro7LibraryFolder || '';
+  const active = options.find(o => o.active);
+  const autoLabel = active ? `Auto-select (${active.name})` : 'Auto-select active library';
+  const knownSelected = selected && options.some(o => o.path === selected);
+
+  const rows = [
+    `<option value="">${esc(autoLabel)}</option>`,
+    ...options.map(o => `<option value="${esc(o.path)}"${selected === o.path ? ' selected' : ''}>${esc(o.name)}${o.active ? ' (active)' : ''}</option>`),
+  ];
+  if (selected && !knownSelected) {
+    rows.push(`<option value="${esc(selected)}" selected>${esc(pathBaseName(selected) || selected)} (manual)</option>`);
+  }
+
+  select.innerHTML = rows.join('');
+  select.disabled = false;
+  select.value = selected && (knownSelected || selected) ? selected : '';
+}
+
+async function loadPro7LibrarySelect(select, cfg, rootPath) {
+  if (!select) return;
+  if (!normalizePro7RootFolder(rootPath || cfg.pro7RootFolder || '')) {
+    fillPro7LibrarySelect(select, cfg, { pro7: { candidates: [] } }, rootPath);
+    return;
+  }
+  select.innerHTML = '<option value="">Loading libraries...</option>';
+  select.disabled = true;
+  try {
+    fillPro7LibrarySelect(select, cfg, await fetchSetupScan(), rootPath);
+  } catch (_) {
+    select.innerHTML = cfg.pro7LibraryFolder
+      ? `<option value="${esc(cfg.pro7LibraryFolder)}">${esc(pathBaseName(cfg.pro7LibraryFolder) || cfg.pro7LibraryFolder)}</option>`
+      : '<option value="">Could not scan libraries</option>';
+    select.disabled = !cfg.pro7LibraryFolder;
+  }
+}
+
+function showMachineSetup(force = false) {
+  if (!force && state.config.setupComplete === true) return;
+  document.querySelector('.setup-overlay')?.remove();
+  const cfg = state.config;
+  const scheme = activeStyleScheme();
+  const macroCount = (scheme?.macros || []).length;
+  const stageCount = (scheme?.stageDisplays || []).length;
+  const bibleReady = !!(cfg.bibleApiKey && cfg.bibleId);
+  const pro7Ready = !!pro7rt.connected;
+  const rootReady = !!cfg.pro7RootFolder;
+  const overlay = document.createElement('div');
+  overlay.className = 'setup-overlay';
+  overlay.innerHTML = `
+    <div class="setup-modal">
+      <div class="setup-header">
+        <div>
+          <div class="setup-title">Machine Setup</div>
+          <div class="setup-sub">One-time setup for this computer: Pro7 connection, Bible lookup, library path, macros, and stage layouts.</div>
+        </div>
+        <button class="setup-close" id="setup-close">×</button>
+      </div>
+      <div class="setup-body">
+        <section class="setup-card">
+          <div class="setup-card-head">
+            <span>Pro7 Connection</span>
+            ${setupStatusPill(pro7Ready, pro7Ready ? 'Connected' : 'Needs check')}
+          </div>
+          <div class="setup-grid-2">
+            <label>Port<input type="number" id="setup-pro7-port" value="${cfg.pro7Port || 1025}" min="1" max="65535"></label>
+            <label>Password<input type="password" id="setup-pro7-password" value="${esc(cfg.pro7Password || '')}" placeholder="blank if none"></label>
+          </div>
+          <button class="btn-sm setup-action" id="setup-check-pro7">Check Pro7</button>
+          <p class="setup-note">ProPresenter must be open with Network API enabled.</p>
+        </section>
+
+        <section class="setup-card">
+          <div class="setup-card-head">
+            <span>Pro7 Folder</span>
+            ${setupStatusPill(rootReady, rootReady ? 'Ready' : 'Auto-detect')}
+          </div>
+          <div class="setup-folder">
+            <input type="text" id="setup-pro7-root" value="${esc(cfg.pro7RootFolder || '')}" readonly placeholder="Auto-detect">
+            ${cfg.pro7RootFolder
+              ? `<button class="btn-browse" id="setup-root-clear">Clear</button>`
+              : `<button class="btn-browse" id="setup-root-detect">Auto-detect</button>
+                 <button class="btn-browse" id="setup-root-browse">Browse…</button>`}
+          </div>
+          <p class="setup-note">Pick the ProPresenter folder that contains Configuration and Libraries.</p>
+          <label class="setup-library-field">Export Library
+            <select id="setup-pro7-library" ${rootReady ? '' : 'disabled'}>
+              <option value="">${rootReady ? 'Loading libraries...' : 'Choose Pro7 Folder first'}</option>
+            </select>
+          </label>
+          <p class="setup-note">Choose where new DeckPro decks save. Auto-select follows Pro7's active library.</p>
+          <div class="setup-folder-tools">
+            <button class="btn-sm setup-action" id="setup-show-scan">Details</button>
+            <span>Shows what DeckPro found on this machine.</span>
+          </div>
+          <pre class="setup-scan" id="setup-scan" style="display:none"></pre>
+        </section>
+
+        <section class="setup-card">
+          <div class="setup-card-head">
+            <span>API.Bible</span>
+            ${setupStatusPill(bibleReady, bibleReady ? 'Ready' : 'Needs key')}
+          </div>
+          <label>API Key<input type="password" id="setup-bible-key" value="${esc(cfg.bibleApiKey || '')}" placeholder="Paste api.bible key"></label>
+          <div class="setup-folder">
+            <select id="setup-bible-id">
+              ${(cfg.bibleList || []).length
+                ? cfg.bibleList.map(b => `<option value="${esc(b.id)}" ${b.id === cfg.bibleId ? 'selected' : ''}>${esc(b.name)} (${esc(b.abbreviation)})</option>`).join('')
+                : (cfg.bibleId ? `<option value="${esc(cfg.bibleId)}">${esc(cfg.bibleName || cfg.bibleId)}</option>` : `<option value="">Fetch translations first</option>`)}
+            </select>
+            <button class="btn-sm" id="setup-bible-fetch">Fetch</button>
+          </div>
+        </section>
+
+        <section class="setup-card">
+          <div class="setup-card-head">
+            <span>Macros & Stage Displays</span>
+            ${setupStatusPill(macroCount + stageCount > 0, `${macroCount} macro${macroCount === 1 ? '' : 's'} · ${stageCount} stage`)}
+          </div>
+          <div class="setup-actions-row">
+            <button class="btn-sm" id="setup-open-macros">Open Macros</button>
+            <button class="btn-sm" id="setup-open-stage">Open Stage</button>
+          </div>
+          <p class="setup-note">Use Pro7's live picker once this computer can connect to Pro7.</p>
+        </section>
+      </div>
+      <div class="setup-footer">
+        <button class="btn-browse" id="setup-open-preferences">Open Preferences</button>
+        <span></span>
+        <button class="btn-browse" id="setup-skip">Skip for now</button>
+        <button class="setup-primary" id="setup-done">Done</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+
+  const close = () => overlay.remove();
+  const finish = () => {
+    cfg.setupComplete = true;
+    saveState();
+    close();
+    toast('success', 'Machine setup saved', 'You can reopen it from the menu anytime.');
+  };
+  const reopen = () => { close(); showMachineSetup(true); };
+
+  overlay.querySelector('#setup-close').addEventListener('click', close);
+  overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
+  overlay.querySelector('#setup-skip').addEventListener('click', finish);
+  overlay.querySelector('#setup-done').addEventListener('click', finish);
+  loadPro7LibrarySelect(overlay.querySelector('#setup-pro7-library'), cfg, cfg.pro7RootFolder);
+
+  overlay.querySelector('#setup-pro7-library')?.addEventListener('change', e => {
+    cfg.pro7LibraryFolder = e.target.value;
+    saveState();
+  });
+
+  overlay.querySelector('#setup-check-pro7').addEventListener('click', async () => {
+    cfg.pro7Port = parseInt(overlay.querySelector('#setup-pro7-port').value, 10) || 1025;
+    cfg.pro7Password = overlay.querySelector('#setup-pro7-password').value;
+    saveState();
+    await checkPro7(false);
+    reopen();
+  });
+
+  overlay.querySelector('#setup-root-detect')?.addEventListener('click', async () => {
+    const btn = overlay.querySelector('#setup-root-detect');
+    btn.disabled = true;
+    btn.textContent = 'Detecting…';
+    try {
+      const data = await fetchSetupScan();
+      const best = bestPro7Candidate(data);
+      if (!best) {
+        const box = overlay.querySelector('#setup-scan');
+        box.style.display = '';
+        box.textContent = setupScanText(data, cfg);
+        toast('error', 'No Pro7 folder found', 'Use Browse and pick the ProPresenter folder manually.');
+        return;
+      }
+      cfg.pro7RootFolder = normalizePro7RootFolder(best.path);
+      if (!libraryBelongsToRoot(cfg.pro7LibraryFolder, cfg.pro7RootFolder)) cfg.pro7LibraryFolder = '';
+      saveState();
+      toast('success', 'Pro7 folder detected', cfg.pro7RootFolder);
+      reopen();
+    } catch (e) {
+      toast('error', 'Auto-detect failed', e.message || '');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Auto-detect';
+    }
+  });
+
+  overlay.querySelector('#setup-root-browse')?.addEventListener('click', async () => {
+    try {
+      const res = await fetch('/api/browse-folder');
+      const data = await res.json();
+      if (!data.ok || !data.folder) return;
+      cfg.pro7RootFolder = normalizePro7RootFolder(data.folder);
+      if (!libraryBelongsToRoot(cfg.pro7LibraryFolder, cfg.pro7RootFolder)) cfg.pro7LibraryFolder = '';
+      saveState();
+      reopen();
+    } catch (e) {
+      toast('error', 'Could not select folder', e.message || '');
+    }
+  });
+  overlay.querySelector('#setup-root-clear')?.addEventListener('click', () => {
+    cfg.pro7RootFolder = '';
+    cfg.pro7LibraryFolder = '';
+    saveState();
+    reopen();
+  });
+
+  overlay.querySelector('#setup-bible-id').addEventListener('change', e => {
+    const sel = e.target;
+    cfg.bibleId = sel.value;
+    cfg.bibleName = sel.options[sel.selectedIndex]?.text || '';
+    saveState();
+  });
+  overlay.querySelector('#setup-bible-key').addEventListener('input', e => {
+    cfg.bibleApiKey = e.target.value.trim();
+    saveState();
+  });
+  overlay.querySelector('#setup-bible-fetch').addEventListener('click', async () => {
+    const btn = overlay.querySelector('#setup-bible-fetch');
+    const key = overlay.querySelector('#setup-bible-key').value.trim();
+    if (!key) { toast('error', 'No API key', 'Enter your api.bible key first'); return; }
+    btn.disabled = true; btn.textContent = '…';
+    try {
+      const res = await fetch(`/api/bible/bibles?apiKey=${encodeURIComponent(key)}`);
+      const data = await res.json();
+      if (!data.ok) { toast('error', 'Failed', data.error || 'Could not fetch Bibles'); return; }
+      cfg.bibleList = data.bibles.map(b => ({
+        id: b.id,
+        name: b.nameLocal || b.name,
+        abbreviation: b.abbreviationLocal || b.abbreviation,
+      }));
+      cfg.bibleApiKey = key;
+      if (!cfg.bibleId && cfg.bibleList.length) {
+        cfg.bibleId = cfg.bibleList[0].id;
+        cfg.bibleName = cfg.bibleList[0].name;
+      }
+      saveState();
+      toast('success', `${data.bibles.length} translation${data.bibles.length !== 1 ? 's' : ''} loaded`, 'Pick your default translation.');
+      reopen();
+    } catch (err) {
+      toast('error', 'Network error', err.message);
+    } finally {
+      btn.disabled = false; btn.textContent = 'Fetch';
+    }
+  });
+
+  overlay.querySelector('#setup-open-preferences').addEventListener('click', () => {
+    state.activeId = 'settings';
+    saveState();
+    render();
+    close();
+  });
+  overlay.querySelector('#setup-open-macros').addEventListener('click', () => {
+    _styleTab = 'macros';
+    state.activeId = 'style';
+    saveState();
+    render();
+    close();
+  });
+  overlay.querySelector('#setup-open-stage').addEventListener('click', () => {
+    _styleTab = 'stage';
+    state.activeId = 'style';
+    saveState();
+    render();
+    close();
+  });
+
+  overlay.querySelector('#setup-show-scan').addEventListener('click', async () => {
+    const box = overlay.querySelector('#setup-scan');
+    if (box.style.display !== 'none') {
+      box.style.display = 'none';
+      return;
+    }
+    box.style.display = '';
+    box.textContent = 'Scanning…';
+    try {
+      box.textContent = setupScanText(await fetchSetupScan(), cfg);
+    } catch (err) {
+      box.textContent = err.message || 'Scan failed';
+    }
   });
 }
 
@@ -2389,9 +4779,9 @@ function fontAdvPanel(schemeKey, label, scheme, locked, extraColorFields = []) {
                 value="${adv.strokeWidth ?? 1}" step="0.5" min="0" ${dis}>
               <span class="fav-unit">pt</span>
               <input type="color" class="fav-sc" data-scheme="${schemeKey}" data-which="strokeColor"
-                value="${adv.strokeColor || '#ffffff'}" ${dis}>
+                value="${adv.strokeColor ? (adv.strokeColor.startsWith('#') ? adv.strokeColor : '#' + adv.strokeColor) : '#ffffff'}" ${dis}>
               <input type="text" class="color-hex fav-sc-hex" data-scheme="${schemeKey}" data-which="strokeColor"
-                value="${adv.strokeColor || ''}" maxlength="7" placeholder="#ffffff" ${dis}>
+                value="${(adv.strokeColor || '').replace(/^#/, '')}" maxlength="6" placeholder="ffffff" ${dis}>
             </div>
           </div>
         </div>
@@ -2407,9 +4797,9 @@ function fontAdvPanel(schemeKey, label, scheme, locked, extraColorFields = []) {
                 value="${adv.shadowOpacity ?? 75}" min="0" max="100" step="1" ${dis}>
               <span class="fav-unit">%</span>
               <input type="color" class="fav-sc" data-scheme="${schemeKey}" data-which="shadowColor"
-                value="${adv.shadowColor || '#000000'}" ${dis}>
+                value="${adv.shadowColor ? (adv.shadowColor.startsWith('#') ? adv.shadowColor : '#' + adv.shadowColor) : '#000000'}" ${dis}>
               <input type="text" class="color-hex fav-sc-hex" data-scheme="${schemeKey}" data-which="shadowColor"
-                value="${adv.shadowColor || ''}" maxlength="7" placeholder="#000000" ${dis}>
+                value="${(adv.shadowColor || '').replace(/^#/, '')}" maxlength="6" placeholder="000000" ${dis}>
             </div>
             <div class="fav-inline-row">
               <span class="fav-num-lbl">Angle</span>
@@ -2441,7 +4831,7 @@ function lyTable(rows, scheme, dis) {
 
   const bodyRows = rows.map(row => {
     if (row.type === 'head') {
-      if (row.label === 'Prop Canvas') inProp = true;
+      if (row.head === 'prop') inProp = true;
       return `<tr class="ly-section-head"><td colspan="6">${esc(row.label)}</td></tr>`;
     }
     const [c0, c1, c2, c3] = row.cols;
@@ -2580,8 +4970,17 @@ function refreshAlignBtns(panel, scheme) {
 // ── Text-tab building blocks ────────────────────────────────────────────────
 // Renders the Font / Weight / Size / Color quick-controls for one text role.
 // Element IDs/classes match the originals so existing change handlers bind.
-function fontControl({ advKey, field, sizeField = null, propSizeField = null, scheme, dis }) {
+function fontControl({ advKey, field, sizeField = null, propSizeField = null, scheme, rawScheme, dis }) {
   const val = scheme[field] || '';
+  const fontTypoKey = FONT_FIELD_TO_TYPO_KEY[field];
+  const colorTypoKey = ADV_FIELD_TO_TYPO_KEY[advKey];
+  const sizeTypoKey = SIZE_FIELD_TO_TYPO_KEY[sizeField];
+  const fontIsScheme  = !!(fontTypoKey  && rawScheme?.typography?.[fontTypoKey]  != null);
+  const colorIsScheme = !!(colorTypoKey && rawScheme?.typography?.[colorTypoKey] != null);
+  const sizeIsScheme  = !!(sizeTypoKey  && rawScheme?.typography?.[sizeTypoKey]  != null);
+  const inheritIcons = (key) => `
+    <button type="button" class="inherit-action inherit-icon-btn" data-action="use-global" data-key="${key}" title="Use global" ${dis}>↺</button>
+    <button type="button" class="inherit-action inherit-icon-btn" data-action="push-global" data-key="${key}" title="Push to Global" ${dis}>↑</button>`;
   const { family: curFam } = parseFontPS(val);
   const families = _fontFamilyMap ? Object.keys(_fontFamilyMap).sort((a, b) => a.localeCompare(b)) : [];
   const famOptions = families.length
@@ -2596,21 +4995,25 @@ function fontControl({ advKey, field, sizeField = null, propSizeField = null, sc
     : '';
   const curAdv = scheme[advKey] || FONT_ADV_DEFAULTS();
   const sizeRow = (sizeField || propSizeField)
-    ? `<label class="tsc-row"><span class="tsc-lbl">Size</span>
-         <span class="tsc-size-row">${sizeBox(sizeField)}${propSizeField ? `<span class="tsc-size-sep" title="LED-wall size">wall</span>${sizeBox(propSizeField)}` : ''}</span></label>`
+    ? `<div class="tsc-row${sizeIsScheme ? ' inherit-scheme' : ''}"><span class="tsc-lbl">Size</span>
+         <span class="tsc-size-row">${sizeBox(sizeField)}${propSizeField ? `<span class="tsc-size-sep" title="LED-wall size">wall</span>${sizeBox(propSizeField)}` : ''}</span></div>`
     : '';
   return `
-    <label class="tsc-row"><span class="tsc-lbl">Font</span>
-      <select class="sf-fam-select" id="sf-fam-${field}" ${dis}>${famOptions}</select></label>
-    <label class="tsc-row"><span class="tsc-lbl">Weight</span>
-      <select class="sf-sty-select" id="sf-sty-${field}" ${dis}>${styOptions}</select></label>
+    <div class="tsc-row${fontIsScheme ? ' inherit-scheme' : ''}"><span class="tsc-lbl">Font</span>
+      <div class="inherit-ctrl-wrap">
+        <select class="sf-fam-select" id="sf-fam-${field}" ${dis}>${famOptions}</select>
+        ${fontIsScheme ? inheritIcons(fontTypoKey) : ''}
+      </div></div>
+    <div class="tsc-row${fontIsScheme ? ' inherit-scheme' : ''}"><span class="tsc-lbl">Weight</span>
+      <select class="sf-sty-select" id="sf-sty-${field}" ${dis}>${styOptions}</select></div>
     ${sizeRow}
-    <label class="tsc-row"><span class="tsc-lbl">Color</span>
+    <div class="tsc-row${colorIsScheme ? ' inherit-scheme' : ''}"><span class="tsc-lbl">Color</span>
       <span class="color-input-wrap font-color-inline">
-        <input type="color" class="fav-color" data-scheme="${advKey}" value="${curAdv.color || '#ffffff'}" ${dis}>
-        <input type="text" class="color-hex fav-color-hex" data-scheme="${advKey}" value="${curAdv.color || ''}" maxlength="7" placeholder="Default" ${dis}>
-        <button class="fav-color-clear" data-scheme="${advKey}" title="Reset to default color" ${dis}>×</button>
-      </span></label>`;
+        <input type="color" class="fav-color" data-scheme="${advKey}" value="${curAdv.color ? (curAdv.color.startsWith('#') ? curAdv.color : '#' + curAdv.color) : '#ffffff'}" ${dis}>
+        <input type="text" class="color-hex fav-color-hex" data-scheme="${advKey}" value="${(curAdv.color || '').replace(/^#/, '')}" maxlength="6" placeholder="Default" ${dis}>
+        <button type="button" class="fav-color-clear" data-scheme="${advKey}" title="Use global color" ${dis}>×</button>
+        ${colorIsScheme ? inheritIcons(colorTypoKey) : ''}
+      </span></div>`;
 }
 
 // Static visual preview of the active scheme (Phase 1 — wired to scheme values, not full render).
@@ -2626,35 +5029,35 @@ function schemePreviewPanel(scheme) {
   return `
     <div class="sp-grid">
       <div class="sp-card">
-        <div class="sp-card-hd">Main Screen — Scripture</div>
+        <div class="sp-card-hd">${dn('mainScreen')} — Scripture</div>
         <div class="sp-screen sp-16x9">
           <div class="sp-grad"></div>
           <div class="sp-refbar" style="background:transparent;color:${esc(titleText)};font-family:${fam(scheme.titleFont)};font-size:${px(scheme.titleSize)}px">JOHN 3:16</div>
-          <div class="sp-body" style="font-family:${fam(scheme.bodyFont)};color:${esc(bodyColor)};font-size:${px(scheme.bodySize)}px">For God so loved the world…</div>
+          <div class="sp-body" style="font-family:${fam(scheme.bodyFont)};color:${esc(bodyColor)};font-size:${px(scheme.bodySize)}px">The Lord created medicines out of the earth…</div>
         </div>
       </div>
       <div class="sp-card">
-        <div class="sp-card-hd">Main Screen — Point</div>
+        <div class="sp-card-hd">${dn('mainScreen')} — Point</div>
         <div class="sp-screen sp-16x9">
           <div class="sp-grad"></div>
-          <div class="sp-body sp-point" style="font-family:${fam(scheme.pointFont || scheme.boldFont)};color:${esc(bodyColor)};font-size:${px(scheme.bodySize)}px">LOVE ONE ANOTHER</div>
+          <div class="sp-body sp-point" style="font-family:${fam(scheme.pointFont)};color:${esc(bodyColor)};font-size:${px(scheme.bodySize)}px">LOVE ONE ANOTHER</div>
         </div>
       </div>
       <div class="sp-card">
-        <div class="sp-card-hd">Prop / LED Wall</div>
+        <div class="sp-card-hd">${dn('ledWall')}</div>
         <div class="sp-screen sp-wall">
-          <div class="sp-body sp-wall-body" style="font-family:${fam(scheme.propBodyFont)};font-size:${px(scheme.propBodySize)}px">For God so loved the world…</div>
+          <div class="sp-body sp-wall-body" style="font-family:${fam(scheme.propBodyFont)};font-size:${px(scheme.propBodySize)}px">The Lord created medicines out of the earth…</div>
         </div>
       </div>
       <div class="sp-card">
-        <div class="sp-card-hd">Start / End</div>
+        <div class="sp-card-hd">Utility</div>
         <div class="sp-screen sp-16x9">
           <div class="sp-se" style="font-family:${fam(scheme.startEndFont)};color:${esc(seColor)};font-size:${px(scheme.startEndSize)}px">MESSAGE TITLE</div>
         </div>
       </div>
       <div class="sp-card sp-card-wide">
-        <div class="sp-card-hd">Slide Notes — Confidence Monitor</div>
-        <div class="sp-notes" style="font-family:${fam(scheme.notesFont)}">Speaker note preview — only visible on the confidence monitor.</div>
+        <div class="sp-card-hd">Slide Notes — ${dn('monitor')}</div>
+        <div class="sp-notes" style="font-family:${fam(scheme.notesFont)}">Speaker note preview — only visible on the ${dn('monitor')}.</div>
       </div>
     </div>
     <p class="sp-foot">Approximate preview from this scheme's fonts, sizes and colours. Use <strong>Test Scheme</strong> (top right) to generate a real deck in ProPresenter.</p>`;
@@ -2667,16 +5070,16 @@ function layoutPreview(scheme, sel) {
   const propW = scheme.propCanvasW || 3200, propH = scheme.propCanvasH || 1280;
   // [slug, label, x, y, w, h] — drawn back-to-front so small boxes sit on top
   const mainRegions = [
-    ['gradient',  'Gradient',     scheme.gradientX ?? 0, scheme.gradientY ?? 0, scheme.canvasW ?? 1920, scheme.gradientH ?? 0],
     ['queue',     'Queue',        scheme.queueX ?? 0,    scheme.queueY ?? 0,    scheme.queueW ?? 0,     scheme.queueH ?? 0],
     ['body',      'Body',         scheme.bodyX ?? 0,     scheme.bodyY ?? 0,     scheme.bodyW ?? 0,      scheme.bodyH ?? 0],
-    ['header',    'Header',       scheme.titleX ?? 0,    scheme.titleY ?? 0,    scheme.titleW ?? 0,     scheme.titleH ?? 0],
-    ['startEnd',  'Start / End',  scheme.startEndX ?? 0, scheme.startEndY ?? 0, scheme.startEndW ?? 0,  scheme.startEndH ?? 0],
+    ['point',     'Point',        scheme.pointX ?? scheme.bodyX ?? 0, scheme.pointY ?? scheme.bodyY ?? 0, scheme.pointW ?? scheme.bodyW ?? 0, scheme.pointH ?? scheme.bodyH ?? 0],
+    ['header',    'Title',        scheme.titleX ?? 0,    scheme.titleY ?? 0,    scheme.titleW ?? 0,     scheme.titleH ?? 0],
+    ['startEnd',  'Utility',      scheme.startEndX ?? 0, scheme.startEndY ?? 0, scheme.startEndW ?? 0,  scheme.startEndH ?? 0],
     ['live',      'Live',         scheme.liveX ?? 0,     scheme.liveY ?? 0,     scheme.liveW ?? 0,      scheme.liveH ?? 0],
   ];
   const propRegions = [
     ['propBody',   'Prop body',   scheme.propBodyX ?? 0, scheme.propBodyY ?? 0, scheme.propBodyW ?? 0,  scheme.propBodyH ?? 0],
-    ['propHeader', 'Prop header', scheme.propTitleX ?? 0, scheme.propTitleY ?? 0, scheme.propTitleW ?? 0, scheme.propTitleH ?? 0],
+    ['propHeader', 'Prop title',  scheme.propTitleX ?? 0, scheme.propTitleY ?? 0, scheme.propTitleW ?? 0, scheme.propTitleH ?? 0],
   ];
   const box = (cw, ch) => ([slug, lbl, x, y, w, h]) => {
     if (!w || !h) return '';
@@ -2688,15 +5091,279 @@ function layoutPreview(scheme, sel) {
   return `
     <div class="lp-wrap">
       <div class="lp-canvas-block">
-        <div class="lp-canvas-lbl">Main Canvas · ${Math.round(mainW)}×${Math.round(mainH)}</div>
+        <div class="lp-canvas-lbl">${dn('mainScreen')} · ${Math.round(mainW)}×${Math.round(mainH)}</div>
         <div class="lp-canvas" style="aspect-ratio:${mainW} / ${mainH}">${mainRegions.map(box(mainW, mainH)).join('')}</div>
       </div>
       <div class="lp-canvas-block">
-        <div class="lp-canvas-lbl">Prop / LED Wall · ${Math.round(propW)}×${Math.round(propH)}</div>
+        <div class="lp-canvas-lbl">${dn('ledWall')} · ${Math.round(propW)}×${Math.round(propH)}</div>
         <div class="lp-canvas" style="aspect-ratio:${propW} / ${propH}">${propRegions.map(box(propW, propH)).join('')}</div>
       </div>
     </div>
     <p class="style-group-hint" style="margin-top:8px">Click a region to highlight its row below. Boxes are drawn from this scheme's positions; off-canvas elements (e.g. Live) may sit outside the frame.</p>`;
+}
+
+// ── Palette tab + Global view helpers ─────────────────────────────────────────
+function renderPaletteTab(rawScheme, t, dis) {
+  const inheritIcons = (key) => `
+    <button type="button" class="inherit-action inherit-icon-btn" data-action="use-global" data-key="${key}" title="Use global" ${dis}>↺</button>
+    <button type="button" class="inherit-action inherit-icon-btn" data-action="push-global" data-key="${key}" title="Push to Global" ${dis}>↑</button>`;
+  const fontSlot = (key, name, desc) => {
+    const isScheme = !!(rawScheme?.typography?.[key]);
+    const val = t[key] || '';
+    const { family: curFam } = parseFontPS(val);
+    const families = _fontFamilyMap ? Object.keys(_fontFamilyMap).sort((a, b) => a.localeCompare(b)) : [];
+    const famOpts = families.length
+      ? families.map(f => `<option value="${esc(f)}"${f === curFam ? ' selected' : ''}>${esc(f)}</option>`).join('')
+      : `<option value="${esc(curFam)}">${esc(curFam || '…')}</option>`;
+    const styArr = _fontFamilyMap?.[curFam] || (val ? [{ style: parseFontPS(val).style, postscript: val }] : []);
+    const styOpts = styArr.map(({ style, postscript }) =>
+      `<option value="${esc(postscript)}"${postscript === val ? ' selected' : ''}>${esc(style)}</option>`
+    ).join('') || `<option value="${esc(val)}">${esc(parseFontPS(val).style || 'Regular')}</option>`;
+    return `<div class="palette-slot${isScheme ? ' inherit-scheme' : ''}">
+      <div class="palette-slot-info"><span class="palette-slot-name">${esc(name)}</span><span class="palette-slot-desc">${esc(desc)}</span></div>
+      <div class="palette-slot-ctrl">
+        <div class="inherit-ctrl-wrap">
+          <select class="sf-fam-select" id="palette-fam-${key}" ${dis}>${famOpts}</select>
+          ${isScheme ? inheritIcons(key) : ''}
+        </div>
+        <select class="sf-sty-select" id="palette-sty-${key}" ${dis}>${styOpts}</select>
+      </div>
+    </div>`;
+  };
+  const colorSlot = (key, name, desc) => {
+    const isScheme = !!(rawScheme?.typography?.[key]);
+    const val = normalizeHexColor(t[key] || '#ffffff');
+    const pickerVal = val.startsWith('#') ? val : '#' + val;
+    return `<div class="palette-slot${isScheme ? ' inherit-scheme' : ''}">
+      <div class="palette-slot-info"><span class="palette-slot-name">${esc(name)}</span><span class="palette-slot-desc">${esc(desc)}</span></div>
+      <span class="color-input-wrap">
+        <input type="color" class="fav-color" id="palette-color-${key}" value="${pickerVal}" ${dis}>
+        <input type="text" class="color-hex fav-color-hex" id="palette-hex-${key}" value="${(val||'').replace(/^#/,'')}" maxlength="6" placeholder="ffffff" ${dis}>
+        <button type="button" class="fav-color-clear palette-color-clear" data-key="${key}" title="Use global color" ${dis}>×</button>
+        ${isScheme ? inheritIcons(key) : ''}
+      </span>
+    </div>`;
+  };
+  return `<p class="style-group-hint">The five palette slots every scheme starts from. Fields in Text / Layout / Motion inherit from these unless they have their own override.</p>
+    <div class="tcard"><div class="tcard-hd">Fonts</div>
+      ${fontSlot('font1',    'Font 1',    'Body · Point · Utility · Notes · Queue · Live')}
+      ${fontSlot('font2',    'Font 2',    'Title · Response Card title')}
+      ${fontSlot('boldFont', 'Bold / ALT','Emphasis spans in body text')}
+    </div>
+    <div class="tcard"><div class="tcard-hd">Colors</div>
+      ${colorSlot('colorNeutral', 'Neutral', 'Body · Point · Utility · Notes · Queue · Live · Bold')}
+      ${colorSlot('colorAccent',  'Accent',  'Title · Response Card title')}
+    </div>`;
+}
+
+function renderGlobalPanel(panel, schemeOptionsHTML) {
+  ensureGlobalTypography();
+  const g = state.globalTypography;
+  const fontRow = (key, name, desc) => {
+    const val = g[key] || '';
+    const { family, style } = parseFontPS(val);
+    return `<div class="palette-slot">
+      <div class="palette-slot-hd">
+        <div class="palette-slot-info"><span class="palette-slot-name">${esc(name)}</span><span class="palette-slot-desc">${esc(desc)}</span></div>
+        <span class="inherit-badge global">Global</span>
+      </div>
+      <div class="palette-slot-val">${esc(family)}${style ? ` · ${esc(style)}` : ''}</div>
+    </div>`;
+  };
+  const colorRow = (key, name) => {
+    const val = normalizeHexColor(g[key] || '#ffffff');
+    const pickerVal = val.startsWith('#') ? val : '#' + val;
+    return `<div class="palette-slot">
+      <div class="palette-slot-hd">
+        <div class="palette-slot-info"><span class="palette-slot-name">${esc(name)}</span></div>
+        <span class="inherit-badge global">Global</span>
+      </div>
+      <span class="color-input-wrap font-color-inline">
+        <input type="color" value="${pickerVal}" disabled>
+        <input type="text" class="color-hex" value="${(val||'').replace(/^#/,'')}" disabled>
+      </span>
+    </div>`;
+  };
+  panel.innerHTML = `<div class="slide-form">
+    <h2>Global Defaults</h2>
+    <p class="scheme-intro">Your house-style — the base every scheme builds on. Read-only here. To update, push a value from any scheme.</p>
+    <div class="scheme-toolbar">
+      <select id="style-scheme-select" class="scheme-tb-select" title="Switch view">
+        <option value="__global__" selected>◈ Global</option>
+        ${schemeOptionsHTML}
+      </select>
+    </div>
+    <div class="global-view-banner">Read-only — push values from a scheme to update these defaults.</div>
+    <div class="tcard"><div class="tcard-hd">Fonts</div>
+      ${fontRow('font1',    'Font 1',    'Body · Point · Utility · Notes · Queue · Live')}
+      ${fontRow('font2',    'Font 2',    'Title · Response Card title')}
+      ${fontRow('boldFont', 'Bold / ALT','Emphasis spans')}
+    </div>
+    <div class="tcard"><div class="tcard-hd">Colors</div>
+      ${colorRow('colorNeutral', 'Neutral')}
+      ${colorRow('colorAccent',  'Accent')}
+    </div>
+    <div class="tcard"><div class="tcard-hd">Sizes</div>
+      <div class="palette-sizes-grid">
+        ${SIZE_FIELDS.map(k => `<div class="palette-size-row"><span class="palette-size-lbl">${esc(k)}</span><span class="palette-size-val">${g[k] ?? DEFAULT_GLOBAL_SIZES[k]} pt</span></div>`).join('')}
+      </div>
+    </div>
+  </div>`;
+  document.getElementById('style-scheme-select')?.addEventListener('change', e => {
+    state.activeSchemeId = e.target.value;
+    renderStylePanel(panel);
+  });
+}
+
+// Spreadsheet-style data grid for Text tab — one row per element, one column per property.
+function renderSchemeGrid(sv, rs, dis) {
+  const sections = [
+    { label: 'Display 1', rows: [
+      { id: 'body1',  lbl: 'body',        fontF: 'bodyFont',      advK: 'bodyFontAdv',      sizeF: 'bodySize' },
+      { id: 'bold1',  lbl: 'bold',        fontF: null,            advK: 'boldFontAdv',      sizeF: null },
+      { id: 'title1', lbl: 'title',       fontF: 'titleFont',     advK: 'titleFontAdv',     sizeF: 'titleSize' },
+      { id: 'point1', lbl: 'point',       fontF: 'pointFont',     advK: 'pointFontAdv',     sizeF: 'pointSize' },
+    ]},
+    { label: 'Display 2', rows: [
+      { id: 'body2',  lbl: 'body',        fontF: 'propBodyFont',  advK: 'propBodyFontAdv',  sizeF: 'propBodySize' },
+      { id: 'bold2',  lbl: 'bold',        fontF: null,            advK: 'propBoldFontAdv',  sizeF: null },
+      { id: 'title2', lbl: 'title',       fontF: 'propTitleFont', advK: 'propTitleFontAdv', sizeF: 'propTitleSize' },
+      { id: 'point2', lbl: 'point',       fontF: 'propPointFont', advK: 'propPointFontAdv', sizeF: 'propPointSize' },
+    ]},
+    { label: 'Display 3', rows: [
+      { id: 'notes',  lbl: 'Slide Notes', fontF: 'notesFont',     advK: 'notesFontAdv',     sizeF: 'notesSize' },
+    ]},
+    { label: 'Utility', rows: [
+      { id: 'se',    lbl: 'Utility',     fontF: 'startEndFont',  advK: 'startEndFontAdv',  sizeF: 'startEndSize' },
+      { id: 'live',  lbl: 'Live badge',  fontF: 'liveFont',      advK: 'liveFontAdv',      sizeF: 'liveSize' },
+      { id: 'queue', lbl: 'Queue',       fontF: 'queueFont',     advK: 'queueFontAdv',     sizeF: 'queueSize' },
+    ]},
+  ];
+
+  const families = (_fontFamilyMap && typeof _fontFamilyMap === 'object')
+    ? Object.keys(_fontFamilyMap).sort((a, b) => a.localeCompare(b))
+    : [];
+
+  const famOptsFn = (curFam) => families.length
+    ? families.map(f => `<option value="${esc(f)}"${f === curFam ? ' selected' : ''}>${esc(f)}</option>`).join('')
+    : `<option value="${esc(curFam || '')}">${esc(curFam || '—')}</option>`;
+
+  const styOptsFn = (curFam, curPS) => {
+    const arr = _fontFamilyMap?.[curFam];
+    if (arr && arr.length) return arr.map(({ style, postscript }) =>
+      `<option value="${esc(postscript)}"${postscript === curPS ? ' selected' : ''}>${esc(style)}</option>`
+    ).join('');
+    return `<option value="${esc(curPS || '')}">${esc(parseFontPS(curPS || '').style || 'Regular')}</option>`;
+  };
+
+  const colorVal = (v, fb = '#ffffff') => {
+    if (!v) return fb;
+    return v.startsWith('#') ? v : '#' + v;
+  };
+
+  const NUM_COLS = 34;
+
+  const dataRow = ({ id, lbl, fontF, advK, sizeF }) => {
+    const ps      = fontF ? (sv[fontF] || '') : '';
+    const curFam  = fontF ? parseFontPS(ps).family : '';
+    const adv     = sv[advK] || FONT_ADV_DEFAULTS();
+    const noFont  = !fontF;
+
+    const togCell  = (field) =>
+      `<td class="sg-td sg-td-tog"><button type="button" class="fav-toggle sg-tog ${adv[field] ? 'on' : ''}" data-scheme="${advK}" data-field="${field}" ${dis}></button></td>`;
+    const haBtn    = (v, title) =>
+      `<td class="sg-td sg-td-align"><button type="button" class="sg-halign-btn sg-align-cell ${adv.alignment === v ? 'on' : ''}" data-scheme="${advK}" data-val="${v}" title="${title}" ${dis}></button></td>`;
+    const vaBtn    = (v, title) =>
+      `<td class="sg-td sg-td-align"><button type="button" class="sg-valign-btn sg-align-cell ${adv.verticalAlignment === v ? 'on' : ''}" data-scheme="${advK}" data-val="${v}" title="${title}" ${dis}></button></td>`;
+    const numCell  = (field, dflt, step) =>
+      `<td class="sg-td"><input type="number" class="fav-num sg-num" data-scheme="${advK}" data-field="${field}" value="${adv[field] ?? dflt}" step="${step}" ${dis}></td>`;
+    const colorCell = (field, fb) =>
+      `<td class="sg-td sg-td-color"><input type="color" class="sg-adv-color" data-scheme="${advK}" data-field="${field}" value="${colorVal(adv[field], fb)}" ${dis}></td>`;
+
+    return `<tr class="sg-row" data-rowid="${id}">
+      <th scope="row" class="sg-row-lbl">${esc(lbl)}</th>
+      <td class="sg-td sg-td-fam">${noFont ? '<span class="sg-na">—</span>'
+        : `<select class="sf-fam-select sg-fam" id="sf-fam-${fontF}" ${dis}>${famOptsFn(curFam)}</select>`}</td>
+      <td class="sg-td sg-td-sty">${noFont ? '<span class="sg-na">—</span>'
+        : `<select class="sf-sty-select sg-sty" id="sf-sty-${fontF}" ${dis}>${styOptsFn(curFam, ps)}</select>`}</td>
+      <td class="sg-td sg-td-color"><input type="color" class="fav-color sg-color" data-scheme="${advK}" value="${colorVal(adv.color)}" ${dis}></td>
+      <td class="sg-td">${sizeF
+        ? `<input type="number" class="sz-input sf-size sg-size" id="ss-${sizeF}" value="${sv[sizeF] ?? 44}" min="1" max="400" step="1" ${dis}>`
+        : '<span class="sg-na">—</span>'}</td>
+      ${togCell('bold')}${togCell('italic')}${togCell('underline')}${togCell('strikethrough')}
+      <td class="sg-td"><select class="fav-select sg-caps" data-scheme="${advK}" data-field="capitalization" ${dis}>
+        <option value="" ${adv.capitalization === '' ? 'selected' : ''}>—</option>
+        <option value="allCaps" ${adv.capitalization === 'allCaps' ? 'selected' : ''}>ALL</option>
+        <option value="titleCase" ${adv.capitalization === 'titleCase' ? 'selected' : ''}>Title</option>
+        <option value="startCase" ${adv.capitalization === 'startCase' ? 'selected' : ''}>Start</option>
+        <option value="allLower" ${adv.capitalization === 'allLower' ? 'selected' : ''}>lower</option>
+      </select></td>
+      <td class="sg-td"><select class="fav-select sg-scale" data-scheme="${advK}" data-field="scaleBehavior" ${dis}>
+        <option value="" ${!adv.scaleBehavior ? 'selected' : ''}>—</option>
+        <option value="SCALE_BEHAVIOR_SCALE_FONT_DOWN" ${adv.scaleBehavior === 'SCALE_BEHAVIOR_SCALE_FONT_DOWN' ? 'selected' : ''}>↓</option>
+        <option value="SCALE_BEHAVIOR_SCALE_FONT_UP_DOWN" ${adv.scaleBehavior === 'SCALE_BEHAVIOR_SCALE_FONT_UP_DOWN' ? 'selected' : ''}>↕</option>
+        <option value="none" ${adv.scaleBehavior === 'none' ? 'selected' : ''}>✕</option>
+      </select></td>
+      ${haBtn('', 'Left')}${haBtn('center', 'Center')}${haBtn('right', 'Right')}${haBtn('justify', 'Justify')}
+      ${vaBtn('', 'Top')}${vaBtn('middle', 'Middle')}${vaBtn('bottom', 'Bottom')}
+      <td class="sg-td sg-td-tog"><button type="button" class="fav-toggle sg-tog ${adv.strokeEnabled ? 'on' : ''}" data-scheme="${advK}" data-field="strokeEnabled" ${dis}></button></td>
+      ${numCell('strokeWidth', 1, 0.5)}
+      ${colorCell('strokeColor', '#000000')}
+      <td class="sg-td sg-td-tog"><button type="button" class="fav-toggle sg-tog ${adv.shadowEnabled ? 'on' : ''}" data-scheme="${advK}" data-field="shadowEnabled" ${dis}></button></td>
+      ${colorCell('shadowColor', '#000000')}
+      ${numCell('shadowAngle', 315, 15)}
+      ${numCell('shadowOffset', 5, 0.5)}
+      ${numCell('shadowBlur', 5, 0.5)}
+      ${numCell('charSpacing', 0, 0.5)}
+      ${numCell('lineHeight', 1, 0.05)}
+      ${numCell('paragraphSpacingBefore', 0, 1)}
+      ${numCell('paragraphSpacingAfter', 0, 1)}
+      ${numCell('marginTop', 0, 1)}
+      ${numCell('marginBottom', 0, 1)}
+      ${numCell('marginLeft', 0, 1)}
+      ${numCell('marginRight', 0, 1)}
+    </tr>`;
+  };
+
+  const tbody = sections.map(sec =>
+    `<tr class="sg-section-hd"><th colspan="${NUM_COLS}" class="sg-section-lbl">${esc(sec.label)}</th></tr>` +
+    sec.rows.map(dataRow).join('')
+  ).join('');
+
+  return `<div class="sg-scroll"><table class="sg-table">
+    <thead>
+      <tr class="sg-grp-row">
+        <th rowspan="2" class="sg-corner"></th>
+        <th colspan="2" class="sg-grp">Font</th>
+        <th class="sg-grp sg-solo">Color</th>
+        <th class="sg-grp sg-solo">Size</th>
+        <th colspan="4" class="sg-grp">Formatting</th>
+        <th rowspan="2" class="sg-grp sg-hd-solo">Caps</th>
+        <th rowspan="2" class="sg-grp sg-hd-solo">Scale</th>
+        <th colspan="4" class="sg-grp">H-Align</th>
+        <th colspan="3" class="sg-grp">V-Align</th>
+        <th colspan="3" class="sg-grp">Stroke</th>
+        <th colspan="5" class="sg-grp">Shadow</th>
+        <th rowspan="2" class="sg-grp sg-hd-solo">Char</th>
+        <th rowspan="2" class="sg-grp sg-hd-solo">Line</th>
+        <th colspan="2" class="sg-grp">Para</th>
+        <th colspan="4" class="sg-grp">Margins</th>
+      </tr>
+      <tr class="sg-col-row">
+        <th class="sg-col">font</th><th class="sg-col">weight</th>
+        <th class="sg-col"></th>
+        <th class="sg-col">pt</th>
+        <th class="sg-col">B</th><th class="sg-col"><i>I</i></th><th class="sg-col"><u>U</u></th><th class="sg-col"><s>S</s></th>
+        <th class="sg-col">L</th><th class="sg-col">C</th><th class="sg-col">R</th><th class="sg-col">J</th>
+        <th class="sg-col">T</th><th class="sg-col">M</th><th class="sg-col">B</th>
+        <th class="sg-col">on</th><th class="sg-col">w</th><th class="sg-col">clr</th>
+        <th class="sg-col">on</th><th class="sg-col">clr</th><th class="sg-col">°</th><th class="sg-col">px</th><th class="sg-col">blur</th>
+        <th class="sg-col">↑</th><th class="sg-col">↓</th>
+        <th class="sg-col">T</th><th class="sg-col">B</th><th class="sg-col">L</th><th class="sg-col">R</th>
+      </tr>
+    </thead>
+    <tbody>${tbody}</tbody>
+  </table></div>`;
 }
 
 function renderStylePanel(panel) {
@@ -2704,13 +5371,21 @@ function renderStylePanel(panel) {
     state.styleSchemes  = [DEFAULT_STYLE_SCHEME()];
     state.activeSchemeId = 'default';
   }
+  const schemeOptionsHTML = state.styleSchemes.map(p =>
+    `<option value="${esc(p.id)}"${p.id === state.activeSchemeId ? ' selected' : ''}>${esc(p.name)}</option>`
+  ).join('');
+  if (state.activeSchemeId === '__global__') {
+    renderGlobalPanel(panel, schemeOptionsHTML);
+    return;
+  }
   const scheme = state.styleSchemes.find(p => p.id === state.activeSchemeId) || state.styleSchemes[0];
-  if (!['text', 'layout', 'motion', 'preview'].includes(_styleTab)) _styleTab = 'text';
+  if (!['palette', 'text', 'layout', 'motion', 'preview', 'macros', 'stage', 'responseCard'].includes(_styleTab)) _styleTab = 'text';
   const locked = !!scheme.isLocked;
   const dis    = locked ? 'disabled' : '';
-  const schemeOptions = state.styleSchemes.map(p =>
-    `<option value="${esc(p.id)}" ${p.id === state.activeSchemeId ? 'selected' : ''}>${esc(p.name)}</option>`
-  ).join('');
+  ensureGlobalTypography();
+  ensureSchemeTypography(scheme);
+  const schemeView = applyTypographyToStyle(scheme);
+  const resolvedTypography = resolveSchemeTypography(scheme);
 
   const FONT_EXTRA_COLORS = {
     bodyFontAdv:  [{ label: 'Fill',   field: 'bodyFill'    }],
@@ -2718,15 +5393,15 @@ function renderStylePanel(panel) {
   // Plain-language explanations of each font slot (technical term kept in the label,
   // explanation surfaced on hover via a ? badge). Keyed by font field.
   const FONT_TIPS = {
-    bodyFont:      'Scripture & body text on the main projection screens.',
-    propBodyFont:  'Scripture body text on the LED wall behind the stage (the "prop"), separate from the main screens.',
-    pointFont:     'Point slides — the main point text on the projection screens.',
-    propPointFont: 'Point slides — the point text on the LED wall behind the stage (the "prop").',
-    boldFont:      'Bold (emphasised) words inside body text on the main screens.',
-    propBoldFont:  'Bold (emphasised) words inside body text on the LED wall.',
-    titleFont:    'The scripture reference bar — e.g. "John 3:16".',
-    startEndFont: 'The Start and End title slides.',
-    notesFont:    'Speaker notes shown only on the confidence monitor, not to the room.',
+    bodyFont:      `Scripture & body text on the ${dn('mainScreen')}.`,
+    propBodyFont:  `Scripture body text on the ${dn('ledWall')} behind the stage (the "prop"), separate from the ${dn('mainScreen')}.`,
+    pointFont:     `Point slides — the main point text on the ${dn('mainScreen')}.`,
+    propPointFont: `Point slides — the point text on the ${dn('ledWall')} behind the stage (the "prop").`,
+    titleFont:    'Slide title text — e.g. a scripture reference or Response Card title.',
+    startEndFont: 'Utility slides like Start, End, and Response Card Hold.',
+    notesFont:    `Speaker notes shown only on the ${dn('monitor')}, not to the room.`,
+    liveFont:     `The small "live" badge shown on the ${dn('monitor')} to mark the active slide.`,
+    queueFont:    'The upcoming-slide queue strip down the side of the slide.',
   };
 
   panel.innerHTML = `
@@ -2740,13 +5415,16 @@ function renderStylePanel(panel) {
       </p>
 
       <div class="scheme-toolbar">
-        <select id="style-scheme-select" class="scheme-tb-select" title="Active scheme">${schemeOptions}</select>
+        <select id="style-scheme-select" class="scheme-tb-select" title="Active scheme">
+          <option value="__global__">◈ Global</option>
+          ${schemeOptionsHTML}
+        </select>
         <input type="text" id="style-scheme-name" class="scheme-tb-name" value="${esc(scheme.name)}" placeholder="Scheme name" ${dis}>
         <div class="scheme-tb-icons">
-          <button class="btn-scheme-icon" id="btn-scheme-new" title="New scheme">
+          <button class="btn-scheme-icon" id="btn-scheme-new" data-tip-key="scheme-new">
             <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M6.5 1v11M1 6.5h11" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
           </button>
-          <button class="btn-scheme-icon" id="btn-scheme-dupe" title="Duplicate scheme">
+          <button class="btn-scheme-icon" id="btn-scheme-dupe" data-tip-key="scheme-dupe">
             <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><rect x="4.5" y="1" width="7.5" height="8.5" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M1 4v6.5A1.5 1.5 0 0 0 2.5 12H9" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
           </button>
           <button class="btn-scheme-icon btn-scheme-icon-danger" id="btn-scheme-delete" title="Delete scheme"
@@ -2757,7 +5435,7 @@ function renderStylePanel(panel) {
             title="${locked ? 'Unlock to edit' : 'Lock scheme'}">${locked ? '🔒' : '🔓'}</button>
         </div>
         <div class="scheme-tb-actions">
-          <button class="btn-scheme-test" id="btn-scheme-import" title="Build a scheme from a presentation you styled in Pro7">Import from Pro7</button>
+          <button class="btn-scheme-test" id="btn-scheme-import" data-tip-key="scheme-import">Import from Pro7</button>
           <button class="btn-scheme-test btn-scheme-test-primary" id="btn-scheme-test">Test Scheme</button>
         </div>
       </div>
@@ -2775,81 +5453,33 @@ function renderStylePanel(panel) {
         </div>
       </div>` : ''}
 
-      <fieldset class="scheme-fields ${locked ? 'scheme-locked' : ''}" ${locked ? 'disabled' : ''}>
-
       <div class="style-tabs">
+        <button class="style-tab style-tab-palette${_styleTab === 'palette' ? ' active' : ''}" data-tab="palette">Palette</button>
         ${[['text','Text'],['layout','Layout'],['motion','Motion'],['preview','Preview']].map(([t, lbl]) => `
           <button class="style-tab${_styleTab === t ? ' active' : ''}" data-tab="${t}">${lbl}</button>`).join('')}
+        <span class="style-tab-sep"></span>
+        <button class="style-tab style-tab-global${_styleTab === 'macros' ? ' active' : ''}" data-tab="macros">Macros</button>
+        <button class="style-tab style-tab-global${_styleTab === 'stage' ? ' active' : ''}" data-tab="stage">Stage</button>
+        <button class="style-tab style-tab-global${_styleTab === 'responseCard' ? ' active' : ''}" data-tab="responseCard">Response Card</button>
       </div>
 
-      <!-- TEXT tab — compact style cards -->
+      <fieldset class="scheme-fields ${locked ? 'scheme-locked' : ''}" ${locked ? 'disabled' : ''}>
+
+      <!-- PALETTE tab — scheme-level font/color slots -->
+      <div class="style-tab-body" id="style-tab-palette" ${_styleTab !== 'palette' ? 'style="display:none"' : ''}>
+        ${renderPaletteTab(scheme, resolvedTypography, dis)}
+      </div>
+
+      <!-- TEXT tab — canvas map + data grid -->
       <div class="style-tab-body" id="style-tab-text" ${_styleTab !== 'text' ? 'style="display:none"' : ''}>
+        <div class="sg-lp-compact">${layoutPreview(scheme, _textSel)}</div>
+
         <div class="style-fill-toggle-row ${locked ? 'disabled' : ''}" id="fill-toggle-row">
           <div class="toggle ${scheme.fillEnabled ? 'on' : ''}" id="fill-toggle"></div>
           <label>Show element fills</label>
         </div>
 
-        <div class="tcard">
-          <div class="tcard-hd">Body <span class="lbl-tip" title="${esc(FONT_TIPS.bodyFont)}">?</span></div>
-          <div class="tcard-cols tcard-2">
-            <div class="tcard-col"><div class="tcard-col-hd">Main Screen</div>
-              ${fontControl({ advKey: 'bodyFontAdv', field: 'bodyFont', sizeField: 'bodySize', scheme, dis })}</div>
-            <div class="tcard-col"><div class="tcard-col-hd">Prop / LED Wall</div>
-              ${fontControl({ advKey: 'propBodyFontAdv', field: 'propBodyFont', sizeField: 'propBodySize', scheme, dis })}</div>
-          </div>
-          ${fontAdvPanel('bodyFontAdv', 'Body — main screen', scheme, locked, FONT_EXTRA_COLORS.bodyFontAdv || [])}
-          ${fontAdvPanel('propBodyFontAdv', 'Body — prop / LED wall', scheme, locked, [])}
-        </div>
-
-        <div class="tcard">
-          <div class="tcard-hd">Point <span class="lbl-tip" title="${esc(FONT_TIPS.pointFont)}">?</span></div>
-          <div class="tcard-cols tcard-2">
-            <div class="tcard-col"><div class="tcard-col-hd">Main Screen</div>
-              ${fontControl({ advKey: 'pointFontAdv', field: 'pointFont', scheme, dis })}</div>
-            <div class="tcard-col"><div class="tcard-col-hd">Prop / LED Wall</div>
-              ${fontControl({ advKey: 'propPointFontAdv', field: 'propPointFont', scheme, dis })}</div>
-          </div>
-          ${fontAdvPanel('pointFontAdv', 'Point — main screen', scheme, locked, [])}
-          ${fontAdvPanel('propPointFontAdv', 'Point — prop / LED wall', scheme, locked, [])}
-        </div>
-
-        <div class="tcard">
-          <div class="tcard-hd">Bold in Body <span class="lbl-tip" title="${esc(FONT_TIPS.boldFont)}">?</span></div>
-          <div class="tcard-cols tcard-2">
-            <div class="tcard-col"><div class="tcard-col-hd">Main Screen</div>
-              ${fontControl({ advKey: 'boldFontAdv', field: 'boldFont', scheme, dis })}</div>
-            <div class="tcard-col"><div class="tcard-col-hd">Prop / LED Wall</div>
-              ${fontControl({ advKey: 'propBoldFontAdv', field: 'propBoldFont', scheme, dis })}</div>
-          </div>
-          ${fontAdvPanel('boldFontAdv', 'Bold in body — main screen', scheme, locked, [])}
-          ${fontAdvPanel('propBoldFontAdv', 'Bold in body — prop / LED wall', scheme, locked, [])}
-        </div>
-
-        <div class="tcard">
-          <div class="tcard-hd">Reference Bar <span class="lbl-tip" title="${esc(FONT_TIPS.titleFont)}">?</span></div>
-          <div class="tcard-cols tcard-1">
-            <div class="tcard-col">
-              ${fontControl({ advKey: 'titleFontAdv', field: 'titleFont', sizeField: 'titleSize', propSizeField: 'propTitleSize', scheme, dis })}
-            </div>
-          </div>
-          ${fontAdvPanel('titleFontAdv', 'Reference bar', scheme, locked, [])}
-        </div>
-
-        <div class="tcard">
-          <div class="tcard-hd">Start / End <span class="lbl-tip" title="${esc(FONT_TIPS.startEndFont)}">?</span></div>
-          <div class="tcard-cols tcard-1">
-            <div class="tcard-col">${fontControl({ advKey: 'startEndFontAdv', field: 'startEndFont', sizeField: 'startEndSize', scheme, dis })}</div>
-          </div>
-          ${fontAdvPanel('startEndFontAdv', 'Start / End', scheme, locked, [])}
-        </div>
-
-        <div class="tcard">
-          <div class="tcard-hd">Slide Notes / Confidence Monitor <span class="lbl-tip" title="${esc(FONT_TIPS.notesFont)}">?</span></div>
-          <div class="tcard-cols tcard-1">
-            <div class="tcard-col">${fontControl({ advKey: 'notesFontAdv', field: 'notesFont', sizeField: 'notesSize', scheme, dis })}</div>
-          </div>
-          ${fontAdvPanel('notesFontAdv', 'Slide notes', scheme, locked, [])}
-        </div>
+        ${renderSchemeGrid(schemeView, scheme, dis)}
       </div>
 
       <!-- MOTION tab — Transitions + Build Order -->
@@ -2891,7 +5521,7 @@ function renderStylePanel(panel) {
         <div class="motion-sub" id="motion-sub-build" ${_motionTab !== 'build' ? 'style="display:none"' : ''}>
           <p class="style-group-hint">Advanced — controls how each element animates in and out, per slide type.</p>
           <div class="bo-tabs" id="bo-tabs">
-            ${[['content','Content'],['point','Point'],['blank','Blank'],['startEnd','Start/End']].map(([tab, lbl]) =>
+            ${[['content','Scripture'],['point','Point'],['blank','Blank'],['startEnd','Utility']].map(([tab, lbl]) =>
               `<button class="bo-tab${_boActiveTab === tab ? ' active' : ''}" data-tab="${tab}">${lbl}</button>`
             ).join('')}
           </div>
@@ -2903,7 +5533,7 @@ function renderStylePanel(panel) {
 
       <!-- PREVIEW tab -->
       <div class="style-tab-body" id="style-tab-preview" ${_styleTab !== 'preview' ? 'style="display:none"' : ''}>
-        ${schemePreviewPanel(scheme)}
+        ${schemePreviewPanel(schemeView)}
       </div>
 
       <!-- LAYOUT tab -->
@@ -2911,26 +5541,42 @@ function renderStylePanel(panel) {
         ${layoutPreview(scheme, _layoutSel)}
         <p class="style-group-hint">X/Y/W/H in pixels; use the align buttons for quick centering.</p>
         ${lyTable([
-          { label: 'Main Canvas',  type: 'head' },
+          { label: dn('mainScreen'), type: 'head' },
           { label: 'Canvas',       cols: ['—','—','canvasW','canvasH'] },
           { label: 'Body',         cols: ['bodyX','bodyY','bodyW','bodyH'], region: 'body' },
-          { label: 'Header',       cols: ['titleX','titleY','titleW','titleH'], autoY: { field: 'autoTitleY', gapField: 'titleAutoGap' }, region: 'header' },
-          { label: 'Start / End',  cols: ['startEndX','startEndY','startEndW','startEndH'], region: 'startEnd' },
-          { label: 'Gradient',     cols: ['gradientX','gradientY',null,'gradientH'], region: 'gradient' },
+          { label: 'Point',        cols: ['pointX','pointY','pointW','pointH'], region: 'point' },
+          { label: 'Title',        cols: ['titleX','titleY','titleW','titleH'], autoY: { field: 'autoTitleY', gapField: 'titleAutoGap' }, region: 'header' },
+          { label: 'Utility',      cols: ['startEndX','startEndY','startEndW','startEndH'], region: 'startEnd' },
           { label: 'Live',         cols: ['liveX','liveY','liveW','liveH'], region: 'live' },
           { label: 'Queue',        cols: ['queueX','queueY','queueW','queueH'], region: 'queue' },
-          { label: 'Prop Canvas',  type: 'head' },
+          { label: dn('ledWall'),  type: 'head', head: 'prop' },
           { label: 'Canvas',       cols: [null,null,'propCanvasW','propCanvasH'] },
           { label: 'Prop body',    cols: ['propBodyX','propBodyY','propBodyW','propBodyH'], region: 'propBody' },
-          { label: 'Prop header',  cols: ['propTitleX','propTitleY','propTitleW','propTitleH'], autoY: { field: 'propAutoTitleY', gapField: 'propTitleAutoGap' }, region: 'propHeader' },
+          { label: 'Prop title',   cols: ['propTitleX','propTitleY','propTitleW','propTitleH'], autoY: { field: 'propAutoTitleY', gapField: 'propTitleAutoGap' }, region: 'propHeader' },
         ], scheme, dis)}
       </div>
 
       </fieldset>
+
+      <!-- MACROS tab — lives outside fieldset so it's editable even on locked schemes -->
+      <div class="style-tab-body" id="style-tab-macros" ${_styleTab !== 'macros' ? 'style="display:none"' : ''}>
+        <div id="scheme-macros-tab"></div>
+      </div>
+
+      <!-- STAGE tab — per-scheme stage display entries -->
+      <div class="style-tab-body" id="style-tab-stage" ${_styleTab !== 'stage' ? 'style="display:none"' : ''}>
+        <div id="scheme-stage-tab"></div>
+      </div>
+
+      <!-- RESPONSE CARD tab — display-2 (LED wall) prop elements -->
+      <div class="style-tab-body" id="style-tab-responseCard" ${_styleTab !== 'responseCard' ? 'style="display:none"' : ''}>
+        <div id="scheme-rc-tab"></div>
+      </div>
+
     </div>
   `;
 
-  // Top-level tabs: Text / Layout / Motion / Preview
+  // Top-level tabs: Text / Layout / Motion / Preview / Macros / Stage
   panel.querySelectorAll('.style-tab').forEach(btn => {
     btn.addEventListener('click', () => {
       _styleTab = btn.dataset.tab;
@@ -2940,6 +5586,13 @@ function renderStylePanel(panel) {
       });
     });
   });
+
+  // Macros tab
+  attachSchemesMacrosTab('scheme-macros-tab');
+  // Stage tab
+  attachSchemesStageTab('scheme-stage-tab');
+  // Response Card tab (display-2 prop elements)
+  attachSchemesResponseCardTab('scheme-rc-tab');
 
   // Motion sub-tabs: Transitions / Build Order
   panel.querySelectorAll('.motion-subtab').forEach(btn => {
@@ -2954,7 +5607,7 @@ function renderStylePanel(panel) {
 
   // Layout visual preview ↔ table row linking (works whether or not the scheme is locked)
   const applyRegionSel = (slug, scroll) => {
-    panel.querySelectorAll('.lp-region').forEach(b => b.classList.toggle('sel', b.dataset.region === slug));
+    panel.querySelectorAll('#style-tab-layout .lp-region').forEach(b => b.classList.toggle('sel', b.dataset.region === slug));
     panel.querySelectorAll('.ly-table tbody tr[data-region]').forEach(tr => {
       const on = tr.dataset.region === slug;
       tr.classList.toggle('ly-row-selected', on);
@@ -2962,11 +5615,12 @@ function renderStylePanel(panel) {
     });
   };
   const selectRegion = (slug) => { _layoutSel = slug; applyRegionSel(slug, true); };
-  panel.querySelectorAll('.lp-region').forEach(b => b.addEventListener('click', () => selectRegion(b.dataset.region)));
+  panel.querySelectorAll('#style-tab-layout .lp-region').forEach(b => b.addEventListener('click', () => selectRegion(b.dataset.region)));
   panel.querySelectorAll('.ly-row-name-click').forEach(c => c.addEventListener('click', () => {
     const tr = c.closest('tr'); if (tr?.dataset.region) selectRegion(tr.dataset.region);
   }));
   if (_layoutSel) applyRegionSel(_layoutSel, false);
+
 
   // Locked-scheme banner actions
   document.getElementById('btn-lock-unlock')?.addEventListener('click', () => {
@@ -2986,26 +5640,27 @@ function renderStylePanel(panel) {
   // Scheme select / new / dupe / delete
   document.getElementById('style-scheme-select').addEventListener('change', e => {
     state.activeSchemeId = e.target.value;
-    saveState(); syncStyleButton(); renderStylePanel(panel);
+    if (e.target.value !== '__global__') saveState();
+    renderStylePanel(panel);
   });
   document.getElementById('btn-scheme-new').addEventListener('click', () => {
     const base = state.styleSchemes.find(s => s.isDefault) || DEFAULT_STYLE_SCHEME();
-    const p = { ...base, id: 'scheme_' + Date.now(), name: 'New Scheme', isDefault: false, isLocked: false };
+    const p = { ...deepClone(base), id: 'scheme_' + Date.now(), name: 'New Scheme', isDefault: false, isLocked: false };
     state.styleSchemes.push(p); state.activeSchemeId = p.id;
-    saveState(); syncStyleButton(); renderStylePanel(panel);
+    saveState(); renderStylePanel(panel);
   });
   document.getElementById('btn-scheme-dupe').addEventListener('click', () => {
     const src = getScheme() || state.styleSchemes[0];
-    const d   = { ...src, id: 'scheme_' + Date.now(), name: src.name + ' Copy', isDefault: false, isLocked: false };
+    const d   = { ...deepClone(src), id: 'scheme_' + Date.now(), name: src.name + ' Copy', isDefault: false, isLocked: false };
     state.styleSchemes.push(d); state.activeSchemeId = d.id;
-    saveState(); syncStyleButton(); renderStylePanel(panel);
+    saveState(); renderStylePanel(panel);
   });
   document.getElementById('btn-scheme-delete').addEventListener('click', () => {
     const s = getScheme();
     if (!s || s.isDefault || state.styleSchemes.length <= 1) return;
     state.styleSchemes  = state.styleSchemes.filter(p => p.id !== state.activeSchemeId);
     state.activeSchemeId = state.styleSchemes[0].id;
-    saveState(); syncStyleButton(); renderStylePanel(panel);
+    saveState(); renderStylePanel(panel);
   });
 
   // Lock / unlock
@@ -3024,10 +5679,32 @@ function renderStylePanel(panel) {
   // Scheme name
   document.getElementById('style-scheme-name').addEventListener('input', e => {
     const s = getScheme();
-    if (s) { s.name = e.target.value; saveState(); syncStyleButton(); }
+    if (s) { s.name = e.target.value; saveState(); }
   });
 
   if (locked) return; // no need to attach change handlers when locked
+
+  document.querySelectorAll('.inherit-action').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.preventDefault();
+      e.stopPropagation();
+      const s = getScheme(); if (!s) return;
+      ensureGlobalTypography();
+      ensureSchemeTypography(s);
+      const key = btn.dataset.key;
+      const resolved = resolveSchemeTypography(s)[key];
+      if (btn.dataset.action === 'push-global') {
+        const inheritCount = state.styleSchemes.filter(x => !(x.typography?.[key])).length;
+        const customCount  = state.styleSchemes.filter(x =>  !!(x.typography?.[key])).length;
+        const msg = `Push "${key}" to Global?\n\n${inheritCount} scheme${inheritCount === 1 ? '' : 's'} will pick up this new default.${customCount ? `\n${customCount} scheme${customCount === 1 ? '' : 's'} with a custom value will not change.` : ''}`;
+        if (!confirm(msg)) return;
+        state.globalTypography[key] = COLOR_TYPO_KEYS.has(key) ? normalizeHexColor(resolved) : resolved;
+      }
+      s.typography[key] = null;
+      saveState();
+      renderStylePanel(panel);
+    });
+  });
 
   // Fill toggle
   document.getElementById('fill-toggle-row').addEventListener('click', () => {
@@ -3050,7 +5727,7 @@ function renderStylePanel(panel) {
   });
 
   // Font selects (family + style)
-  ['bodyFont', 'propBodyFont', 'pointFont', 'propPointFont', 'boldFont', 'propBoldFont', 'titleFont', 'startEndFont', 'notesFont'].forEach(field => {
+  ['bodyFont', 'propBodyFont', 'pointFont', 'propPointFont', 'titleFont', 'propTitleFont', 'startEndFont', 'notesFont', 'liveFont', 'queueFont'].forEach(field => {
     const famSel = document.getElementById(`sf-fam-${field}`);
     const stySel = document.getElementById(`sf-sty-${field}`);
     if (!famSel || !stySel) return;
@@ -3069,26 +5746,104 @@ function renderStylePanel(panel) {
       stySel.innerHTML = styles.map(({ style, postscript }) =>
         `<option value="${esc(postscript)}">${esc(style)}</option>`
       ).join('') || `<option value="${esc(fam)}">${esc('Regular')}</option>`;
-      s[field] = stySel.value;
+      const typoKey = FONT_FIELD_TO_TYPO_KEY[field];
+      if (typoKey) {
+        ensureSchemeTypography(s);
+        s.typography[typoKey] = stySel.value;
+      } else {
+        s[field] = stySel.value;
+      }
       applyPreview();
       saveState();
+      if (typoKey) renderStylePanel(panel);
     });
 
     stySel.addEventListener('change', e => {
       const s = getScheme(); if (!s) return;
-      s[field] = e.target.value;
+      const typoKey = FONT_FIELD_TO_TYPO_KEY[field];
+      if (typoKey) {
+        ensureSchemeTypography(s);
+        s.typography[typoKey] = e.target.value;
+      } else {
+        s[field] = e.target.value;
+      }
       applyPreview();
       saveState();
+      if (typoKey) renderStylePanel(panel);
+    });
+  });
+
+  // Palette tab — font slot selects (font1, font2, boldFont)
+  ;['font1', 'font2', 'boldFont'].forEach(key => {
+    const famSel = document.getElementById(`palette-fam-${key}`);
+    const stySel = document.getElementById(`palette-sty-${key}`);
+    if (!famSel || !stySel) return;
+    const applyPreview = () => { famSel.style.fontFamily = `"${stySel.value || famSel.value}", sans-serif`; };
+    applyPreview();
+    famSel.addEventListener('change', e => {
+      const s = getScheme(); if (!s) return;
+      const fam = e.target.value;
+      const styles = _fontFamilyMap?.[fam] || [];
+      stySel.innerHTML = styles.map(({ style, postscript }) =>
+        `<option value="${esc(postscript)}">${esc(style)}</option>`
+      ).join('') || `<option value="${esc(fam)}">${esc('Regular')}</option>`;
+      ensureSchemeTypography(s);
+      s.typography[key] = stySel.value;
+      applyPreview(); saveState(); renderStylePanel(panel);
+    });
+    stySel.addEventListener('change', e => {
+      const s = getScheme(); if (!s) return;
+      ensureSchemeTypography(s);
+      s.typography[key] = e.target.value;
+      applyPreview(); saveState(); renderStylePanel(panel);
+    });
+  });
+
+  // Palette tab — color slot pickers (colorNeutral, colorAccent)
+  ;['colorNeutral', 'colorAccent'].forEach(key => {
+    const picker = document.getElementById(`palette-color-${key}`);
+    const hexIn  = document.getElementById(`palette-hex-${key}`);
+    const clearBtn = document.querySelector(`.palette-color-clear[data-key="${key}"]`);
+    if (!picker || !hexIn) return;
+    const commitColor = (hex, rerender = true) => {
+      const s = getScheme(); if (!s) return;
+      ensureSchemeTypography(s);
+      s.typography[key] = normalizeHexColor(hex);
+      saveState(); if (rerender) renderStylePanel(panel);
+    };
+    picker.addEventListener('input', e => { hexIn.value = e.target.value.replace(/^#/,''); commitColor(e.target.value, false); });
+    picker.addEventListener('change', e => commitColor(e.target.value));
+    hexIn.addEventListener('blur', e => {
+      const v = '#' + e.target.value.replace(/^#/,'');
+      if (/^#[0-9a-fA-F]{6}$/.test(v)) commitColor(v);
+    });
+    clearBtn?.addEventListener('click', () => {
+      const s = getScheme(); if (!s) return;
+      ensureSchemeTypography(s);
+      s.typography[key] = null;
+      saveState(); renderStylePanel(panel);
     });
   });
 
   // Size inputs
-  ['bodySize', 'titleSize', 'startEndSize', 'propBodySize', 'propTitleSize', 'notesSize'].forEach(field => {
+  ['bodySize', 'pointSize', 'titleSize', 'startEndSize', 'propBodySize', 'propPointSize', 'propTitleSize', 'notesSize', 'liveSize', 'queueSize'].forEach(field => {
     const inp = document.getElementById(`ss-${field}`);
     if (!inp) return;
     inp.addEventListener('input', e => {
       const s = getScheme();
-      if (s) { s[field] = parseInt(e.target.value, 10) || 44; saveState(); }
+      if (!s) return;
+      const val = parseInt(e.target.value, 10) || DEFAULT_GLOBAL_SIZES[field] || 44;
+      const typoKey = SIZE_FIELD_TO_TYPO_KEY[field];
+      if (typoKey) {
+        ensureSchemeTypography(s);
+        s.typography[typoKey] = val;
+      } else {
+        s[field] = val;
+      }
+      saveState();
+    });
+    inp.addEventListener('change', () => {
+      if (SIZE_FIELD_TO_TYPO_KEY[field]) renderStylePanel(panel);
     });
   });
 
@@ -3200,10 +5955,18 @@ function renderStylePanel(panel) {
       const s = getScheme(); if (!s) return;
       const key = picker.dataset.scheme;
       if (!s[key]) s[key] = FONT_ADV_DEFAULTS();
-      s[key].color = e.target.value;
+      s[key].color = e.target.value; // always #RRGGBB from native picker
+      const typoKey = ADV_FIELD_TO_TYPO_KEY[key];
+      if (typoKey) {
+        ensureSchemeTypography(s);
+        s.typography[typoKey] = normalizeHexColor(e.target.value);
+      }
       const hexEl = picker.closest('.color-input-wrap')?.querySelector('.fav-color-hex');
-      if (hexEl) hexEl.value = e.target.value;
+      if (hexEl) hexEl.value = e.target.value.replace(/^#/, '');
       saveState();
+    });
+    picker.addEventListener('change', () => {
+      if (ADV_FIELD_TO_TYPO_KEY[picker.dataset.scheme]) renderStylePanel(panel);
     });
   });
   document.querySelectorAll('.fav-color-hex').forEach(hexIn => {
@@ -3211,11 +5974,19 @@ function renderStylePanel(panel) {
       const s = getScheme(); if (!s) return;
       const key = hexIn.dataset.scheme;
       if (!s[key]) s[key] = FONT_ADV_DEFAULTS();
-      if (/^#[0-9a-fA-F]{6}$/.test(e.target.value)) {
-        s[key].color = e.target.value;
+      const raw = e.target.value.replace(/^#/, '');
+      if (/^[0-9a-fA-F]{6}$/.test(raw)) {
+        const full = '#' + raw;
+        s[key].color = full;
+        const typoKey = ADV_FIELD_TO_TYPO_KEY[key];
+        if (typoKey) {
+          ensureSchemeTypography(s);
+          s.typography[typoKey] = normalizeHexColor(full);
+        }
         const picker = hexIn.closest('.color-input-wrap')?.querySelector('.fav-color');
-        if (picker) picker.value = e.target.value;
+        if (picker) picker.value = full;
         saveState();
+        if (typoKey) renderStylePanel(panel);
       }
     });
   });
@@ -3225,12 +5996,18 @@ function renderStylePanel(panel) {
       const key = btn.dataset.scheme;
       if (!s[key]) s[key] = FONT_ADV_DEFAULTS();
       s[key].color = '';
+      const typoKey = ADV_FIELD_TO_TYPO_KEY[key];
+      if (typoKey) {
+        ensureSchemeTypography(s);
+        s.typography[typoKey] = null;
+      }
       const wrap = btn.closest('.color-input-wrap');
       if (wrap) {
         wrap.querySelector('.fav-color').value = '#ffffff';
         wrap.querySelector('.fav-color-hex').value = '';
       }
       saveState();
+      if (typoKey) renderStylePanel(panel);
     });
   });
 
@@ -3257,7 +6034,7 @@ function renderStylePanel(panel) {
       if (!s[key]) s[key] = FONT_ADV_DEFAULTS();
       s[key][field] = e.target.value;
       const hex = picker.closest('.fav-inline-row')?.querySelector('.fav-sc-hex[data-which="' + field + '"]');
-      if (hex) hex.value = e.target.value;
+      if (hex) hex.value = e.target.value.replace(/^#/, '');
       saveState();
     });
   });
@@ -3267,14 +6044,89 @@ function renderStylePanel(panel) {
       const key   = hexIn.dataset.scheme;
       const field = hexIn.dataset.which;
       if (!s[key]) s[key] = FONT_ADV_DEFAULTS();
-      if (/^#[0-9a-fA-F]{6}$/.test(e.target.value)) {
-        s[key][field] = e.target.value;
+      const raw = e.target.value.replace(/^#/, '');
+      if (/^[0-9a-fA-F]{6}$/.test(raw)) {
+        const full = '#' + raw;
+        s[key][field] = full;
         const picker = hexIn.closest('.fav-inline-row')?.querySelector('.fav-sc[data-which="' + field + '"]');
-        if (picker) picker.value = e.target.value;
+        if (picker) picker.value = full;
         saveState();
       }
     });
   });
+
+  // Scheme grid: H-alignment radio buttons
+  panel.querySelectorAll('.sg-halign-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const s = getScheme(); if (!s) return;
+      const key = btn.dataset.scheme;
+      if (!s[key]) s[key] = FONT_ADV_DEFAULTS();
+      s[key].alignment = btn.dataset.val;
+      panel.querySelectorAll(`.sg-halign-btn[data-scheme="${key}"]`).forEach(b =>
+        b.classList.toggle('on', b.dataset.val === btn.dataset.val));
+      saveState();
+    });
+  });
+
+  // Scheme grid: V-alignment radio buttons
+  panel.querySelectorAll('.sg-valign-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const s = getScheme(); if (!s) return;
+      const key = btn.dataset.scheme;
+      if (!s[key]) s[key] = FONT_ADV_DEFAULTS();
+      s[key].verticalAlignment = btn.dataset.val;
+      panel.querySelectorAll(`.sg-valign-btn[data-scheme="${key}"]`).forEach(b =>
+        b.classList.toggle('on', b.dataset.val === btn.dataset.val));
+      saveState();
+    });
+  });
+
+  // Scheme grid: bare color fields (stroke color, shadow color)
+  panel.querySelectorAll('.sg-adv-color').forEach(picker => {
+    picker.addEventListener('input', e => {
+      const s = getScheme(); if (!s) return;
+      const key   = picker.dataset.scheme;
+      const field = picker.dataset.field;
+      if (!s[key]) s[key] = FONT_ADV_DEFAULTS();
+      s[key][field] = e.target.value;
+      saveState();
+    });
+  });
+
+  // Scheme grid: canvas click → highlight matching row
+  panel.querySelectorAll('#style-tab-text .lp-region').forEach(b => {
+    b.addEventListener('click', () => {
+      const slug = b.dataset.region;
+      _textSel = slug;
+      const TEXT_REGION_TO_ROW = {
+        body: 'body1', propBody: 'body2', point: 'point1', propPoint: 'point2',
+        header: 'title1', propHeader: 'title2', startEnd: 'se',
+        live: 'live', queue: 'queue',
+      };
+      const rowId = TEXT_REGION_TO_ROW[slug];
+      panel.querySelectorAll('#style-tab-text .lp-region').forEach(r =>
+        r.classList.toggle('sel', r.dataset.region === slug));
+      panel.querySelectorAll('#style-tab-text .sg-row').forEach(r =>
+        r.classList.toggle('sg-row-sel', r.dataset.rowid === rowId));
+      if (rowId) {
+        const target = panel.querySelector(`#style-tab-text .sg-row[data-rowid="${rowId}"]`);
+        if (target) target.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      }
+    });
+  });
+  // Restore selection highlight after re-render
+  if (_textSel) {
+    const TEXT_REGION_TO_ROW = {
+      body: 'body1', propBody: 'body2', point: 'point1', propPoint: 'point2',
+      header: 'title1', propHeader: 'title2', startEnd: 'se',
+      live: 'live', queue: 'queue',
+    };
+    const rowId = TEXT_REGION_TO_ROW[_textSel];
+    panel.querySelectorAll('#style-tab-text .lp-region').forEach(r =>
+      r.classList.toggle('sel', r.dataset.region === _textSel));
+    panel.querySelectorAll('#style-tab-text .sg-row').forEach(r =>
+      r.classList.toggle('sg-row-sel', r.dataset.rowid === rowId));
+  }
 
   // Layout numeric inputs — update value + refresh alignment button states in-place
   document.querySelectorAll('.layout-num').forEach(inp => {
@@ -3370,21 +6222,41 @@ function renderResponseCardPanel(panel) {
       <div class="settings-section">
         <h3>Text</h3>
         <div class="field" style="margin-bottom:10px">
-          <label>Decision Text</label>
-          <input type="text" id="rc-decisionText" spellcheck="true" value="${esc(rc.decisionText)}"
-                 placeholder="I have decided to follow Jesus today!">
+          <label data-tip-key="decision-text">Decision Text</label>
+          ${(cfg.rcDecisionTextLocked !== false) ? `
+            <div class="rc-locked-field" id="rc-decisionText-locked" title="Click to customize">
+              <span class="rc-locked-val">${esc(rc.decisionText || 'I have decided to follow Jesus today!')}</span>
+              <span class="rc-locked-hint">locked</span>
+            </div>
+          ` : `
+            <div style="display:flex;align-items:center;gap:6px;flex:1">
+              <input type="text" id="rc-decisionText" spellcheck="true" value="${esc(rc.decisionText)}" placeholder="Decision text" style="flex:1">
+              <button class="btn-sm rc-lock-btn" id="rc-decision-relock" title="Reset and lock">Lock</button>
+            </div>
+          `}
         </div>
         <div class="field" style="margin-bottom:10px">
           <label>Response 1</label>
-          <input type="text" id="rc-r1" spellcheck="true" value="${esc(rc.r1)}" placeholder="e.g. I am out of step in my relationships.">
+          <input type="text" id="rc-r1" spellcheck="true" value="${esc(rc.r1)}" placeholder="Response option">
         </div>
         <div class="field" style="margin-bottom:10px">
           <label>Response 2</label>
-          <input type="text" id="rc-r2" spellcheck="true" value="${esc(rc.r2)}" placeholder="e.g. I want to learn a new rhythm.">
+          <input type="text" id="rc-r2" spellcheck="true" value="${esc(rc.r2)}" placeholder="Response option">
         </div>
         <div class="field" style="margin-bottom:0">
           <label>Response 3</label>
-          <input type="text" id="rc-r3" spellcheck="true" value="${esc(rc.r3)}" placeholder="e.g. I will choose to respond and not react.">
+          <input type="text" id="rc-r3" spellcheck="true" value="${esc(rc.r3)}" placeholder="Response option">
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <h3 data-tip="The confidence-monitor notes shown on every Response Card slide. Write your own text and drop in tags that auto-fill.">${dn('monitor')} Notes</h3>
+        <div class="field" style="margin-bottom:6px">
+          <textarea id="rc-notes-template" class="rc-notes-template" rows="5" spellcheck="true" placeholder="{decision}&#10;1 — {r1}&#10;2 — {r2}&#10;3 — {r3}">${esc(rc.notesTemplate ?? '{decision}\n1 — {r1}\n2 — {r2}\n3 — {r3}')}</textarea>
+        </div>
+        <div class="rc-notes-tags">
+          Tags: <code>{decision}</code> <code>{r1}</code> <code>{r2}</code> <code>{r3}</code> — they auto-fill from the fields above.
+          <button class="btn-sm" id="rc-notes-reset" type="button" style="margin-left:6px">Reset to default</button>
         </div>
       </div>
     </div>
@@ -3396,11 +6268,40 @@ function renderResponseCardPanel(panel) {
     saveState();
   });
 
-  ['decisionText', 'r1', 'r2', 'r3'].forEach(key => {
-    document.getElementById(`rc-${key}`).addEventListener('input', e => {
-      cfg.responses[key] = e.target.value;
-      saveState();
+  // Decision text lock/unlock
+  const lockedEl  = document.getElementById('rc-decisionText-locked');
+  const relockBtn = document.getElementById('rc-decision-relock');
+  if (lockedEl) {
+    lockedEl.addEventListener('click', () => {
+      showConfirmModal(
+        'Customize decision text?',
+        'This text appears on the Response Card slide. Unlocking lets you edit it for this deck.',
+        'Unlock',
+        () => { cfg.rcDecisionTextLocked = false; saveState(); render(); }
+      );
     });
+  }
+  if (relockBtn) {
+    relockBtn.addEventListener('click', () => {
+      cfg.rcDecisionTextLocked = true;
+      saveState();
+      render();
+    });
+  }
+
+  ['r1', 'r2', 'r3'].forEach(key => {
+    const el = document.getElementById('rc-' + key);
+    if (el) el.addEventListener('input', e => { cfg.responses[key] = e.target.value; saveState(); });
+  });
+  const dtEl = document.getElementById('rc-decisionText');
+  if (dtEl) dtEl.addEventListener('input', e => { cfg.responses.decisionText = e.target.value; saveState(); });
+
+  const tmplEl = document.getElementById('rc-notes-template');
+  if (tmplEl) tmplEl.addEventListener('input', e => { cfg.responses.notesTemplate = e.target.value; saveState(); });
+  document.getElementById('rc-notes-reset')?.addEventListener('click', () => {
+    cfg.responses.notesTemplate = '{decision}\n1 — {r1}\n2 — {r2}\n3 — {r3}';
+    saveState();
+    render();
   });
 }
 
@@ -3410,9 +6311,11 @@ function richEditor(id, spans) {
   return `
     <div class="rich-editor-wrap">
       <div class="rich-toolbar">
-        <button class="btn-fmt" id="${id}-bold"      type="button" title="Bold (⌘B)"><b>B</b></button>
-        <button class="btn-fmt" id="${id}-italic"    type="button" title="Italic (⌘I)"><i>I</i></button>
-        <button class="btn-fmt" id="${id}-underline" type="button" title="Underline (⌘U)"><u>U</u></button>
+        <button class="btn-fmt" id="${id}-bold"      type="button" data-tip-key="bold"><b>B</b></button>
+        <button class="btn-fmt" id="${id}-italic"    type="button" data-tip-key="italic"><i>I</i></button>
+        <button class="btn-fmt" id="${id}-underline" type="button" data-tip-key="underline"><u>U</u></button>
+        <span class="rich-toolbar-sep"></span>
+        <button class="btn-fmt btn-fmt-alt" id="${id}-alt" type="button" data-tip-key="alt">ALT</button>
       </div>
       <div class="rich-content" id="${id}" contenteditable="true" spellcheck="true"
            data-placeholder="Enter text…">${spansToHtmlPreview(spans)}</div>
@@ -3420,34 +6323,60 @@ function richEditor(id, spans) {
   `;
 }
 
-function blankBeforeRow(slide, defaultText = '') {
-  const on = !!slide.blankBefore;
+// Plain multi-line editor — same contenteditable input method as the scripture
+// rich editor, but with no formatting toolbar (point text is plain text).
+function plainEditor(id, text, placeholder = 'Point text…') {
   return `
-    <div class="blank-before-row" id="blank-before-row">
-      <div class="toggle${on ? ' on' : ''}" id="bb-toggle"></div>
-      <label>Blank slide before this one</label>
-    </div>
-    <div class="blank-before-preview${on ? ' visible' : ''}" id="bb-preview">
-      <div class="field" style="margin-bottom:0">
-        <label style="margin-bottom:4px">Blank slide confidence monitor text (optional)</label>
-        ${richEditor('f-blank-spans', slide.blankSpans || [])}
-      </div>
+    <div class="rich-editor-wrap rich-editor-plain">
+      <div class="rich-content" id="${id}" contenteditable="true" spellcheck="true"
+           data-placeholder="${esc(placeholder)}">${esc(text || '').replace(/\n/g, '<br>')}</div>
     </div>
   `;
 }
 
+function macroOverrideRow(slide) {
+  const m = slide.macroOverride;
+  const dot = m && m.color
+    ? `<span class="cm-dot" style="background:${m.color};width:9px;height:9px;flex-shrink:0"></span>`
+    : `<span class="cm-dot cm-dot-default" style="width:9px;height:9px;flex-shrink:0"></span>`;
+  return `
+    <div class="field override-macro-row">
+      <label data-tip-key="macro-override">Macro Override</label>
+      <div class="override-macro-val" id="override-macro-val">
+        ${m ? `${dot}<span class="override-macro-name">${esc(m.name)}</span>
+          <button class="btn-override-macro-clear" id="btn-override-macro-clear" title="Remove">×</button>` : ''}
+      </div>
+      <button class="btn-sm" id="btn-override-macro-pick" type="button">${m ? 'Change' : 'Add'}</button>
+    </div>
+  `;
+}
+
+function overridesSection(slide, features) {
+  if (features && !features.overrides) return '';
+  const stageRow  = stageLayoutRow(slide);
+  const transRow  = slideTransitionRow(slide, features);
+  const macroRow  = macroOverrideRow(slide);
+  const body = [stageRow, transRow, macroRow].filter(Boolean).join('');
+  if (!body) return '';
+  return `
+    <details class="slide-overrides" id="slide-overrides">
+      <summary class="slide-overrides-summary" data-tip-key="overrides">Overrides</summary>
+      <div class="slide-overrides-body">${body}</div>
+    </details>
+  `;
+}
+
+
 function stageLayoutRow(slide) {
-  const ss = state.config.stageScreen || DEFAULT_STAGESCREEN();
-  // Build list of configured layout names (non-empty only)
-  const layouts = [
-    ss.rcLayoutName       && { name: ss.rcLayoutName,      uuid: ss.rcLayoutUuid },
-    ss.messageLayoutName  && { name: ss.messageLayoutName,  uuid: ss.messageLayoutUuid },
-  ].filter(Boolean);
+  const displays = activeStyleScheme().stageDisplays || [];
+  const layouts = displays
+    .filter(d => d.name)
+    .map(d => ({ name: d.name, uuid: d.uuid }));
   if (!layouts.length) return ''; // no layouts configured yet
   const cur = slide.stageLayout?.layoutName || '';
   return `
     <div class="field">
-      <label>Stage Layout</label>
+      <label data-tip-key="stage-layout-override">Stage Layout Override</label>
       <select id="f-stageLayout" style="flex:1">
         <option value="">None</option>
         ${layouts.map(l => `<option value="${esc(l.name)}" data-uuid="${esc(l.uuid)}" ${cur === l.name ? 'selected' : ''}>${esc(l.name)}</option>`).join('')}
@@ -3460,7 +6389,7 @@ function slideTransitionRow(slide, features) {
   if (features && !features.transitionOverride) return '';
   return `
     <div class="field">
-      <label>Transition Override</label>
+      <label data-tip-key="transition-override">Transition Override</label>
       ${transitionRow(slide.transition, 'f')}
     </div>
   `;
@@ -3473,7 +6402,7 @@ function propSection(slide, features, { showTransition = true, idPrefix = 'fp', 
     const propVal = slide.propName || slide.propBaseName || slide.bodyText || slide.reference || '';
     parts.push(`
       <div class="field">
-        <label>Prop Name</label>
+        <label data-tip-key="prop-name">Prop Name</label>
         <input type="text" id="f-propName" spellcheck="false" value="${esc(propVal)}" placeholder="Auto-set from reference">
       </div>
     `);
@@ -3489,7 +6418,7 @@ function propSection(slide, features, { showTransition = true, idPrefix = 'fp', 
   if (showTransition && (!features || features.propTransitionOverride)) {
     parts.push(`
       <div class="field">
-        <label>Prop Transition Override</label>
+        <label data-tip-key="prop-transition-override">Prop Transition Override</label>
         ${transitionRow(slide.propTransition, idPrefix)}
       </div>
     `);
@@ -3502,7 +6431,7 @@ function startEndForm(slide) {
   const isStart = slide.type === 'start';
   const iconCls = isStart ? 'si-start' : 'si-end';
   const iconTxt = isStart ? 'S' : 'E';
-  const defaultText = isStart ? 'START' : 'End of Notes';
+  const defaultText = isStart ? 'Start of Notes' : 'End of Notes';
   return `
     <div class="slide-form">
       <h2>
@@ -3520,12 +6449,22 @@ function attachStartEndHandlers(slide) {
   document.getElementById('f-label')?.addEventListener('input', e => {
     slide.label = e.target.value;
     saveState();
-    renderQueue();
+    renderSidebar();
   });
   document.getElementById('f-text')?.addEventListener('input', e => {
     slide.text = e.target.value;
     saveState();
   });
+}
+
+function customConfidenceMonitorSection(editorId, spans) {
+  const hasText = (spans || []).some(span => String(span?.text || '').trim());
+  return `
+    <details class="slide-overrides cm-custom-text"${hasText ? ' open' : ''}>
+      <summary class="slide-overrides-summary">Custom ${esc(dn('monitor'))} Text</summary>
+      <div class="slide-overrides-body">${richEditor(editorId, spans || [])}</div>
+    </details>
+  `;
 }
 
 function blankForm(slide) {
@@ -3534,16 +6473,13 @@ function blankForm(slide) {
     <div class="slide-form">
       <h2>
         <input type="text" class="slide-title-input" id="f-label" spellcheck="true" value="${esc(slide.label)}" placeholder="Blank label">
+        ${macroChipsHTML('blank', slidePosKey(slide))}${stageDisplayChipsHTML('blank', slidePosKey(slide))}
       </h2>
       ${F.confidenceMonitor ? `
-        <details class="cm-swivel">
-          <summary class="cm-swivel-summary">Confidence monitor text</summary>
-          <div class="cm-swivel-body">${richEditor('f-body', slide.spans || [])}</div>
-        </details>
+        ${customConfidenceMonitorSection('f-body', slide.spans || [])}
       ` : ''}
       <div class="slide-secondary">
-        ${stageLayoutRow(slide)}
-        ${slideTransitionRow(slide, F)}
+        ${overridesSection(slide, F)}
       </div>
     </div>
   `;
@@ -3555,14 +6491,11 @@ function imageForm(slide) {
   const blankSection = F.blankBefore ? `
     <div class="blank-before-row" id="blank-before-row">
       <div class="toggle${on ? ' on' : ''}" id="bb-toggle"></div>
-      <label>Blank slide before this one</label>
+      <label data-tip-key="blank-before">Blank slide before this one</label>
     </div>
     ${F.confidenceMonitor ? `
       <div class="blank-before-preview${on ? ' visible' : ''}" id="bb-preview">
-        <details class="cm-swivel">
-          <summary class="cm-swivel-summary">Confidence monitor text</summary>
-          <div class="cm-swivel-body">${richEditor('f-blank-spans', slide.blankSpans || [])}</div>
-        </details>
+        ${customConfidenceMonitorSection('f-blank-spans', slide.blankSpans || [])}
       </div>
     ` : `<div class="blank-before-preview${on ? ' visible' : ''}" id="bb-preview" style="display:none"></div>`}
   ` : '';
@@ -3570,12 +6503,12 @@ function imageForm(slide) {
     <div class="slide-form">
       <h2>
         <input type="text" class="slide-title-input" id="f-label" spellcheck="true" value="${esc(slide.label)}" placeholder="Image label">
+        ${macroChipsHTML('image', slidePosKey(slide))}${stageDisplayChipsHTML('image', slidePosKey(slide))}
       </h2>
 
       <div class="slide-secondary">
         ${blankSection}
-        ${stageLayoutRow(slide)}
-        ${slideTransitionRow(slide, F)}
+        ${overridesSection(slide, F)}
         ${propSection(slide, F, { idPrefix: 'fp' })}
       </div>
     </div>
@@ -3587,8 +6520,9 @@ function customForm(slide) {
     <div class="slide-form">
       <h2>
         <input type="text" class="slide-title-input" id="f-label" spellcheck="true" value="${esc(slide.label)}" placeholder="Custom label">
+        ${macroChipsHTML('custom', slidePosKey(slide))}${stageDisplayChipsHTML('custom', slidePosKey(slide))}
       </h2>
-      <p style="color:var(--muted);font-size:13px;margin-top:4px">Placeholder — build it out later.</p>
+      <p style="color:var(--muted);font-size:13px;margin-top:4px">Exports as a blank slide with this label — a slot you can build out by hand in ProPresenter.</p>
     </div>
   `;
 }
@@ -3612,14 +6546,11 @@ function scriptureForm(slide) {
   const blankSection = F.blankBefore ? `
     <div class="blank-before-row" id="blank-before-row">
       <div class="toggle${on ? ' on' : ''}" id="bb-toggle"></div>
-      <label>Blank slide before this one</label>
+      <label data-tip-key="blank-before">Blank slide before this one</label>
     </div>
     ${F.confidenceMonitor ? `
       <div class="blank-before-preview${on ? ' visible' : ''}" id="bb-preview">
-        <details class="cm-swivel">
-          <summary class="cm-swivel-summary">Confidence monitor text</summary>
-          <div class="cm-swivel-body">${richEditor('f-blank-spans', slide.blankSpans || [])}</div>
-        </details>
+        ${customConfidenceMonitorSection('f-blank-spans', slide.blankSpans || [])}
       </div>
     ` : `<div class="blank-before-preview${on ? ' visible' : ''}" id="bb-preview" style="display:none"></div>`}
   ` : '';
@@ -3628,10 +6559,11 @@ function scriptureForm(slide) {
     <div class="slide-form">
       <h2>
         <input type="text" class="slide-title-input" id="f-label" spellcheck="true" value="${esc(slide.label)}" placeholder="Reference">
+        ${macroChipsHTML('scripture', slidePosKey(slide))}${stageDisplayChipsHTML('scripture', slidePosKey(slide))}
       </h2>
 
       <div class="field">
-        <label>Reference</label>
+        <label data-tip-key="reference">Reference</label>
         <div class="ref-row">
           <input type="text" id="f-reference" spellcheck="false" value="${esc(slide.reference || '')}" placeholder="e.g. John 13:35">
           ${(() => {
@@ -3652,18 +6584,24 @@ function scriptureForm(slide) {
         <div class="body-field-hdr">
           <label>Body Text</label>
           <div class="body-field-tools">
-            <button class="btn-sm body-tool-btn ${slide.fitWidth ? 'active' : ''}" id="btn-fit-width" type="button" title="Auto-fit text box width to content">Fit Width</button>
-            <button class="btn-sm body-tool-btn ${slide.stripNewlines ? 'active' : ''}" id="btn-strip-nl" type="button" title="Strip line breaks on main slide (prop keeps them)">Strip</button>
+            ${F.bodyTools ? `
+            <button class="btn-sm body-tool-btn ${slide.fitWidth ? 'active' : ''}" id="btn-fit-width" type="button" data-tip-key="fit-width">Fit Width</button>
+            <button class="btn-sm body-tool-btn ${slide.stripNewlines ? 'active' : ''}" id="btn-strip-nl" type="button" data-tip-key="strip">Strip</button>
+            ` : ''}
+            ${F.verseFormatting ? `
+            <div class="verse-fmt-wrap">
+              <button class="btn-sm body-tool-btn ${state.config.verseNumbers ? 'active' : ''}" id="btn-verse-fmt" type="button" data-tip-key="bible-formatting">Verses ⌄</button>
+            </div>
+            ` : ''}
           </div>
         </div>
         ${bodyEditors}
-        <button class="btn-split-body" id="btn-split-body" type="button">+ Split into another slide</button>
+        <button class="btn-split-body" id="btn-split-body" type="button" data-tip-key="split">+ Split into another slide</button>
       </div>
 
       <div class="slide-secondary">
         ${blankSection}
-        ${stageLayoutRow(slide)}
-        ${slideTransitionRow(slide, F)}
+        ${overridesSection(slide, F)}
         ${propSection(slide, F)}
       </div>
     </div>
@@ -3678,7 +6616,7 @@ function pointForm(slide) {
   const singleFields = mode === 'single' ? `
     <div class="field" id="field-bodyText">
       <label>Point Text</label>
-      <input type="text" id="f-bodyText" spellcheck="true" value="${esc(slide.bodyText || '')}" placeholder="e.g. Create Opportunities">
+      ${plainEditor('f-bodyText', slide.bodyText, 'Point text…')}
     </div>
   ` : '';
 
@@ -3687,10 +6625,10 @@ function pointForm(slide) {
   const revealingFields = mode === 'revealing' ? `
     <div class="field" id="field-title">
       <label>Series Title (optional header on prop)</label>
-      <input type="text" id="f-title" spellcheck="true" value="${esc(slide.title || '')}" placeholder="e.g. The King Has Come">
+      <input type="text" id="f-title" spellcheck="true" value="${esc(slide.title || '')}" placeholder="Series title">
     </div>
     <div class="field" id="field-follow-reveal">
-      <label>Confidence monitor</label>
+      <label>${dn('monitor')}</label>
       <div class="segmented-control">
         <button id="fr-single"   class="${followReveal === 'single'   ? 'active' : ''}">Sequential</button>
         <button id="fr-stacking" class="${followReveal === 'stacking' ? 'active' : ''}">Stacking</button>
@@ -3753,14 +6691,11 @@ function pointForm(slide) {
   const blankSection = F.blankBefore ? `
     <div class="blank-before-row" id="blank-before-row">
       <div class="toggle${on ? ' on' : ''}" id="bb-toggle"></div>
-      <label>Blank slide before this one</label>
+      <label data-tip-key="blank-before">Blank slide before this one</label>
     </div>
     ${F.confidenceMonitor ? `
       <div class="blank-before-preview${on ? ' visible' : ''}" id="bb-preview">
-        <details class="cm-swivel">
-          <summary class="cm-swivel-summary">Confidence monitor text</summary>
-          <div class="cm-swivel-body">${richEditor('f-blank-spans', slide.blankSpans || [])}</div>
-        </details>
+        ${customConfidenceMonitorSection('f-blank-spans', slide.blankSpans || [])}
       </div>
     ` : `<div class="blank-before-preview${on ? ' visible' : ''}" id="bb-preview" style="display:none"></div>`}
   ` : '';
@@ -3769,13 +6704,14 @@ function pointForm(slide) {
     <div class="slide-form">
       <h2>
         <input type="text" class="slide-title-input" id="f-label" spellcheck="true" value="${esc(slide.label)}" placeholder="Point label">
+        ${macroChipsHTML('point', slidePosKey(slide))}${stageDisplayChipsHTML('point', slidePosKey(slide))}
       </h2>
 
       <div class="field">
         <label>Mode</label>
         <div class="segmented-control">
-          <button id="mode-single" class="${mode === 'single' ? 'active' : ''}">Single</button>
-          <button id="mode-revealing" class="${mode === 'revealing' ? 'active' : ''}">Revealing</button>
+          <button id="mode-single" class="${mode === 'single' ? 'active' : ''}" data-tip-key="point-single">Single</button>
+          <button id="mode-revealing" class="${mode === 'revealing' ? 'active' : ''}" data-tip-key="point-revealing">Revealing</button>
         </div>
       </div>
       ${singleFields}
@@ -3783,18 +6719,136 @@ function pointForm(slide) {
 
       <div class="slide-secondary">
         ${blankSection}
-        ${stageLayoutRow(slide)}
-        ${slideTransitionRow(slide, F)}
+        ${overridesSection(slide, F)}
         ${propPart}
-      </div>
-      <div style="margin-top:12px;display:flex;gap:6px;justify-content:flex-end">
-        <button class="btn-sm body-tool-btn ${slide.fitWidth ? 'active' : ''}" id="btn-fit-width" type="button" title="Auto-fit text box width to content">Fit Width</button>
       </div>
     </div>
   `;
 }
 
 // ─── Form event handlers ──────────────────────────────────────────────────────
+
+function toggleAltFmt(bodyEl, onSave) {
+  const sel = window.getSelection();
+  if (!sel.rangeCount) return;
+  const range = sel.getRangeAt(0);
+  if (range.collapsed) return;
+
+  // Find all .alt-fmt spans that intersect the selection:
+  //  - directAlt: selection is inside a span (commonAncestor is or is inside .alt-fmt)
+  //  - descAlt: spans are inside the selection
+  // This handles trailing-whitespace snap: even if word-snap extends one char past the
+  // span boundary, intersectsNode still finds the span so we unwrap correctly.
+  const root = range.commonAncestorContainer.nodeType === 3
+    ? range.commonAncestorContainer.parentElement
+    : range.commonAncestorContainer;
+  const directAlt = root.closest?.('.alt-fmt') || (root.classList?.contains('alt-fmt') ? root : null);
+  const descAlt   = [...root.querySelectorAll('.alt-fmt')].filter(s => range.intersectsNode(s));
+  const altSpans  = directAlt ? [directAlt, ...descAlt] : descAlt;
+
+  if (altSpans.length > 0) {
+    // Unwrap all intersecting alt-fmt spans
+    for (const span of altSpans) {
+      const frag = document.createDocumentFragment();
+      while (span.firstChild) frag.appendChild(span.firstChild);
+      span.parentNode.replaceChild(frag, span);
+    }
+  } else {
+    // Wrap selection in .alt-fmt span
+    try {
+      const span = document.createElement('span');
+      span.className = 'alt-fmt';
+      range.surroundContents(span);
+    } catch (_) {
+      // Selection crosses element boundaries — extract, wrap, reinsert
+      const contents = range.extractContents();
+      const span = document.createElement('span');
+      span.className = 'alt-fmt';
+      span.appendChild(contents);
+      range.insertNode(span);
+      sel.removeAllRanges();
+      const newRange = document.createRange();
+      newRange.selectNodeContents(span);
+      sel.addRange(newRange);
+    }
+  }
+
+  onSave(extractSpans(bodyEl));
+}
+
+function applyAltFmt(bodyEl, onSave) {
+  const sel = window.getSelection();
+  if (!sel.rangeCount) return;
+  const range = sel.getRangeAt(0);
+  if (range.collapsed) return;
+  try {
+    const span = document.createElement('span');
+    span.className = 'alt-fmt';
+    range.surroundContents(span);
+  } catch (_) {
+    const contents = range.extractContents();
+    const span = document.createElement('span');
+    span.className = 'alt-fmt';
+    span.appendChild(contents);
+    range.insertNode(span);
+    sel.removeAllRanges();
+    const r = document.createRange();
+    r.selectNodeContents(span);
+    sel.addRange(r);
+  }
+  onSave(extractSpans(bodyEl));
+}
+
+let _altBrackets = null;
+
+function updateAltBrackets() {
+  const sel = window.getSelection();
+  if (!sel || !sel.rangeCount || sel.isCollapsed) { removeAltBrackets(); return; }
+  const range = sel.getRangeAt(0);
+  const rects = Array.from(range.getClientRects()).filter(r => r.width > 0);
+  if (!rects.length) { removeAltBrackets(); return; }
+  if (!_altBrackets) {
+    const mk = char => {
+      const el = document.createElement('span');
+      el.className = 'alt-drag-bracket';
+      el.textContent = char;
+      document.body.appendChild(el);
+      return el;
+    };
+    _altBrackets = { open: mk('['), close: mk(']') };
+  }
+  const first = rects[0], last = rects[rects.length - 1];
+  _altBrackets.open.style.left  = `${first.left - 9}px`;
+  _altBrackets.open.style.top   = `${first.top}px`;
+  _altBrackets.open.style.height = `${first.height}px`;
+  _altBrackets.close.style.left  = `${last.right + 2}px`;
+  _altBrackets.close.style.top   = `${last.top}px`;
+  _altBrackets.close.style.height = `${last.height}px`;
+}
+
+function removeAltBrackets() {
+  if (_altBrackets) {
+    _altBrackets.open.remove();
+    _altBrackets.close.remove();
+    _altBrackets = null;
+  }
+}
+
+// Wire a plainEditor: reports plain text (with \n for line breaks), strips any
+// formatting, and blocks bold/italic/underline so it stays plain.
+function attachPlainEditor(editorId, onSave) {
+  const el = document.getElementById(editorId);
+  if (!el) return;
+  el.addEventListener('input', () => onSave(extractSpans(el).map(s => s.text).join('')));
+  el.addEventListener('paste', e => {
+    e.preventDefault();
+    const text = (e.clipboardData || window.clipboardData).getData('text/plain');
+    document.execCommand('insertText', false, text);
+  });
+  el.addEventListener('keydown', e => {
+    if ((e.metaKey || e.ctrlKey) && ['b', 'i', 'u'].includes(e.key.toLowerCase())) e.preventDefault();
+  });
+}
 
 function attachRichEditor(editorId, onSave) {
   const bodyEl = document.getElementById(editorId);
@@ -3805,40 +6859,98 @@ function attachRichEditor(editorId, onSave) {
     italic:    document.getElementById(`${editorId}-italic`),
     underline: document.getElementById(`${editorId}-underline`),
   };
+  const altBtn = document.getElementById(`${editorId}-alt`);
 
   function updateFmtBtns() {
     for (const [cmd, btn] of Object.entries(fmtBtns)) {
       if (btn) btn.classList.toggle('active', document.queryCommandState(cmd));
     }
+    if (altBtn) {
+      const sel = window.getSelection();
+      const node = sel.focusNode;
+      const inAlt = node && (node.nodeType === 3
+        ? node.parentElement.closest('.alt-fmt')
+        : node.closest?.('.alt-fmt'));
+      altBtn.classList.toggle('active', !!inAlt);
+    }
   }
 
   bodyEl.addEventListener('input', () => onSave(extractSpans(bodyEl)));
 
-  // cmd+click toggles bold on the clicked word — workaround for Chromium's
-  // intentional removal of multi-range selection (unlike native NSTextView in Pro7)
+  // cmd+click / cmd+drag: toggle alt on click, drag word-by-word to apply alt
   bodyEl.addEventListener('mousedown', e => {
     if (!e.metaKey) return;
     e.preventDefault();
     bodyEl.focus();
-    const caretRange = document.caretRangeFromPoint(e.clientX, e.clientY);
-    if (!caretRange) return;
+    const cr = document.caretRangeFromPoint(e.clientX, e.clientY);
+    if (!cr) return;
     const sel = window.getSelection();
     sel.removeAllRanges();
-    sel.addRange(caretRange);
+    sel.addRange(cr);
+    // Anchor at word start so drag extends from a clean boundary
     sel.modify('move', 'backward', 'word');
-    sel.modify('extend', 'forward', 'word');
-    document.execCommand('bold');
-    updateFmtBtns();
-    onSave(extractSpans(bodyEl));
+    bodyEl.classList.add('alt-dragging');
+
+    let dragged = false;
+
+    const onMove = ev => {
+      dragged = true;
+      const cr2 = document.caretRangeFromPoint(ev.clientX, ev.clientY);
+      if (!cr2) return;
+      try {
+        sel.extend(cr2.startContainer, cr2.startOffset);
+        // Snap focus to word boundary in the drag direction
+        const anchorNode = sel.anchorNode, focusNode = sel.focusNode;
+        if (anchorNode && focusNode) {
+          const isForward = anchorNode === focusNode
+            ? sel.focusOffset >= sel.anchorOffset
+            : !!(anchorNode.compareDocumentPosition(focusNode) & Node.DOCUMENT_POSITION_FOLLOWING);
+          sel.modify('extend', isForward ? 'forward' : 'backward', 'word');
+        }
+      } catch (_) {}
+      updateAltBrackets();
+    };
+
+    const onUp = () => {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+      removeAltBrackets();
+      bodyEl.classList.remove('alt-dragging');
+      if (!dragged) {
+        // Single click: extend to full word and toggle
+        sel.modify('extend', 'forward', 'word');
+        toggleAltFmt(bodyEl, onSave);
+      } else {
+        // Drag: already word-snapped, just apply
+        applyAltFmt(bodyEl, onSave);
+      }
+      updateFmtBtns();
+    };
+
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
   });
 
   for (const [cmd, btn] of Object.entries(fmtBtns)) {
     if (!btn) continue;
+    // Prevent mousedown from blurring the editor — otherwise the text selection
+    // collapses before the click fires and execCommand has nothing to format.
+    btn.addEventListener('mousedown', e => e.preventDefault());
     btn.addEventListener('click', () => {
       bodyEl.focus();
       document.execCommand(cmd);
       updateFmtBtns();
       onSave(extractSpans(bodyEl));
+    });
+  }
+
+  if (altBtn) {
+    // Prevent mousedown from blurring the editor so the selection survives into click
+    altBtn.addEventListener('mousedown', e => e.preventDefault());
+    altBtn.addEventListener('click', () => {
+      bodyEl.focus();
+      toggleAltFmt(bodyEl, onSave);
+      updateFmtBtns();
     });
   }
 
@@ -3851,6 +6963,9 @@ function attachRichEditor(editorId, onSave) {
   });
   bodyEl.addEventListener('keyup',   updateFmtBtns);
   bodyEl.addEventListener('mouseup', updateFmtBtns);
+  bodyEl.addEventListener('blur', () => {
+    bodyEl.innerHTML = spansToHtmlPreview(extractSpans(bodyEl));
+  });
 }
 
 function attachBlankBeforeHandlers(slide) {
@@ -3875,11 +6990,34 @@ function attachBlankBeforeHandlers(slide) {
   });
 }
 
+function attachOverridesHandlers(slide) {
+  const get = id => document.getElementById(id);
+
+  // Macro override pick
+  const pickBtn  = get('btn-override-macro-pick');
+  const clearBtn = get('btn-override-macro-clear');
+
+  if (pickBtn) {
+    // Select from already-configured macros (not the Pro7 import picker).
+    pickBtn.addEventListener('click', () => showMacroOverridePopover(pickBtn, slide));
+  }
+  if (clearBtn) {
+    clearBtn.addEventListener('click', () => {
+      slide.macroOverride = null;
+      saveState();
+      renderMain();
+    });
+  }
+}
+
 function attachFormHandlers(slide) {
   const get = id => document.getElementById(id);
 
   // ── Blank-before (scripture + point) ──
   attachBlankBeforeHandlers(slide);
+
+  // ── Overrides section (macro override, all slide types) ──
+  attachOverridesHandlers(slide);
 
   // ── Reference (scripture) — auto-syncs label & propName ──
   const refEl = get('f-reference');
@@ -4023,23 +7161,22 @@ function attachFormHandlers(slide) {
   }
 
   // ── Point single fields ──
-  const btEl = get('f-bodyText');
-  if (btEl) {
-    btEl.addEventListener('input', () => {
-      slide.bodyText = btEl.value;
-      if (!slide._labelManual) {
-        slide.label = slide.bodyText;
-        get('f-label').value = slide.label;
-        renderSidebar();
-      }
-      if (!slide._propNameManual) {
-        slide.propName = slide.bodyText;
-        const pn = get('f-propName');
-        if (pn) pn.value = slide.propName;
-      }
-      saveState();
-    });
-  }
+  attachPlainEditor('f-bodyText', text => {
+    slide.bodyText = text;
+    // Label and prop/cue name stay single-line (collapse any line breaks).
+    const oneLine = text.replace(/\s*\n\s*/g, ' ').trim();
+    if (!slide._labelManual) {
+      slide.label = oneLine;
+      const l = get('f-label'); if (l) l.value = slide.label;
+      renderSidebar();
+    }
+    if (!slide._propNameManual) {
+      slide.propName = oneLine;
+      const pn = get('f-propName');
+      if (pn) pn.value = slide.propName;
+    }
+    saveState();
+  });
 
   // Custom prop toggle (single mode)
   document.getElementById('custom-prop-row')?.addEventListener('click', () => {
@@ -4208,6 +7345,12 @@ function attachFormHandlers(slide) {
     });
   }
 
+  // ── Bible formatting popover (verse numbers + superscript) ──
+  const verseFmtBtn = get('btn-verse-fmt');
+  if (verseFmtBtn) {
+    verseFmtBtn.addEventListener('click', () => showVerseFormatPopover(verseFmtBtn, slide));
+  }
+
   // ── Stage layout select ──
   const stageLayoutEl = get('f-stageLayout');
   if (stageLayoutEl) {
@@ -4234,8 +7377,8 @@ function selectSlide(id) {
 function addSlide(type) {
   const endIdx = state.slides.findIndex(s => s.type === 'end');
   const defaults = {
-    scripture: { label: 'New Scripture', reference: '', bodies: [[]], propName: '', blankBefore: true, blankSpans: [], transition: null, propTransition: null, stripNewlines: false, fitWidth: true, bodyW: null, bodyX: null },
-    point:     { label: 'New Point', mode: 'single', bodyText: '', propName: '', propBaseName: '', title: '', bullets: [[]], blankBefore: true, blankSpans: [], transition: null, propTransition: null, propInitialTransition: null, propRevealTransition: null, fitWidth: true, bodyW: null, bodyX: null },
+    scripture: { label: 'New Scripture', reference: '', bodies: [[]], propName: '', blankBefore: true, blankSpans: [], blankShowProp: false, transition: null, propTransition: null, stripNewlines: false, fitWidth: true, bodyW: null, bodyX: null },
+    point:     { label: 'New Point', mode: 'single', bodyText: '', propName: '', propBaseName: '', title: '', bullets: [[]], blankBefore: true, blankSpans: [], blankShowProp: false, transition: null, propTransition: null, propInitialTransition: null, propRevealTransition: null, fitWidth: true, bodyW: null, bodyX: null },
     blank:     { label: 'Blank', spans: [], transition: null },
     image:     { label: 'Image', blankBefore: true, blankSpans: [], transition: null, propTransition: null },
     custom:    { label: 'Custom' },
@@ -4290,13 +7433,25 @@ function attachHeaderHandlers() {
     state.activeId = state.activeId === 'settings' ? null : 'settings';
     render(); moreMenu?.classList.remove('open');
   });
+  document.getElementById('mm-setup')?.addEventListener('click', () => {
+    showMachineSetup(true);
+    moreMenu?.classList.remove('open');
+  });
   document.getElementById('mm-help')?.addEventListener('click', () => {
     document.getElementById('help-modal')?.classList.add('open');
     moreMenu?.classList.remove('open');
   });
+  document.getElementById('mm-diagnostic')?.addEventListener('click', () => {
+    moreMenu?.classList.remove('open');
+    exportDiagnosticBundle();
+  });
   document.getElementById('mm-changelog')?.addEventListener('click', () => {
     document.getElementById('changelog-modal')?.classList.add('open');
     moreMenu?.classList.remove('open');
+  });
+  document.getElementById('mm-check-updates')?.addEventListener('click', () => {
+    moreMenu?.classList.remove('open');
+    checkForUpdates(true);
   });
   document.getElementById('mm-theme')?.addEventListener('click', () => {
     toggleTheme();
@@ -4389,7 +7544,8 @@ function attachHeaderHandlers() {
 function buildFileName() {
   const { seriesName, messageTitle, weekDate, qrCode } = state.config;
   const d = weekDate || new Date().toISOString().slice(0, 10);
-  const [yy, mm, dd] = d.split('-');
+  const [yyyy, mm, dd] = d.split('-');
+  const yy = (yyyy || '').slice(-2);  // 2-digit year: 2026 → 26
   const series = (seriesName || 'Untitled').replace(/\s+/g, '_');
   const title  = (messageTitle || '').replace(/\s+/g, '_');
   const qrSuffix = qrCode ? '_SAT' : '';
@@ -4403,7 +7559,6 @@ function buildFileName() {
 const BOOK_NAME_OPTIONS = [
   { key: 'acts',          label: 'Acts',                             pattern: /^Acts\b/i,                      choices: ['Acts', 'Acts of the Apostles'] },
   { key: 'songOfSolomon', label: 'Song of Solomon / Song of Songs',  pattern: /^Song of (Solomon|Songs?)\b/i,  choices: ['Song of Solomon', 'Song of Songs'] },
-  { key: 'revelation',    label: 'Revelation / Revelations',         pattern: /^Revelations?\b/i,              choices: ['Revelation', 'Revelations'] },
   { key: 'psalm',         label: 'Psalm / Psalms',                   pattern: /^Psalms?\b/i,                   choices: ['Psalm', 'Psalms'] },
   {
     key: 'numberedBooks',
@@ -4434,17 +7589,21 @@ function applyBookNames(ref, bookNames) {
   return s;
 }
 
+// Build the stageScreen object the builder expects from the active scheme's stageDisplays.
+function schemeStageScreen() {
+  return { screenName: '', screenUuid: '' };
+}
+
 function buildSpec() {
   const { qrCode, includeResponseCard, outputFolder, responses } = state.config;
 
   // Resolve active style scheme (strip UI-only fields)
   const activeScheme = (state.styleSchemes || []).find(p => p.id === state.activeSchemeId)
     || DEFAULT_STYLE_SCHEME();
-  // eslint-disable-next-line no-unused-vars
-  const { id: _sid, name: _sname, isDefault: _sd, isLocked: _sl, ...style } = activeScheme;
+  const style = styleForExport(activeScheme);
 
   const slides = state.slides.map(slide => {
-    if (slide.type === 'start') return { type: 'start', label: slide.label || 'START',        text: slide.text ?? slide.label ?? 'START' };
+    if (slide.type === 'start') return { type: 'start', label: slide.label || 'Start of Notes', text: slide.text ?? slide.label ?? 'Start of Notes' };
     if (slide.type === 'end')   return { type: 'end',   label: slide.label || 'End of Notes', text: slide.text ?? slide.label ?? 'End of Notes' };
 
     if (slide.type === 'scripture') {
@@ -4470,6 +7629,7 @@ function buildSpec() {
         stageLayout:   slide.stageLayout || null,
         transition:    slide.transition || null,
         propTransition: slide.propTransition || null,
+        macroOverride: slide.macroOverride || null,
         stripNewlines: !!slide.stripNewlines,
         bodyW:         slide.fitWidth ? (slide.bodyW || null) : null,
         bodyX:         slide.fitWidth ? (slide.bodyX || null) : null,
@@ -4488,7 +7648,9 @@ function buildSpec() {
           followReveal:         slide.followReveal || 'single',
           blankBefore:          !!slide.blankBefore,
           blankSpans:           slide.blankSpans || [],
+          stageLayout:          slide.stageLayout || null,
           transition:           slide.transition || null,
+          macroOverride:        slide.macroOverride || null,
           propInitialTransition: slide.propInitialTransition || null,
           propRevealTransition:  slide.propRevealTransition || null,
           bodyW:                slide.fitWidth ? (slide.bodyW || null) : null,
@@ -4504,7 +7666,9 @@ function buildSpec() {
         customProp:    !!slide.customProp,
         blankBefore:   !!slide.blankBefore,
         blankSpans:    slide.blankSpans || [],
+        stageLayout:   slide.stageLayout || null,
         transition:    slide.transition || null,
+        macroOverride: slide.macroOverride || null,
         propTransition: slide.propTransition || null,
         bodyW:         slide.fitWidth ? (slide.bodyW || null) : null,
         bodyX:         slide.fitWidth ? (slide.bodyX || null) : null,
@@ -4518,6 +7682,7 @@ function buildSpec() {
         spans:       slide.spans || [],
         stageLayout: slide.stageLayout || null,
         transition:  slide.transition || null,
+        macroOverride: slide.macroOverride || null,
       };
     }
 
@@ -4528,8 +7693,21 @@ function buildSpec() {
         stageLayout:    slide.stageLayout || null,
         transition:     slide.transition || null,
         propTransition: slide.propTransition || null,
+        macroOverride:  slide.macroOverride || null,
         blankBefore:    !!slide.blankBefore,
         blankSpans:     slide.blankSpans || [],
+      };
+    }
+
+    if (slide.type === 'custom') {
+      // Unfinished type — exported as a blank slide so the slot is preserved.
+      return {
+        type:          'custom',
+        label:         slide.label || 'Custom',
+        spans:         slide.spans || [],
+        stageLayout:   slide.stageLayout || null,
+        transition:    slide.transition || null,
+        macroOverride: slide.macroOverride || null,
       };
     }
 
@@ -4543,8 +7721,12 @@ function buildSpec() {
     outputFolder:        outputFolder || '',
     responses:           responses || { decisionText: '', r1: '', r2: '', r3: '' },
     style,
-    macros:              state.config.macros || DEFAULT_MACROS(),
-    stageScreen:         state.config.stageScreen || DEFAULT_STAGESCREEN(),
+    stageScreen:         schemeStageScreen(),
+    stageDisplays:       (activeStyleScheme().stageDisplays || []).filter(d => d.name && d.uuid && (d.triggers || []).length),
+    customMacros:        (activeStyleScheme().macros || []).filter(m => m.name && m.uuid && (m.triggers || []).length),
+    queueMode:           state.config.queueMode || 'ref',
+    pro7RootFolder:      state.config.pro7RootFolder || '',
+    pro7LibraryFolder:   state.config.pro7LibraryFolder || '',
     slides,
   };
 }
@@ -4556,12 +7738,28 @@ const LONG_SCRIPTURE_CHARS = 380;
 // True if a string has leading or trailing whitespace we'd want flagged.
 const hasEdgeSpace = (s) => typeof s === 'string' && s.length > 0 && s !== s.replace(/^[ \t]+|[ \t]+$/g, '');
 
+// True if a string has a hard return (blank line) before or after the actual
+// text — e.g. "text\n\n". Internal line breaks are intentional and not flagged.
+const hasEdgeHardReturn = (s) => typeof s === 'string' && s.trim() !== '' && (/^\s*\n/.test(s) || /\n\s*$/.test(s));
+
+// Strip leading/trailing hard returns (and edge whitespace) from a spans array,
+// in place: drop fully-blank edge spans, then trim the new first/last text spans.
+function trimEdgeHardReturns(bodyArr) {
+  while (bodyArr.length && /^\s*$/.test(bodyArr[bodyArr.length - 1].text || '')) bodyArr.pop();
+  while (bodyArr.length && /^\s*$/.test(bodyArr[0].text || '')) bodyArr.shift();
+  const first = bodyArr.findIndex(s => s.text);
+  if (first >= 0) bodyArr[first] = { ...bodyArr[first], text: bodyArr[first].text.replace(/^\s+/, '') };
+  const last = bodyArr.map((s, j) => (s.text ? j : -1)).filter(j => j >= 0).pop();
+  if (last != null) bodyArr[last] = { ...bodyArr[last], text: bodyArr[last].text.replace(/\s+$/, '') };
+}
+
 function updateDigitBadge(idx, spans) {
   const badge = document.getElementById('digit-badge-' + idx);
   if (!badge) return;
-  const digitSpan = (spans || []).find(s => /^\d+\s*$/.test(s.text || ''));
-  const joined = (spans || []).map(s => s.text || '').join('');
-  const m = !digitSpan && joined.trim().match(/^(\d+)\s/);
+  // Intentional verse-number spans are not artifacts — ignore them.
+  const digitSpan = (spans || []).find(s => !s.verseNum && /^\d+\s*$/.test(s.text || ''));
+  const joined = (spans || []).filter(s => !s.verseNum).map(s => s.text || '').join('');
+  const m = !digitSpan && joined.trim().match(DIGIT_PREFIX_RE);
   if (digitSpan) {
     badge.textContent = '\u26a0 "' + digitSpan.text.trim() + '" looks like a verse number';
     badge.style.display = 'block';
@@ -4616,13 +7814,45 @@ function preflightWarnings() {
             saveState();
           });
         }
-        // Detect lone digit spans (verse-number artifacts from Bible copy-paste)
-        const digitSpan = (b || []).find(s => /^\d+\s*$/.test(s.text || ''));
+        if (hasEdgeHardReturn(joined)) {
+          warn(`Scripture “${label}”${sfx} has a hard return (blank line) before or after the text`, slide.id, 'body', () => {
+            const bodyArr = slide.bodies?.[i];
+            if (!bodyArr || !bodyArr.length) return;
+            trimEdgeHardReturns(bodyArr);
+            saveState();
+          });
+        }
+        // Detect lone digit spans (verse-number artifacts from Bible copy-paste).
+        // Intentional verse-number spans are flagged { verseNum: true } and skipped.
+        const digitSpan = (b || []).find(s => !s.verseNum && /^\d+\s*$/.test(s.text || ''));
         if (digitSpan) {
-          warn(`Scripture "${label}"${sfx} may contain a leftover verse number: "${digitSpan.text.trim()}" is a digit-only span`, slide.id, 'body');
-        } else if (/^\d+\s/.test(joined.trim())) {
-          const digit = (joined.trim().match(/^(\d+)\s/) || [])[1];
-          warn(`Scripture "${label}"${sfx} body starts with "${digit}" — may be a leftover verse number`, slide.id, 'body');
+          warn(
+            `Scripture "${label}"${sfx} may contain a leftover verse number: "${digitSpan.text.trim()}" is a digit-only span`,
+            slide.id, 'body',
+            () => {
+              if (!slide.bodies) return;
+              slide.bodies[i] = (slide.bodies[i] || []).filter(s => !/^\d+\s*$/.test(s.text || ''));
+              saveState();
+            }
+          );
+        } else if (!(b || []).some(s => s.verseNum) && /^\d+(?:\s|["“”‘’])/.test(joined.trim())) {
+          const digit = (joined.trim().match(/^(\d+)/) || [])[1];
+          warn(
+            `Scripture "${label}"${sfx} body starts with "${digit}" — may be a leftover verse number`,
+            slide.id, 'body',
+            () => {
+              if (!slide.bodies) return;
+              const bodyArr = slide.bodies[i];
+              if (!bodyArr) return;
+              const firstIdx = bodyArr.findIndex(s => s.text);
+              if (firstIdx < 0) return;
+              bodyArr[firstIdx] = {
+                ...bodyArr[firstIdx],
+                text: bodyArr[firstIdx].text.replace(/^\d+(?:\s|["“”‘’])/, m => m.slice(digit.length).replace(/^\s/, ''))
+              };
+              saveState();
+            }
+          );
         }
       });
     }
@@ -4634,6 +7864,13 @@ function preflightWarnings() {
           `Point “${label}” has a stray space at the start or end`,
           slide.id, 'bodyText',
           () => { slide.bodyText = slide.bodyText.trim(); saveState(); }
+        );
+      }
+      if (hasEdgeHardReturn(slide.bodyText)) {
+        warn(
+          `Point “${label}” has a hard return (blank line) before or after the text`,
+          slide.id, 'bodyText',
+          () => { slide.bodyText = slide.bodyText.replace(/^\s+|\s+$/g, ''); saveState(); }
         );
       }
     }
@@ -4690,7 +7927,7 @@ async function generate() {
 
   // Check Pro7 BEFORE disabling the button — so we can bail cleanly.
   // If auto-manage is on, the server will quit/relaunch Pro7 for us, so we proceed.
-  const autoManage = state.config.autoManagePro7 !== false;
+  const autoManage = state.config.autoManagePro7 === true;
   try {
     const check = await fetch('/api/pro7/process');
     const { running } = await check.json();
@@ -4707,23 +7944,25 @@ async function generate() {
   btn.textContent = 'Exporting…';
 
   // Compute fit-width for any slides that have it on (catches slides never visited in this session)
-  const scheme = activeStyleScheme();
-  for (const slide of state.slides) {
-    if (!slide.fitWidth) continue;
-    let spans = null;
-    if (slide.type === 'scripture') spans = (slide.bodies || [[]])[0] || [];
-    else if (slide.type === 'point') {
-      const text = slide.mode === 'revealing' ? (slide.bullets || [])[0] || '' : (slide.bodyText || '');
-      spans = [{ text, bold: true }];
+  try {
+    const scheme = activeStyleScheme();
+    for (const slide of state.slides) {
+      if (!slide.fitWidth) continue;
+      let spans = null;
+      if (slide.type === 'scripture') spans = (slide.bodies || [[]])[0] || [];
+      else if (slide.type === 'point') {
+        const text = slide.mode === 'revealing' ? (slide.bullets || [])[0] || '' : (slide.bodyText || '');
+        spans = [{ text, bold: true }];
+      }
+      if (spans && spans.some(s => s.text)) {
+        const r = computeOptimalBodyWidth(spans, scheme);
+        slide.bodyW = r.bodyW; slide.bodyX = r.bodyX;
+      }
     }
-    if (spans && spans.some(s => s.text)) {
-      const r = computeOptimalBodyWidth(spans, scheme);
-      slide.bodyW = r.bodyW; slide.bodyX = r.bodyX;
-    }
-  }
+  } catch (_) { /* non-fatal — export continues without fit-width pre-computation */ }
 
   // Always export directly to Pro7
-  await runGenerate(false, btn, true);
+  await runGenerate(btn, true);
 }
 
 function showDeliveryOverlay(steps, opts = {}) {
@@ -4968,18 +8207,16 @@ function renderImportReview(overlay, panel, data, close) {
 
   const textRows = [
     ['bodyFont', 'Body font', 'font'], ['bodySize', 'Body size', 'size'],
-    ['boldFont', 'Bold-in-body font', 'font'],
-    ['titleFont', 'Reference font', 'font'], ['titleSize', 'Reference size', 'size'],
-    ['startEndFont', 'Start/End font', 'font'], ['startEndSize', 'Start/End size', 'size'],
+    ['titleFont', 'Title font', 'font'], ['titleSize', 'Title size', 'size'],
+    ['startEndFont', 'Utility font', 'font'], ['startEndSize', 'Utility size', 'size'],
     ['bodyFill', 'Body fill', 'color'],
   ];
   const layoutRows = [
     ['canvasW', 'Canvas width', 'num'], ['canvasH', 'Canvas height', 'num'],
     ['bodyY', 'Body Y', 'num'], ['bodyH', 'Body height', 'num'],
-    ['titleY', 'Reference bar Y', 'num'],
-    ['gradientY', 'Gradient Y', 'num'], ['gradientH', 'Gradient height', 'num'],
+    ['titleY', 'Title Y', 'num'],
     ['liveX', 'Live X', 'num'], ['queueW', 'Queue width', 'num'],
-    ['startEndY', 'Start/End Y', 'num'],
+    ['startEndY', 'Utility Y', 'num'],
   ];
   const transRows = [
     ['transitionType', 'Slide transition', 'text'],
@@ -5018,15 +8255,17 @@ function renderImportReview(overlay, panel, data, close) {
   overlay.querySelector('#si-save').addEventListener('click', () => {
     const nameEl = overlay.querySelector('#si-name');
     const name = (nameEl.value || '').trim() || `From ${report.presentation}`;
-    const merged = {
+    const merged = deepClone({
       ...DEFAULT_STYLE_SCHEME(), ...scheme,
       id: 'scheme_' + Date.now(),
       name: name.slice(0, 60),
       isDefault: false, isLocked: false,
-    };
+    });
+    delete merged.typography;
+    ensureSchemeTypography(merged, ensureGlobalTypography());
     state.styleSchemes.push(merged);
     state.activeSchemeId = merged.id;
-    saveState(); syncStyleButton();
+    saveState();
     close();
     renderStylePanel(panel);
     toast('success', 'Scheme imported', `Saved "${merged.name}" with ${report.captured.length} detected settings.`);
@@ -5050,41 +8289,42 @@ async function runSchemeTest(scheme) {
     name: testName,
     deliverMode: true,
     includeResponseCard: true,
-    style: (({ id: _a, name: _b, isDefault: _c, isLocked: _d, ...s }) => s)(scheme),
+    style: styleForExport(scheme),
     slides: [
       { type: 'start' },
 
       // Short reference scripture — 1 body, no blank before
       {
         type: 'scripture',
-        label: 'John 3:16',
-        reference: 'John 3:16',
+        label: 'Sirach 38:4',
+        reference: 'Sirach 38:4',
         bodies: [[
-          { text: 'For God so loved the world that he gave his one and only Son, that whoever believes in him shall not perish but have ', bold: false },
-          { text: 'eternal life', bold: true },
-          { text: '.', bold: false },
+          { text: 'The Lord created medicines out of the earth, and the ', bold: false },
+          { text: 'sensible', bold: true },
+          { text: ' will not despise them.', bold: false },
         ]],
-        propName: 'John 3:16',
+        propName: 'Sirach 38:4',
       },
 
       // Long reference scripture — 2 bodies, mixed bold, blank before
       {
         type: 'scripture',
-        label: '2 Corinthians 3:18',
-        reference: '2 Corinthians 3:18',
+        label: 'Tobit 6:2-4',
+        reference: 'Tobit 6:2-4',
         blankBefore: true,
         blankSpans: [{ text: 'Transition slide', bold: false }],
         bodies: [
           [
-            { text: 'And we all, who with unveiled faces contemplate the Lord\'s glory, are being ', bold: false },
-            { text: 'transformed', bold: true },
-            { text: ' into his image with ever-increasing glory,', bold: false },
+            { text: 'When the young man went down to wash his feet in the Tigris River, a large fish ', bold: false },
+            { text: 'leaped up', bold: true },
+            { text: ' from the water and tried to swallow his foot, and Tobias cried out.', bold: false },
           ],
           [
-            { text: 'which comes from the Lord, who is the Spirit.', bold: false },
+            { text: 'But the angel said to him, ', bold: false },
+            { text: '"Grab the fish and hold on to it!"', bold: true },
           ],
         ],
-        propName: '2 Corinthians 3:18',
+        propName: 'Tobit 6:2-4',
       },
 
       // Point — single mode
@@ -5145,30 +8385,30 @@ async function runSchemeTest(scheme) {
   }
 }
 
-async function runGenerate(downloadMode, btn, deliverMode = false) {
+async function runGenerate(btn, deliverMode = false) {
   if (!btn) btn = document.getElementById('btn-generate');
 
   btn.disabled = true;
   btn.textContent = 'Exporting…';
 
-  const spec     = buildSpec();
-  const fileName = spec.name;
-  spec.deliverMode = true;
-  spec.autoManagePro7 = state.config.autoManagePro7 !== false;
-
-  const steps = [
-    'Building presentation',
-    'Writing to ProPresenter library',
-    'Writing props',
-  ];
-  if (spec.autoManagePro7) {
-    steps.unshift('Closing ProPresenter (if open)');
-    steps.push('Relaunching ProPresenter');
-  }
-  showDeliveryOverlay(steps);
-  const lastStep = steps.length - 1;
-
   try {
+    const spec     = buildSpec();
+    const fileName = spec.name;
+    spec.deliverMode = true;
+    spec.autoManagePro7 = state.config.autoManagePro7 === true;
+
+    const steps = [
+      'Building presentation',
+      'Writing to ProPresenter library',
+      'Writing props',
+    ];
+    if (spec.autoManagePro7) {
+      steps.unshift('Closing ProPresenter (if open)');
+      steps.push('Relaunching ProPresenter');
+    }
+    showDeliveryOverlay(steps);
+    const lastStep = steps.length - 1;
+
     updateDeliveryStep(0, false);
     const res  = await fetch('/api/generate', {
       method:  'POST',
@@ -5191,7 +8431,7 @@ async function runGenerate(downloadMode, btn, deliverMode = false) {
     }
   } catch (err) {
     hideDeliveryOverlay();
-    toast('error', 'Network error', err.message);
+    toast('error', 'Export error', err.message);
   } finally {
     btn.disabled = false;
     btn.textContent = 'Export';
@@ -5215,18 +8455,6 @@ function showProRunningModal() {
   modal.classList.add('open');
   document.getElementById('pro-running-ok')?.addEventListener('click', () => modal.classList.remove('open'));
   document.getElementById('gen-modal-close')?.addEventListener('click', () => modal.classList.remove('open'));
-}
-
-function triggerDownloads(data) {
-  const dl = (b64, name) => {
-    const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
-    const url   = URL.createObjectURL(new Blob([bytes], { type: 'application/octet-stream' }));
-    const a     = Object.assign(document.createElement('a'), { href: url, download: name });
-    document.body.appendChild(a); a.click();
-    setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 1000);
-  };
-  dl(data.data, data.fileName);
-  for (const p of (data.props || [])) dl(p.data, p.fileName);
 }
 
 function showWarningDialog(warnings, opts = {}) {
@@ -5325,41 +8553,6 @@ function showWarningDialog(warnings, opts = {}) {
   });
 }
 
-function showOutputModeDialog() {
-  const modal = document.getElementById('gen-modal');
-  const body  = document.getElementById('gen-modal-body');
-  const title = document.getElementById('gen-modal-title');
-  if (!modal || !body) return;
-  title.innerHTML = 'How do you want to save?';
-  body.innerHTML = `
-    <div style="display:flex;flex-direction:column;gap:10px">
-      <button class="gen-ask-btn" id="gen-ask-local" style="justify-content:flex-start;gap:10px;padding:12px 14px;border-radius:8px;border:1px solid var(--border);background:var(--bg);cursor:pointer;font-size:13px;text-align:left">
-        <strong>Save to folder</strong><br>
-        <span style="color:var(--muted);font-size:12px">Write directly to your ProPresenter folder</span>
-      </button>
-      <button class="gen-ask-btn" id="gen-ask-deliver" style="justify-content:flex-start;gap:10px;padding:12px 14px;border-radius:8px;border:1px solid var(--border);background:var(--bg);cursor:pointer;font-size:13px;text-align:left">
-        <strong>Deliver to Pro7</strong><br>
-        <span style="color:var(--muted);font-size:12px">Save to Pro7 library and open in ProPresenter</span>
-      </button>
-      <button class="gen-ask-btn" id="gen-ask-download" style="justify-content:flex-start;gap:10px;padding:12px 14px;border-radius:8px;border:1px solid var(--border);background:var(--bg);cursor:pointer;font-size:13px;text-align:left">
-        <strong>Download</strong><br>
-        <span style="color:var(--muted);font-size:12px">Get a file download in your browser</span>
-      </button>
-    </div>
-    <div style="margin-top:6px;text-align:right">
-      <button id="gen-modal-cancel" style="background:none;border:none;color:var(--muted);font-size:13px;cursor:pointer">Cancel</button>
-    </div>
-  `;
-  modal.classList.add('open');
-  const btn = document.getElementById('btn-generate');
-  const close = () => modal.classList.remove('open');
-  document.getElementById('gen-ask-local')?.addEventListener('click', async () => { close(); await runGenerate(false, btn); });
-  document.getElementById('gen-ask-deliver')?.addEventListener('click', async () => { close(); await runGenerate(false, btn, true); });
-  document.getElementById('gen-ask-download')?.addEventListener('click', async () => { close(); await runGenerate(true, btn); });
-  document.getElementById('gen-modal-cancel')?.addEventListener('click', close);
-  document.getElementById('gen-modal-close')?.addEventListener('click', close);
-}
-
 // ─── Toast ────────────────────────────────────────────────────────────────────
 
 function toast(type, title, detail) {
@@ -5371,6 +8564,20 @@ function toast(type, title, detail) {
   setTimeout(() => el.remove(), 7000);
 }
 
+async function readJsonResponse(resp, fallback) {
+  const text = await resp.text();
+  try {
+    return JSON.parse(text);
+  } catch (_) {
+    const title = (text.match(/<title[^>]*>([^<]+)/i)?.[1] || '').trim();
+    const detail = [
+      `HTTP ${resp.status || 'unknown'}`,
+      title ? `title "${title}"` : '',
+    ].filter(Boolean).join(', ');
+    throw new Error(`${fallback || 'DeckPro'} got a web page instead of app data (${detail}). Make sure the Google Doc is shared "Anyone with the link can view".`);
+  }
+}
+
 // ─── PDF speaker notes ────────────────────────────────────────────────────────
 
 let _pdfObjectUrl = null;
@@ -5378,6 +8585,7 @@ let _pdfZoom = 100;
 let _styleTab = 'text';      // Text | Layout | Motion | Preview
 let _motionTab = 'transitions'; // within Motion: transitions | build
 let _layoutSel = null;          // selected region slug in the Layout visual preview
+let _textSel   = null;          // selected region slug in the Text visual preview
 
 function attachPdfHandlers() {
   const zone      = document.getElementById('pdf-drop-zone');
@@ -5434,7 +8642,7 @@ function attachPdfHandlers() {
       const proxyUrl = `/api/gdrive-pdf?url=${encodeURIComponent(url)}`;
       const resp = await fetch(proxyUrl);
       if (!resp.ok) {
-        const err = await resp.json().catch(() => ({ error: resp.statusText }));
+        const err = await readJsonResponse(resp, 'Drive load failed').catch(e => ({ error: e.message || resp.statusText }));
         toast('error', 'Drive load failed', err.error || resp.statusText);
         return;
       }
@@ -5459,18 +8667,44 @@ function attachPdfHandlers() {
     }
   }
 
+  // Google Docs → rich HTML (Smart Notes); other Drive files → PDF viewer.
+  async function loadGdriveNotes(url) {
+    if (!url) return;
+    const isDoc = /\/document\/d\//.test(url);
+    if (!isDoc) return loadGdrivePdf(url);
+
+    const loadBtn = document.getElementById('btn-pdf-gdrive-load');
+    const orig = loadBtn ? loadBtn.textContent : '';
+    if (loadBtn) { loadBtn.textContent = 'Loading…'; loadBtn.disabled = true; }
+    try {
+      const resp = await fetch(`/api/gdrive-html?url=${encodeURIComponent(url)}`);
+      const data = await readJsonResponse(resp, 'Doc load failed');
+      if (!resp.ok || !data.ok) { toast('error', 'Doc load failed', data.error || resp.statusText || 'Unknown error'); return; }
+      const processed = processNotesHtml(data.html, data.id);
+      showNotesDoc(processed, 'Google Doc');
+      state.config.gdriveUrl = url;
+      saveState();
+    } catch (e) {
+      toast('error', 'Doc load failed', e.message);
+    } finally {
+      if (loadBtn) { loadBtn.textContent = orig; loadBtn.disabled = false; }
+    }
+  }
+
   const gdriveInput = document.getElementById('pdf-gdrive-input');
   document.getElementById('btn-pdf-gdrive-load')?.addEventListener('click', () => {
-    loadGdrivePdf(gdriveInput?.value.trim());
+    loadGdriveNotes(gdriveInput?.value.trim());
   });
   gdriveInput?.addEventListener('keydown', e => {
-    if (e.key === 'Enter') loadGdrivePdf(gdriveInput.value.trim());
+    if (e.key === 'Enter') loadGdriveNotes(gdriveInput.value.trim());
   });
   // Restore a previously-loaded Drive doc after a reload / redeploy
   if (gdriveInput && state.config.gdriveUrl) {
     gdriveInput.value = state.config.gdriveUrl;
-    loadGdrivePdf(state.config.gdriveUrl);
+    loadGdriveNotes(state.config.gdriveUrl);
   }
+
+  attachNotesDocHandlers();
 
   document.getElementById('btn-pdf-zoom-in')?.addEventListener('click', () => {
     _pdfZoom = Math.min(_pdfZoom + 25, 200); applyZoom();
@@ -5491,6 +8725,568 @@ function attachPdfHandlers() {
     state.config.gdriveUrl = '';
     saveState();
     _pdfZoom = 100;
+  });
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// Smart Notes — rich-document intake (Phase 1)
+// Google Docs load as structured HTML rendered in DeckPro's own DOM, so we can
+// scan, suggest, drag, and link. PDFs stay on the iframe viewer (display only).
+// Deterministic — no LLM. The app suggests; nothing touches the deck until you
+// click Add.
+// ════════════════════════════════════════════════════════════════════════════
+
+let _notesDoc  = null;   // { id, title, blocks:[{tag,text,bg,idx}], colors:[], suggestions:[] }
+let _notesZoom = 100;
+
+// Bible books (incl. apocrypha — the team uses Sirach/Tobit) for deterministic
+// scripture detection. Order longest-first so "Song of Solomon" wins over "Song".
+const BIBLE_BOOKS = [
+  'Song of Solomon','Song of Songs','Ecclesiasticus',
+  'Genesis','Exodus','Leviticus','Numbers','Deuteronomy','Joshua','Judges','Ruth',
+  'Samuel','Kings','Chronicles','Ezra','Nehemiah','Esther','Job','Psalms','Psalm',
+  'Proverbs','Ecclesiastes','Isaiah','Jeremiah','Lamentations','Ezekiel','Daniel',
+  'Hosea','Joel','Amos','Obadiah','Jonah','Micah','Nahum','Habakkuk','Zephaniah',
+  'Haggai','Zechariah','Malachi','Matthew','Mark','Luke','John','Acts','Romans',
+  'Corinthians','Galatians','Ephesians','Philippians','Colossians','Thessalonians',
+  'Timothy','Titus','Philemon','Hebrews','James','Peter','Jude','Revelation',
+  'Tobit','Judith','Wisdom','Sirach','Baruch','Maccabees',
+];
+
+function scriptureRegex() {
+  const numPrefix = '(?:[1-3]|First|Second|Third|I{1,3})\\s+';
+  const books = BIBLE_BOOKS.map(b => b.replace(/ /g, '\\s+')).join('|');
+  // optional numbered prefix · book · chapter · optional :verse(-verse)(,verse…)
+  return new RegExp(
+    `\\b(?:${numPrefix})?(?:${books})\\.?\\s+\\d+(?::\\d+(?:[\\u2013\\u2014-]\\d+)?(?:\\s*,\\s*\\d+(?:[\\u2013\\u2014-]\\d+)?)*)?\\b`,
+    'gi'
+  );
+}
+
+const _normRef   = r => (r || '').toLowerCase().replace(/\s+/g, '').replace(/[.,;]/g, '');
+const _normLabel = t => (t || '').toLowerCase().replace(/\s+/g, ' ').trim();
+
+function scriptureExists(ref) {
+  const n = _normRef(ref);
+  return state.slides.some(s => s.type === 'scripture' && _normRef(s.reference) === n);
+}
+function pointExists(text) {
+  const n = _normLabel(text);
+  return state.slides.some(s => s.type === 'point' &&
+    (_normLabel(s.label) === n || _normLabel(s.bodyText) === n));
+}
+
+function _isHighlight(c) {
+  if (!c) return false;
+  if (c === 'transparent') return false;
+  // any fully-transparent rgba is not a highlight
+  const m = c.match(/rgba?\(([^)]+)\)/);
+  if (m) {
+    const parts = m[1].split(',').map(x => x.trim());
+    if (parts.length === 4 && parseFloat(parts[3]) === 0) return false;
+    // near-white backgrounds aren't highlights
+    const [r, g, b] = parts.map(Number);
+    if (r >= 250 && g >= 250 && b >= 250) return false;
+  }
+  return true;
+}
+
+// Prefix every selector in the doc's own CSS so it can't leak into the app UI.
+function scopeNotesCss(css, scope) {
+  if (!css) return '';
+  return css.replace(/(^|\})\s*([^@{}]+?)\s*\{/g, (full, brace, sel) => {
+    const scoped = sel.split(',').map(s => `${scope} ${s.trim()}`).join(', ');
+    return `${brace} ${scoped} {`;
+  });
+}
+
+function processNotesHtml(html, id) {
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  doc.querySelectorAll('script,meta,link,title,base').forEach(n => n.remove());
+  let styleText = '';
+  doc.querySelectorAll('style').forEach(s => { styleText += s.textContent + '\n'; s.remove(); });
+  const bodyHtml = doc.body ? doc.body.innerHTML : html;
+  return { id, styleText, bodyHtml };
+}
+
+function showNotesDoc({ id, styleText, bodyHtml }, title) {
+  let styleEl = document.getElementById('notes-doc-style');
+  if (!styleEl) { styleEl = document.createElement('style'); styleEl.id = 'notes-doc-style'; document.head.appendChild(styleEl); }
+  styleEl.textContent = scopeNotesCss(styleText, '#notes-doc-body');
+
+  const bodyEl = document.getElementById('notes-doc-body');
+  bodyEl.innerHTML = bodyHtml;
+  bodyEl.querySelectorAll('a').forEach(a => { a.removeAttribute('href'); a.style.cursor = 'text'; });
+
+  document.getElementById('notes-doc-name').textContent = title || 'Google Doc';
+  document.getElementById('pdf-drop-zone').style.display = 'none';
+  document.getElementById('pdf-viewer').style.display    = 'none';
+  document.getElementById('notes-doc-view').style.display = 'flex';
+  document.getElementById('notes-panel')?.classList.add('pdf-open');
+
+  _notesDoc = { id, title, blocks: [], colors: [], suggestions: [] };
+  extractNotesBlocks();
+  applyNotesZoom();
+  refreshNotesMode();
+}
+
+function extractNotesBlocks() {
+  const bodyEl = document.getElementById('notes-doc-body');
+  if (!bodyEl) return;
+  const blocks = [];
+  const colorSet = new Set();
+  bodyEl.querySelectorAll('h1,h2,h3,h4,h5,h6,p,li').forEach(el => {
+    const text = (el.textContent || '').replace(/\s+/g, ' ').trim();
+    if (!text) return;
+    let bg = '';
+    const own = getComputedStyle(el).backgroundColor;
+    if (_isHighlight(own)) { bg = own; }
+    el.querySelectorAll('*').forEach(s => {
+      const c = getComputedStyle(s).backgroundColor;
+      if (_isHighlight(c)) { bg = c; }
+    });
+    if (bg) colorSet.add(bg);
+    const idx = blocks.length;
+    blocks.push({ tag: el.tagName.toLowerCase(), text, bg, idx });
+    el.dataset.notesBlock = idx;
+  });
+  _notesDoc.blocks  = blocks;
+  _notesDoc.colors  = [...colorSet];
+}
+
+// Resolve a block's role from the Style Map: highlight color wins over heading
+// level; anything unmapped falls through to 'auto' (built-in behavior).
+function resolveBlockRole(b) {
+  const map = state.config.notesStyleMap || {};
+  if (b.bg && map[b.bg] && map[b.bg] !== 'auto') return map[b.bg];
+  if (/^h[1-6]$/.test(b.tag) && map[b.tag] && map[b.tag] !== 'auto') return map[b.tag];
+  return 'auto';
+}
+
+// Gather consecutive <li> blocks following block i (a heading's bullet list).
+function collectBullets(blocks, i) {
+  const bullets = [];
+  let j = i + 1, consumed = 0;
+  while (j < blocks.length && blocks[j].tag === 'li') { bullets.push(blocks[j].text); j++; consumed++; }
+  return { bullets, consumed };
+}
+
+function buildNotesSuggestions() {
+  if (!_notesDoc) return [];
+  const rx = scriptureRegex();
+  const ignored = new Set(state.config.notesIgnored || []);
+  const blocks  = _notesDoc.blocks;
+  const out  = [];
+  const seen = new Set();
+  const push = (s) => { if (!seen.has(s.key) && !ignored.has(s.key)) { seen.add(s.key); out.push(s); } };
+
+  const makePoint = (b, conf) => {
+    const grp  = collectBullets(blocks, b._i);
+    const mode = 'single';
+    push({ type: 'point', mode, title: b.text, text: b.text, bullets: grp.bullets,
+           preview: b.text, blockIdx: b.idx, confidence: conf, key: 'pt:' + _normLabel(b.text),
+           dupe: pointExists(b.text) });
+    return grp.consumed;
+  };
+
+  const pushScripturesFromBlock = (b, conf) => {
+    rx.lastIndex = 0;
+    let found = false;
+    let m;
+    while ((m = rx.exec(b.text)) !== null) {
+      found = true;
+      const ref = m[0].replace(/[.,;:]+$/, '').trim();
+      push({ type: 'scripture', ref, preview: ref, blockIdx: b.idx, confidence: conf, key: 'scr:' + _normRef(ref), dupe: scriptureExists(ref) });
+    }
+    return found;
+  };
+
+  const firstScriptureRef = (text) => {
+    rx.lastIndex = 0;
+    const m = rx.exec(text || '');
+    return m ? m[0].replace(/[.,;:]+$/, '').trim() : '';
+  };
+
+  const nearbyUnhighlightedRef = (i) => {
+    if (state.config.notesUseNearbyRefs === false) return '';
+    const floor = Math.max(0, i - 3);
+    for (let j = i - 1; j >= floor; j--) {
+      const prev = blocks[j];
+      const prevRole = resolveBlockRole(prev);
+      if (['ignore', 'point', 'confidence'].includes(prevRole)) break;
+      const ref = firstScriptureRef(prev.text);
+      if (ref && !prev.bg && prev.text.length <= 120) return ref;
+      if (/^h[1-6]$/.test(prev.tag) && prevRole !== 'scripture') break;
+    }
+    return '';
+  };
+
+  const sameSignal = (a, b) => a && b && a.bg && a.bg === b.bg && resolveBlockRole(a) === resolveBlockRole(b);
+  let scriptureContinuation = null;
+
+  for (let i = 0; i < blocks.length; i++) {
+    const b = blocks[i]; b._i = i;
+    const role = resolveBlockRole(b);
+    if (role === 'ignore') { scriptureContinuation = null; continue; }
+
+    if (role === 'scripture') {
+      const m = b.text.match(rx);
+      const ref = (m ? m[0] : b.text).replace(/[.,;:]+$/, '').trim();
+      push({ type: 'scripture', ref, preview: ref, blockIdx: b.idx, confidence: 'Mapped', key: 'scr:' + _normRef(ref), dupe: scriptureExists(ref) });
+      scriptureContinuation = b;
+      continue;
+    }
+    if (role === 'confidence') {
+      scriptureContinuation = null;
+      push({ type: 'confidence', text: b.text, preview: b.text, blockIdx: b.idx, confidence: 'Mapped', key: 'cf:' + _normLabel(b.text), dupe: false });
+      continue;
+    }
+    if (role === 'point') { scriptureContinuation = null; i += makePoint(b, 'Mapped'); continue; }
+    if (role === 'content') {
+      const hasScripture = pushScripturesFromBlock(b, 'Content');
+      if (hasScripture) {
+        scriptureContinuation = b;
+      } else {
+        const ref = nearbyUnhighlightedRef(i);
+        if (ref) {
+          push({ type: 'scripture', ref, preview: ref, blockIdx: b.idx, confidence: 'Content', key: 'scr:' + _normRef(ref), dupe: scriptureExists(ref) });
+          scriptureContinuation = b;
+        } else if (sameSignal(scriptureContinuation, b)) {
+          // Same highlight immediately after a highlighted reference is verse text,
+          // not a separate point suggestion.
+          scriptureContinuation = b;
+        } else {
+          scriptureContinuation = null;
+          i += makePoint(b, 'Content');
+        }
+      }
+      continue;
+    }
+
+    // role === 'auto' — built-in detection
+    scriptureContinuation = null;
+    pushScripturesFromBlock(b, 'High');
+    if (/^h[1-3]$/.test(b.tag) && b.text.length <= 80) i += makePoint(b, 'Medium');
+  }
+  _notesDoc.suggestions = out;
+  return out;
+}
+
+function rescanNotes() {
+  if ((state.config.notesMode || 'manual') === 'auto' && _notesDoc) buildNotesSuggestions();
+  renderNotesTray();
+}
+
+// ── Mode (auto / manual) ──────────────────────────────────────────────────
+function refreshNotesMode() {
+  const mode = state.config.notesMode || 'manual';
+  document.querySelectorAll('.notes-mode-btn').forEach(b =>
+    b.classList.toggle('active', b.dataset.mode === mode));
+  if (mode === 'auto' && _notesDoc) buildNotesSuggestions();
+  renderNotesTray();
+}
+
+function renderNotesTray() {
+  const body  = document.getElementById('notes-tray-body');
+  const count = document.getElementById('notes-tray-count');
+  const tray  = document.getElementById('notes-tray');
+  if (!body || !tray) return;
+
+  tray.classList.toggle('collapsed', state.config.notesTrayOpen === false);
+
+  const mode = state.config.notesMode || 'manual';
+  if (mode === 'manual') {
+    if (count) count.textContent = '';
+    body.innerHTML = `<p class="notes-tray-empty">Manual mode — select text in the notes above, then choose what to add.</p>`;
+    return;
+  }
+
+  const sugs = (_notesDoc && _notesDoc.suggestions) || [];
+  if (count) count.textContent = sugs.length ? String(sugs.length) : '';
+  if (!sugs.length) {
+    body.innerHTML = `<p class="notes-tray-empty">No suggestions found in this doc.</p>`;
+    return;
+  }
+  const chipLabel = t => t === 'scripture' ? 'Scripture' : t === 'confidence' ? 'Confidence' : 'Point';
+  body.innerHTML = sugs.map(s => `
+    <div class="sug-card" data-key="${esc(s.key)}" data-block="${s.blockIdx}">
+      <div class="sug-top">
+        <span class="sug-chip sug-${s.type}">${chipLabel(s.type)}</span>
+        <span class="sug-conf">${s.confidence}</span>
+        ${s.dupe ? `<span class="sug-dupe" title="A matching slide already exists">⚠ in deck</span>` : ''}
+      </div>
+      <div class="sug-preview">${esc(s.preview)}</div>
+      ${s.type === 'point' && s.bullets && s.bullets.length ? `
+        <div class="sug-mode" data-key="${esc(s.key)}">
+          <button class="sug-mode-btn ${s.mode === 'single' ? 'active' : ''}" data-mode="single">Single</button>
+          <button class="sug-mode-btn ${s.mode === 'revealing' ? 'active' : ''}" data-mode="revealing">Revealing (${s.bullets.length})</button>
+        </div>` : ''}
+      <div class="sug-acts">
+        <button class="sug-btn sug-add" data-key="${esc(s.key)}">Add</button>
+        <button class="sug-btn sug-ignore" data-key="${esc(s.key)}">Ignore</button>
+      </div>
+    </div>`).join('');
+}
+
+function notesSuggestionByKey(key) {
+  return (_notesDoc && _notesDoc.suggestions || []).find(s => s.key === key);
+}
+
+// ── Add wiring (reuses addSlide so shapes are always correct) ──────────────
+function notesAddScripture(ref) {
+  addSlide('scripture');
+  const slide = state.slides.find(s => s.id === state.activeId);
+  if (!slide) return;
+  slide.reference = ref;
+  slide.label     = ref;
+  slide.propName  = ref;
+  saveState();
+  render();
+  lookupBibleVerse(slide, ref);            // async — fills bodies + toast on miss
+  toast('success', 'Scripture added', ref);
+}
+
+function textToBullets(text) {
+  return text.split('\n').map(l => l.trim()).filter(Boolean).map(l => [{ text: l, bold: false }]);
+}
+
+function notesAddPoint(text, mode = 'single') {
+  notesAddPointFrom({ text, title: text, mode, bullets: mode === 'revealing' ? text.split('\n') : [] });
+}
+
+// Create a point slide from a suggestion (or selection), honoring single/revealing.
+function notesAddPointFrom(s) {
+  addSlide('point');
+  const slide = state.slides.find(x => x.id === state.activeId);
+  if (!slide) return;
+  slide.mode  = s.mode || 'single';
+  slide.label = (s.title || s.text || 'Point').split('\n')[0].slice(0, 60);
+  if (slide.mode === 'revealing' && s.bullets && s.bullets.length) {
+    slide.title   = s.title || '';
+    slide.bullets = s.bullets.map(t => [{ text: String(t).trim(), bold: false }]).filter(b => b[0].text);
+    if (!slide.bullets.length) slide.bullets = [[]];
+    slide.propBaseName = slide.label;
+  } else {
+    slide.bodyText = (s.text || s.title || '').replace(/\n+/g, ' ').trim();
+  }
+  saveState();
+  render();
+  toast('success', 'Point added', slide.label);
+}
+
+// Confidence-monitor note → a Blank slide carrying that text.
+function notesAddConfidence(text) {
+  addSlide('blank');
+  const slide = state.slides.find(x => x.id === state.activeId);
+  if (!slide) return;
+  const clean = text.replace(/\n+/g, ' ').trim();
+  slide.label = 'Confidence: ' + clean.slice(0, 40);
+  slide.spans = [{ text: clean, bold: false }];
+  saveState();
+  render();
+  toast('success', 'Confidence note added', '');
+}
+
+function notesIgnore(key) {
+  if (!state.config.notesIgnored) state.config.notesIgnored = [];
+  if (!state.config.notesIgnored.includes(key)) state.config.notesIgnored.push(key);
+  if (_notesDoc) _notesDoc.suggestions = _notesDoc.suggestions.filter(s => s.key !== key);
+  saveState();
+  renderNotesTray();
+}
+
+function applyNotesZoom() {
+  const body = document.getElementById('notes-doc-body');
+  if (!body) return;
+  body.style.fontSize = `${_notesZoom}%`;
+}
+
+// ── Style Map: map this doc's heading levels & highlight colors to roles ────
+const NOTES_ROLES = ['auto', 'content', 'scripture', 'point', 'confidence', 'ignore'];
+const NOTES_ROLE_LABELS = {
+  auto: 'Auto',
+  content: 'Content',
+  scripture: 'Scripture',
+  point: 'Point',
+  confidence: 'Confidence',
+  ignore: 'Ignore',
+};
+
+function renderStyleMap() {
+  const el = document.getElementById('notes-stylemap');
+  if (!el || !_notesDoc) return;
+  const map = state.config.notesStyleMap || {};
+  const headingTags = [...new Set(_notesDoc.blocks.map(b => b.tag).filter(t => /^h[1-6]$/.test(t)))].sort();
+  const colors = _notesDoc.colors || [];
+  const roleSel = (sig) => `<select class="sm-role" data-sig="${esc(sig)}">
+    ${NOTES_ROLES.map(r => `<option value="${r}" ${(map[sig] || 'auto') === r ? 'selected' : ''}>${NOTES_ROLE_LABELS[r]}</option>`).join('')}
+  </select>`;
+  const nearbyRefs = state.config.notesUseNearbyRefs !== false;
+  el.innerHTML = `
+    <div class="sm-hdr">Style Map</div>
+    <div class="sm-sub">Map this doc's headings and highlight colors to slide types. Content forces a suggestion: Scripture if a reference is found, otherwise Point.</div>
+    <label class="sm-check">
+      <input type="checkbox" id="sm-nearby-refs" ${nearbyRefs ? 'checked' : ''}>
+      <span><strong>Refs without highlight</strong><small>Pair highlighted Content with a nearby Bible ref above it.</small></span>
+    </label>
+    <div class="sm-sec">Headings</div>
+    ${headingTags.length
+      ? headingTags.map(t => `<div class="sm-row"><span class="sm-key">${t.toUpperCase()}</span>${roleSel(t)}</div>`).join('')
+      : `<div class="sm-empty">No headings found in this doc</div>`}
+    <div class="sm-sec">Highlight colors</div>
+    ${colors.length
+      ? colors.map(c => `<div class="sm-row"><span class="sm-swatch" style="background:${esc(c)}"></span><span class="sm-key sm-key-color">${esc(c)}</span>${roleSel(c)}</div>`).join('')
+      : `<div class="sm-empty">No highlights found in this doc</div>`}`;
+}
+
+function toggleStyleMap(force) {
+  const el = document.getElementById('notes-stylemap');
+  if (!el) return;
+  const show = force !== undefined ? force : el.style.display === 'none';
+  if (show) { renderStyleMap(); el.style.display = 'block'; }
+  else el.style.display = 'none';
+}
+
+// ── Manual select-to-assign ───────────────────────────────────────────────
+function showNotesSelectionMenu() {
+  const menu = document.getElementById('notes-sel-menu');
+  if (!menu) return;
+  const sel = window.getSelection();
+  const text = sel ? sel.toString().trim() : '';
+  const bodyEl = document.getElementById('notes-doc-body');
+  // only react to selections inside the notes doc
+  if (!text || !bodyEl || !sel.anchorNode || !bodyEl.contains(sel.anchorNode)) {
+    menu.style.display = 'none';
+    return;
+  }
+  const rect = sel.getRangeAt(0).getBoundingClientRect();
+  const panelRect = document.getElementById('notes-panel').getBoundingClientRect();
+  menu.dataset.text = text;
+  menu.style.display = 'flex';
+  menu.style.top  = `${rect.bottom - panelRect.top + 6}px`;
+  menu.style.left = `${Math.max(8, rect.left - panelRect.left)}px`;
+  // default route hint: looks like a reference?
+  const looksRef = scriptureRegex().test(text);
+  menu.querySelector('[data-role="scripture"]').classList.toggle('preferred', looksRef);
+  menu.querySelector('[data-role="point"]').classList.toggle('preferred', !looksRef && text.split('\n').length > 1);
+}
+
+function attachNotesDocHandlers() {
+  // Mode toggle
+  document.getElementById('notes-mode-toggle')?.addEventListener('click', e => {
+    const btn = e.target.closest('.notes-mode-btn');
+    if (!btn) return;
+    state.config.notesMode = btn.dataset.mode;
+    saveState();
+    refreshNotesMode();
+  });
+
+  // Tray collapse
+  document.getElementById('notes-tray-hdr')?.addEventListener('click', () => {
+    state.config.notesTrayOpen = !(state.config.notesTrayOpen !== false);
+    saveState();
+    renderNotesTray();
+  });
+
+  // Tray Add / Ignore / mode-toggle (delegated)
+  document.getElementById('notes-tray-body')?.addEventListener('click', e => {
+    const modeBtn = e.target.closest('.sug-mode-btn');
+    const addBtn  = e.target.closest('.sug-add');
+    const igBtn   = e.target.closest('.sug-ignore');
+    if (modeBtn) {
+      const card = modeBtn.closest('.sug-card');
+      const s = notesSuggestionByKey(card?.dataset.key);
+      if (s) { s.mode = modeBtn.dataset.mode; renderNotesTray(); }
+      return;
+    }
+    if (addBtn) {
+      const s = notesSuggestionByKey(addBtn.dataset.key);
+      if (!s) return;
+      if (s.type === 'scripture')      notesAddScripture(s.ref);
+      else if (s.type === 'confidence') notesAddConfidence(s.text);
+      else                              notesAddPointFrom(s);
+      notesIgnore(s.key);   // remove from tray once added (tracked as handled)
+    } else if (igBtn) {
+      notesIgnore(igBtn.dataset.key);
+    }
+  });
+
+  // Zoom
+  document.getElementById('btn-notes-zoom-in')?.addEventListener('click',  () => { _notesZoom = Math.min(_notesZoom + 10, 200); applyNotesZoom(); });
+  document.getElementById('btn-notes-zoom-out')?.addEventListener('click', () => { _notesZoom = Math.max(_notesZoom - 10, 60);  applyNotesZoom(); });
+
+  // Style Map
+  document.getElementById('btn-notes-stylemap')?.addEventListener('click', e => { e.stopPropagation(); toggleStyleMap(); });
+  document.getElementById('notes-stylemap')?.addEventListener('change', e => {
+    const nearbyRefs = e.target.closest('#sm-nearby-refs');
+    if (nearbyRefs) {
+      state.config.notesUseNearbyRefs = nearbyRefs.checked;
+      saveState();
+      rescanNotes();
+      return;
+    }
+    const sel = e.target.closest('.sm-role');
+    if (!sel) return;
+    if (!state.config.notesStyleMap) state.config.notesStyleMap = {};
+    const v = sel.value;
+    if (v === 'auto') delete state.config.notesStyleMap[sel.dataset.sig];
+    else state.config.notesStyleMap[sel.dataset.sig] = v;
+    saveState();
+    rescanNotes();
+  });
+  document.addEventListener('mousedown', e => {
+    const el = document.getElementById('notes-stylemap');
+    if (el && el.style.display !== 'none' &&
+        !el.contains(e.target) && e.target.id !== 'btn-notes-stylemap') {
+      el.style.display = 'none';
+    }
+  });
+
+  // Remove doc
+  document.getElementById('btn-notes-doc-clear')?.addEventListener('click', () => {
+    document.getElementById('notes-doc-body').innerHTML = '';
+    document.getElementById('notes-doc-view').style.display = 'none';
+    document.getElementById('pdf-drop-zone').style.display  = 'flex';
+    document.getElementById('notes-panel')?.classList.remove('pdf-open');
+    _notesDoc = null;
+    state.config.gdriveUrl = '';
+    saveState();
+  });
+
+  // Manual selection menu
+  const docBody = document.getElementById('notes-doc-body');
+  docBody?.addEventListener('mouseup', () => {
+    if ((state.config.notesMode || 'manual') === 'manual') setTimeout(showNotesSelectionMenu, 0);
+  });
+  // Dismiss the selection menu when clicking away from it
+  document.addEventListener('mousedown', e => {
+    const menu = document.getElementById('notes-sel-menu');
+    if (menu && menu.style.display !== 'none' && !menu.contains(e.target)) menu.style.display = 'none';
+  });
+  document.getElementById('notes-sel-menu')?.addEventListener('click', e => {
+    const opt = e.target.closest('[data-role]');
+    if (!opt) return;
+    const menu = document.getElementById('notes-sel-menu');
+    const text = menu.dataset.text || '';
+    menu.style.display = 'none';
+    if (!text) return;
+    if (opt.dataset.role === 'scripture') {
+      const m = text.match(scriptureRegex());
+      notesAddScripture(m ? m[0] : text);
+    } else if (opt.dataset.role === 'point') {
+      notesAddPoint(text, text.split('\n').length > 1 ? 'revealing' : 'single');
+    } else if (opt.dataset.role === 'confidence') {
+      const slide = state.slides.find(s => s.id === state.activeId);
+      if (slide && 'blankSpans' in slide) {
+        slide.blankBefore = true;
+        slide.blankSpans  = [{ text: text.replace(/\n+/g, ' ').trim(), bold: false }];
+        saveState(); renderMain();
+        toast('success', 'Set as Confidence Monitor', slide.label || '');
+      } else {
+        toast('error', 'Select a slide first', 'Confidence text attaches to the current scripture/point slide');
+      }
+    }
+    window.getSelection()?.removeAllRanges();
   });
 }
 
@@ -5541,10 +9337,8 @@ function addGenHistoryEntry(data) {
 
 function renderGenHistory() {
   const panel = document.getElementById('gen-history-panel');
-  const btn   = document.getElementById('btn-gen-history');
   if (!panel) return;
   const h = loadGenHistory();
-  if (btn) btn.classList.toggle('has-items', h.length > 0);
   if (!h.length) {
     panel.innerHTML = `<div class="gen-history-empty">No exports yet</div>`;
     return;
@@ -5606,7 +9400,7 @@ async function restorePro7Backup(backupFile) {
     'If ProPresenter is open it will be quit and relaunched.',
   ], { heading: 'Restore ProPresenter config', okLabel: 'Restore', cancelLabel: 'Cancel' });
   if (!ok) return;
-  const autoManage = state.config.autoManagePro7 !== false;
+  const autoManage = state.config.autoManagePro7 === true;
   try {
     const res = await fetch('/api/pro7/restore', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -5706,6 +9500,57 @@ function showGenerateModal(data, spec) {
 
 // ─── Bible lookup ─────────────────────────────────────────────────────────────
 
+// ─── Verse-number span helpers ───────────────────────────────────────────────
+
+const VERSE_SENTINEL_RE = /\uE000([\d\u2013-]+)\uE001\s*/g;
+
+// Convert server text with verse-number sentinels into spans. Each verse number
+// becomes its own span flagged { verseNum: true, super }.
+function parseVerseSpans(text, superscript) {
+  const spans = [];
+  let lastIdx = 0, m;
+  VERSE_SENTINEL_RE.lastIndex = 0;
+  while ((m = VERSE_SENTINEL_RE.exec(text)) !== null) {
+    if (m.index > lastIdx) {
+      const t = text.slice(lastIdx, m.index);
+      if (t) spans.push({ text: t, bold: false });
+    }
+    spans.push({ text: m[1], verseNum: true, super: !!superscript, bold: false });
+    spans.push({ text: ' ', bold: false });
+    lastIdx = VERSE_SENTINEL_RE.lastIndex;
+  }
+  if (lastIdx < text.length) {
+    const t = text.slice(lastIdx);
+    if (t) spans.push({ text: t, bold: false });
+  }
+  return spans.length ? spans : [{ text: text, bold: false }];
+}
+
+// Remove verse-number spans (and a trailing space) from a spans array.
+function stripVerseSpans(spans) {
+  const out = [];
+  for (let i = 0; i < (spans || []).length; i++) {
+    const s = spans[i];
+    if (s.verseNum) {
+      // also swallow an immediately-following pure-space span
+      if (spans[i + 1] && !spans[i + 1].verseNum && spans[i + 1].text === ' ') i++;
+      continue;
+    }
+    out.push(s);
+  }
+  return out.length ? out : [{ text: '', bold: false }];
+}
+
+// Returns true if any body in the slide contains verse-number spans.
+function slideHasVerseNums(slide) {
+  return (slide.bodies || []).some(b => (b || []).some(s => s.verseNum));
+}
+
+// Re-apply the superscript flag to all verse-number spans across a slide's bodies.
+function applyVerseSuper(slide, superscript) {
+  (slide.bodies || []).forEach(b => (b || []).forEach(s => { if (s.verseNum) s.super = !!superscript; }));
+}
+
 async function lookupBibleVerse(slide, ref, overrideBibleId = '') {
   if (!ref) return;
   const btn = document.getElementById('btn-bible-lookup');
@@ -5720,13 +9565,15 @@ async function lookupBibleVerse(slide, ref, overrideBibleId = '') {
   }
 
   try {
-    const url = `/api/bible/search?apiKey=${encodeURIComponent(bibleApiKey)}&bibleId=${encodeURIComponent(resolvedBibleId)}&ref=${encodeURIComponent(ref)}`;
+    const wantVerseNums = state.config.verseNumbers === true;
+    const url = `/api/bible/search?apiKey=${encodeURIComponent(bibleApiKey)}&bibleId=${encodeURIComponent(resolvedBibleId)}&ref=${encodeURIComponent(ref)}${wantVerseNums ? '&verseNumbers=1' : ''}`;
     const res  = await fetch(url);
     const data = await res.json();
 
     if (!data.ok) { toast('error', 'Verse not found', data.error || ref); return; }
 
     // Preserve hard line breaks (poetry). Collapse only horizontal whitespace; keep newlines.
+    // Verse-number sentinels (\uE000 N \uE001) are preserved through this cleanup.
     const text = (data.text || '')
       .replace(/\r\n?/g, '\n')
       .replace(/[ \t]+/g, ' ')
@@ -5734,7 +9581,9 @@ async function lookupBibleVerse(slide, ref, overrideBibleId = '') {
       .trim();
     if (!text) { toast('error', 'No text returned', ref); return; }
 
-    const spans = [{ text, bold: false }];
+    const spans = wantVerseNums
+      ? parseVerseSpans(text, state.config.verseSuper !== false)
+      : [{ text: text.replace(/\uE000[\d\u2013-]+\uE001\s*/g, ''), bold: false }];
     if (!slide.bodies) slide.bodies = [[]];
     slide.bodies[0] = spans;
 
@@ -5759,12 +9608,259 @@ async function lookupBibleVerse(slide, ref, overrideBibleId = '') {
   }
 }
 
-// ─── Notes panel ─────────────────────────────────────────────────────────────
+// ─── Stage layout picker modal (mirrors showMacroPicker) ─────────────────────
 
-function spansToText(spans) {
-  if (!spans || !spans.length) return '';
-  return spans.map(s => s.text || '').join('');
+// cb(name, uuid) for single-select (Pick on existing entry).
+// cb([{name,uuid}, ...]) for multi-select (+ Add Stage Display).
+function showStageLayoutPicker(field, anchorEl, cb, singleSelect = true) {
+  document.getElementById('stage-layout-picker-overlay')?.remove();
+  const liveLayouts = pro7rt.liveStageLayouts || [];
+  const existing    = new Set((activeStyleScheme().stageDisplays || []).map(d => d.uuid));
+  const selected    = new Set();
+
+  const overlay = document.createElement('div');
+  overlay.className = 'macro-picker-overlay';
+  overlay.id = 'stage-layout-picker-overlay';
+  overlay.innerHTML = `
+    <div class="macro-picker-modal">
+      <div class="macro-picker-header">
+        <input type="text" class="macro-picker-search" placeholder="Search stage layouts…" autocomplete="off" spellcheck="false">
+        <button class="macro-picker-close" title="Cancel">×</button>
+      </div>
+      <div class="macro-picker-list"></div>
+      <div class="macro-picker-footer">
+        <span class="macro-picker-count">${liveLayouts.length} layouts from Pro7</span>
+        <div style="display:flex;gap:6px;align-items:center">
+          <button class="macro-picker-refresh">Refresh</button>
+          ${singleSelect ? '' : `<button class="macro-picker-add" disabled>Add 0</button>`}
+        </div>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+
+  const search   = overlay.querySelector('.macro-picker-search');
+  const list     = overlay.querySelector('.macro-picker-list');
+  const closeBtn = overlay.querySelector('.macro-picker-close');
+  const refresh  = overlay.querySelector('.macro-picker-refresh');
+  const count    = overlay.querySelector('.macro-picker-count');
+  const addBtn   = overlay.querySelector('.macro-picker-add');
+
+  function updateAddBtn() {
+    if (!addBtn) return;
+    addBtn.disabled = selected.size === 0;
+    addBtn.textContent = selected.size === 0 ? 'Add 0' : `Add ${selected.size}`;
+  }
+
+  const BRUSH = `<svg style="width:10px;height:10px;flex-shrink:0" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M7 1.5L8.5 3 4 7.5 2 8l.5-2L7 1.5Z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/></svg>`;
+
+  function renderRows(filter = '') {
+    const f = filter.trim().toLowerCase();
+    if (!liveLayouts.length) {
+      list.innerHTML = `<div class="macro-picker-empty">No stage layouts found — make sure Pro7 is connected.</div>`;
+      return;
+    }
+    const filtered = liveLayouts.filter(l => !f || l.name.toLowerCase().includes(f) || l.uuid.toLowerCase().includes(f));
+    if (!filtered.length) {
+      list.innerHTML = `<div class="macro-picker-empty">No matches for "${esc(filter)}".</div>`;
+      return;
+    }
+    list.innerHTML = filtered.map(l => {
+      const isExisting = existing.has(l.uuid);
+      const isSel      = selected.has(l.uuid);
+      return `<div class="macro-picker-row${isSel ? ' selected' : ''}${isExisting ? ' existing' : ''}" data-name="${esc(l.name)}" data-uuid="${esc(l.uuid)}">
+        ${singleSelect ? '' : `<span class="mpi-check">${isSel ? '✓' : ''}</span>`}
+        <span class="mpi-dot mpi-dot-default" style="display:flex;align-items:center;justify-content:center;color:var(--muted)">${BRUSH}</span>
+        <span class="macro-picker-row-name">${esc(l.name)}</span>
+        <code class="macro-picker-row-uuid">${esc(l.uuid)}</code>
+        ${isExisting ? '<span class="mpi-existing">added</span>' : ''}
+      </div>`;
+    }).join('');
+  }
+
+  renderRows();
+  setTimeout(() => search.focus(), 40);
+
+  search.addEventListener('input', () => renderRows(search.value));
+
+  list.addEventListener('click', e => {
+    const row = e.target.closest('.macro-picker-row');
+    if (!row || row.classList.contains('existing')) return;
+    const { name, uuid } = row.dataset;
+    if (singleSelect) {
+      overlay.remove();
+      cb(name, uuid);
+      return;
+    }
+    if (selected.has(uuid)) selected.delete(uuid); else selected.add(uuid);
+    row.classList.toggle('selected', selected.has(uuid));
+    row.querySelector('.mpi-check').textContent = selected.has(uuid) ? '✓' : '';
+    updateAddBtn();
+  });
+
+  if (addBtn) {
+    addBtn.addEventListener('click', () => {
+      const result = [...selected].map(uuid => {
+        const l = liveLayouts.find(l => l.uuid === uuid);
+        return l ? { name: l.name, uuid: l.uuid } : null;
+      }).filter(Boolean);
+      overlay.remove();
+      cb(result);
+    });
+  }
+
+  refresh.addEventListener('click', async () => {
+    refresh.textContent = 'Refreshing…';
+    refresh.disabled = true;
+    await fetchPro7StageLayouts(true);
+    liveLayouts.length = 0;
+    liveLayouts.push(...(pro7rt.liveStageLayouts || []));
+    count.textContent = `${liveLayouts.length} layouts from Pro7`;
+    refresh.textContent = 'Refresh';
+    refresh.disabled = false;
+    renderRows(search.value);
+  });
+
+  closeBtn.addEventListener('click', () => overlay.remove());
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
 }
+
+function showMacroOverridePopover(anchorEl, slide) {
+  document.getElementById('macro-ov-pop')?.remove();
+  const macros = activeStyleScheme().macros || [];
+
+  const pop = document.createElement('div');
+  pop.id = 'macro-ov-pop';
+  pop.className = 'verse-fmt-pop macro-ov-pop';
+  const cur = slide.macroOverride;
+  const rowHtml = (uuid, color, name, checked, isNone) =>
+    `<div class="mov-row${isNone ? ' mov-none' : ''}" data-uuid="${esc(uuid || '')}">
+      ${isNone ? '' : `<span class="cm-dot" style="background:${color}"></span>`}
+      <span class="mov-name">${esc(name)}</span>
+      ${checked ? '<span class="mov-check">\u2713</span>' : ''}
+    </div>`;
+  const list = macros.length
+    ? macros.map(m => rowHtml(m.uuid, macroDisplayColor(m), m.name, cur && cur.uuid === m.uuid, false)).join('')
+    : `<div class="mov-empty">No macros configured yet. Add them in <strong>Preferences \u2192 Macros</strong>.</div>`;
+  pop.innerHTML = `
+    <div class="vfp-title">Select macro</div>
+    ${cur ? rowHtml('', '', 'None (clear override)', false, true) : ''}
+    ${list}
+  `;
+  document.body.appendChild(pop);
+
+  const r = anchorEl.getBoundingClientRect();
+  const pw = pop.offsetWidth;
+  let left = r.right - pw;
+  left = Math.max(8, Math.min(left, window.innerWidth - pw - 8));
+  pop.style.left = left + 'px';
+  pop.style.top  = (r.bottom + 6) + 'px';
+
+  const close = () => { pop.remove(); document.removeEventListener('mousedown', onDoc, true); };
+  function onDoc(e) { if (!pop.contains(e.target) && e.target !== anchorEl) close(); }
+  setTimeout(() => document.addEventListener('mousedown', onDoc, true), 0);
+
+  pop.addEventListener('click', e => {
+    const row = e.target.closest('.mov-row');
+    if (!row) return;
+    const uuid = row.dataset.uuid;
+    if (!uuid) {
+      slide.macroOverride = null;
+    } else {
+      const m = macros.find(x => x.uuid === uuid);
+      if (m) slide.macroOverride = { uuid: m.uuid, name: m.name, color: m.color };
+    }
+    close();
+    saveState();
+    renderMain();
+    const ov = document.getElementById('slide-overrides');
+    if (ov) ov.open = true;
+  });
+}
+
+function showVerseFormatPopover(anchorEl, slide) {
+  document.getElementById('verse-fmt-pop')?.remove();
+  const cfg = state.config;
+
+  const pop = document.createElement('div');
+  pop.id = 'verse-fmt-pop';
+  pop.className = 'verse-fmt-pop';
+  pop.innerHTML = `
+    <div class="vfp-title">Bible formatting</div>
+    <div class="vfp-row" id="vfp-nums-row">
+      <div class="toggle${cfg.verseNumbers ? ' on' : ''}" id="vfp-nums"></div>
+      <div class="vfp-label">
+        <span>Verse numbers</span>
+        <small>Add the number in front of each verse</small>
+      </div>
+    </div>
+    <div class="vfp-row${cfg.verseNumbers ? '' : ' vfp-disabled'}" id="vfp-super-row">
+      <div class="toggle${cfg.verseSuper !== false ? ' on' : ''}" id="vfp-super"></div>
+      <div class="vfp-label">
+        <span>Superscript</span>
+        <small>Raise the number above the line</small>
+      </div>
+    </div>
+    <div class="vfp-foot">Applies to Bible lookups. ${slide.reference ? 'Changing this re-fetches this verse.' : 'Look up a verse to apply.'}</div>
+  `;
+  document.body.appendChild(pop);
+
+  // Position below the anchor button, right-aligned
+  const r = anchorEl.getBoundingClientRect();
+  const pw = pop.offsetWidth;
+  let left = r.right - pw;
+  left = Math.max(8, Math.min(left, window.innerWidth - pw - 8));
+  pop.style.left = left + 'px';
+  pop.style.top  = (r.bottom + 6) + 'px';
+
+  const close = () => {
+    pop.remove();
+    document.removeEventListener('mousedown', onDoc, true);
+  };
+  function onDoc(e) {
+    if (!pop.contains(e.target) && e.target !== anchorEl) close();
+  }
+  setTimeout(() => document.addEventListener('mousedown', onDoc, true), 0);
+
+  // Verse numbers toggle
+  pop.querySelector('#vfp-nums').addEventListener('click', async () => {
+    const turningOn = !cfg.verseNumbers;
+    cfg.verseNumbers = turningOn;
+    saveState();
+    pop.querySelector('#vfp-nums').classList.toggle('on', turningOn);
+    pop.querySelector('#vfp-super-row').classList.toggle('vfp-disabled', !turningOn);
+    anchorEl.classList.toggle('active', turningOn);
+
+    if (turningOn) {
+      if (slide.reference) {
+        close();
+        await lookupBibleVerse(slide, slide.reference, slide.bibleId || '');
+      } else {
+        toast('info', 'No reference yet', 'Look up a verse and numbers will be added');
+      }
+    } else {
+      // Strip verse-number spans from existing bodies
+      slide.bodies = (slide.bodies || []).map(stripVerseSpans);
+      saveState();
+      renderMain();
+    }
+  });
+
+  // Superscript toggle
+  pop.querySelector('#vfp-super').addEventListener('click', () => {
+    if (!cfg.verseNumbers) return;
+    cfg.verseSuper = cfg.verseSuper === false ? true : false;
+    saveState();
+    pop.querySelector('#vfp-super').classList.toggle('on', cfg.verseSuper !== false);
+    if (slideHasVerseNums(slide)) {
+      applyVerseSuper(slide, cfg.verseSuper !== false);
+      saveState();
+      renderMain();
+    }
+  });
+}
+
+// ─── Notes panel ─────────────────────────────────────────────────────────────
 
 function spansToHtml(spans) {
   if (!spans || !spans.length) return '';
@@ -5844,7 +9940,19 @@ function renderNotesPanel() {
 
 // ─── Render ───────────────────────────────────────────────────────────────────
 
+let _lastActiveId = null;
 function render() {
+  // Auto-lock: leaving the Schemes panel re-locks the default scheme so it
+  // can't be changed by accident (you have to unlock again to edit it).
+  if (_lastActiveId === 'style' && state.activeId !== 'style') {
+    let relocked = false;
+    for (const s of (state.styleSchemes || [])) {
+      if (s.isDefault && !s.isLocked) { s.isLocked = true; relocked = true; }
+    }
+    if (relocked) saveState();
+  }
+  _lastActiveId = state.activeId;
+
   saveState();
   renderSidebar();
   renderMain();
@@ -5881,7 +9989,10 @@ async function checkPro7(silent = false) {
     } else {
       pro7rt.version = null;
     }
-    if (pro7rt.connected) await fetchPro7Macros(true);
+    if (pro7rt.connected) {
+      await fetchPro7Macros(true);
+      await fetchPro7StageLayouts(true);
+    }
   } catch (_) {
     pro7rt.connected = false;
     pro7rt.version   = null;
@@ -5902,8 +10013,27 @@ async function fetchPro7Macros(silent = false) {
       pro7rt.liveMacros = data.macros;
     }
   } catch (_) {}
-  if (!silent && document.getElementById('macro-live-panel'))
-    renderMacroPicker();
+}
+
+async function fetchPro7StageLayouts(silent = false) {
+  if (!pro7rt.connected) return;
+  const port     = state.config.pro7Port || 1025;
+  const password = state.config.pro7Password || '';
+  try {
+    const res  = await fetch(`/api/pro7/stage-layouts?port=${port}&password=${encodeURIComponent(password)}`);
+    const data = await res.json();
+    if (data.ok) {
+      // Pro7 returns layouts as an array or wrapped in { layouts: [...] }
+      const raw = Array.isArray(data.layouts) ? data.layouts
+                : Array.isArray(data.layouts?.layouts) ? data.layouts.layouts
+                : [];
+      // Normalise each layout to { name, uuid }
+      pro7rt.liveStageLayouts = raw.map(l => ({
+        name: l.id?.name ?? l.name ?? '',
+        uuid: l.id?.uuid ?? l.uuid ?? '',
+      })).filter(l => l.name || l.uuid);
+    }
+  } catch (_) {}
 }
 
 async function loadFonts() {
@@ -5967,11 +10097,6 @@ function parseFontPS(psName) {
   return { family: psName.slice(0, idx), style: psName.slice(idx + 1) };
 }
 
-function validateFont(name) {
-  if (!_fontList) return null;  // not loaded yet
-  return _fontList.includes(name);
-}
-
 function renderPro7StatusInPanel() {
   const el = document.getElementById('pro7-connect-status');
   if (!el) return;
@@ -5982,28 +10107,6 @@ function renderPro7StatusInPanel() {
     el.textContent = 'Not connected — check Pro7 is running and Network API is enabled';
     el.className = 'pro7-connect-status err';
   }
-}
-
-function renderMacroPicker() {
-  const el = document.getElementById('macro-live-panel');
-  if (!el || !pro7rt.liveMacros) return;
-  // Show a datalist that macro inputs can reference
-  let dl = document.getElementById('macro-datalist');
-  if (!dl) {
-    dl = document.createElement('datalist');
-    dl.id = 'macro-datalist';
-    document.body.appendChild(dl);
-  }
-  dl.innerHTML = pro7rt.liveMacros.map(m =>
-    `<option value="${esc(m.id?.uuid?.string || '')}" label="${esc(m.name?.string || '')}">` +
-    `${esc(m.name?.string || '')} — ${esc(m.id?.uuid?.string || '')}`
-  ).join('');
-  el.innerHTML = `<div class="macro-live-header">Live macros from Pro7 (${pro7rt.liveMacros.length})</div>`
-    + pro7rt.liveMacros.map(m => {
-      const uuid = m.id?.uuid?.string || '';
-      const name = m.name?.string || '';
-      return `<div class="macro-live-row"><span class="macro-live-name">${esc(name)}</span><code class="macro-live-uuid">${esc(uuid)}</code></div>`;
-    }).join('');
 }
 
 // ─── Deck Library ────────────────────────────────────────────────────────────
@@ -6036,8 +10139,6 @@ async function refreshLibCache() {
   if (data.ok) { _libCache = data.decks || []; _libReady = true; }
   return _libCache;
 }
-
-function loadDecks() { return _libCache; }
 
 async function initLibrary() {
   // One-time migration: move localStorage decks into the library database
@@ -6205,15 +10306,16 @@ async function newDeck({ series = '', title = '', date = '', schemeId = null, sp
   s.config.pro7Port      = state.config.pro7Port;
   s.config.pro7Password  = state.config.pro7Password;
   s.config.outputFolder  = state.config.outputFolder;
-  s.config.outputMode    = state.config.outputMode;
   s.config.bibleApiKey   = state.config.bibleApiKey;
   s.config.bibleId       = state.config.bibleId;
   s.config.bibleName     = state.config.bibleName;
   s.config.bibleList     = state.config.bibleList;
-  s.config.macros        = state.config.macros;
   s.config.features      = state.config.features;
   s.config.recentSeries  = state.config.recentSeries;
-  if (!fromTemplateId) s.styleSchemes = state.styleSchemes;
+  if (!fromTemplateId) {
+    s.styleSchemes = state.styleSchemes;
+    s.globalTypography = state.globalTypography;
+  }
   s.activeSchemeId = schemeId || s.activeSchemeId || state.activeSchemeId;
   s.currentDeckId  = crypto.randomUUID();
   s.activeId       = 'start';
@@ -6459,6 +10561,10 @@ function initDecks() {
     if (dl) {
       dl.innerHTML = (state.config.recentSeries || []).map(r => `<option value="${esc(r)}">`).join('');
     }
+    const sdl = document.getElementById('speaker-datalist');
+    if (sdl) {
+      sdl.innerHTML = (state.config.speakers || []).map(s => `<option value="${esc(s)}">`).join('');
+    }
     // Refresh from db in the background (picks up changes from other machines)
     refreshLibCache().then(renderDecksList);
   }
@@ -6514,6 +10620,17 @@ function initDecks() {
     const date     = document.getElementById('nd-date')?.value           || '';
     const schemeId = document.getElementById('nd-scheme')?.value         || null;
     const fromTemplateId = document.getElementById('nd-template')?.value || null;
+    // Offer to remember a new speaker as a permanent/recurring one.
+    if (speaker) {
+      const known = state.config.speakers || (state.config.speakers = []);
+      if (!known.some(s => s.toLowerCase() === speaker.toLowerCase())) {
+        if (confirm(`Add “${speaker}” as a permanent speaker? They'll appear in the dropdown next time.`)) {
+          known.push(speaker);
+          known.sort((a, b) => a.localeCompare(b));
+          saveState();
+        }
+      }
+    }
     document.getElementById('new-deck-form')?.classList.add('hidden');
     modal.classList.remove('open');
     await newDeck({ series, title, date, schemeId, speaker, fromTemplateId });
@@ -6725,13 +10842,13 @@ async function installUpdate() {
 
 // ─── Help ─────────────────────────────────────────────────────────────────────
 
-const HELP_SECTIONS = [
+function helpSections() { return [
   {
     id: 'overview',
     label: 'Overview',
     html: `
       <h3>What is DeckPro?</h3>
-      <p>DeckPro builds ProPresenter 7 slide decks for Canvas Church messages. Fill in your slides, hit <strong>Export</strong>, and a ready-to-use <code>.pro</code> file drops directly into ProPresenter — props included, confidence monitor ready.</p>
+      <p>DeckPro builds ProPresenter 7 slide decks for Canvas Church messages. Fill in your slides, hit <strong>Export</strong>, and a ready-to-use <code>.pro</code> file drops directly into ProPresenter — props included, ${dn('monitor').toLowerCase()} ready.</p>
       <h4>Workflow</h4>
       <ul>
         <li>Set the <strong>Series</strong>, <strong>Title</strong>, and <strong>Date</strong> in the header</li>
@@ -6739,13 +10856,7 @@ const HELP_SECTIONS = [
         <li>Fill in content — body text, reference, bullets</li>
         <li>Close ProPresenter, hit <strong>Export</strong>, then reopen Pro7</li>
       </ul>
-      <h4>Keyboard Shortcuts</h4>
-      <ul>
-        <li><span class="help-kbd">⌘1–5</span> Add slide type &nbsp;&nbsp; <span class="help-kbd">⌘E</span> Export</li>
-        <li><span class="help-kbd">⌘Z</span> Undo &nbsp;&nbsp; <span class="help-kbd">⌘⇧Z</span> Redo</li>
-        <li><span class="help-kbd">⌘B</span> Bold in body text and bullet fields</li>
-        <li><span class="help-kbd">Enter</span> in Bible reference field — triggers lookup</li>
-      </ul>
+      <p style="color:var(--muted);font-size:12px">See the <strong>Shortcuts</strong> tab for all keyboard shortcuts.</p>
     `,
   },
   {
@@ -6753,8 +10864,8 @@ const HELP_SECTIONS = [
     label: 'Slide Types',
     html: `
       <h4>Scripture</h4>
-      <p>Verse or passage slide. Enter the reference and body text, or use Bible Lookup to auto-fill. Split long passages across two slides with <strong>+ Split into another slide</strong>. Each scripture creates a matching prop for the LED wall.</p>
-      <p>Slide Notes embed the full verse text (even across splits) — feeds the confidence monitor in Pro7 without needing off-screen elements.</p>
+      <p>Verse or passage slide. Enter the reference and body text, or use Bible Lookup to auto-fill. Split long passages across two slides with <strong>+ Split into another slide</strong>. Each scripture creates a matching prop for the ${dn('ledWall')}.</p>
+      <p>Slide Notes embed the full verse text (even across splits) — feeds the ${dn('monitor')} in Pro7 without needing off-screen elements.</p>
       <h4>Point</h4>
       <p>Message point slide. Two modes:</p>
       <ul>
@@ -6777,9 +10888,9 @@ const HELP_SECTIONS = [
       <p>Scripture slides include a lookup tool powered by API.Bible. Enter your API key once in <strong>Preferences</strong> — saved and hidden like a password.</p>
       <h4>Using It</h4>
       <ul>
-        <li>Type a reference like <strong>John 3:16</strong> or <strong>1 Corinthians 13:4-7</strong></li>
+        <li>Type a reference like <strong>Sirach 38:4</strong> or <strong>Tobit 6:2-4</strong></li>
         <li>Press <span class="help-kbd">Enter</span> or click <strong>Lookup</strong></li>
-        <li>Body text and reference bar auto-fill from the API</li>
+        <li>Body text and title auto-fill from the API</li>
       </ul>
       <h4>Translations</h4>
       <ul>
@@ -6872,7 +10983,7 @@ const HELP_SECTIONS = [
       <h4>Layout Alignment Buttons</h4>
       <p>Each layout row has 6 alignment buttons — 3 horizontal (left/center/right) and 3 vertical (top/middle/bottom). Click one to snap X or Y to the canvas-relative position. The active alignment lights up orange. When an element fills the full canvas width, center is shown as active.</p>
       <h4>Auto Y</h4>
-      <p>The Header and Prop header rows have an <strong>Auto Y</strong> toggle. When checked, Y is calculated automatically to sit just above the body text box (body Y − header H − gap). Uncheck to set a fixed Y.</p>
+      <p>The Title and Prop title rows have an <strong>Auto Y</strong> toggle. When checked, Y is calculated automatically to sit just above the body text box (body Y − title H − gap). Uncheck to set a fixed Y.</p>
     `,
   },
   {
@@ -6892,7 +11003,37 @@ const HELP_SECTIONS = [
       <p>Configure stage screen and layout UUIDs in <strong>Preferences → Stage Display</strong> to enable stage layout actions on blank, image, scripture, and point slides.</p>
     `,
   },
-];
+  {
+    id: 'shortcuts',
+    label: 'Shortcuts',
+    html: `
+      <h3>Keyboard Shortcuts</h3>
+      <table class="help-shortcuts-table">
+        <tbody>
+          <tr class="help-shortcuts-group"><td colspan="2">File</td></tr>
+          <tr><td><span class="help-kbd">⌘N</span></td><td>New Deck</td></tr>
+          <tr><td><span class="help-kbd">⌘O</span></td><td>Deck Library</td></tr>
+          <tr><td><span class="help-kbd">⌘E</span></td><td>Export</td></tr>
+          <tr><td><span class="help-kbd">⌘⇧R</span></td><td>Redeploy app</td></tr>
+          <tr class="help-shortcuts-group"><td colspan="2">Edit</td></tr>
+          <tr><td><span class="help-kbd">⌘Z</span></td><td>Undo</td></tr>
+          <tr><td><span class="help-kbd">⌘⇧Z</span></td><td>Redo</td></tr>
+          <tr class="help-shortcuts-group"><td colspan="2">Add Slide</td></tr>
+          <tr><td><span class="help-kbd">⌘1</span></td><td>Add Scripture</td></tr>
+          <tr><td><span class="help-kbd">⌘2</span></td><td>Add Point</td></tr>
+          <tr><td><span class="help-kbd">⌘3</span></td><td>Add Blank</td></tr>
+          <tr><td><span class="help-kbd">⌘4</span></td><td>Add Image</td></tr>
+          <tr><td><span class="help-kbd">⌘5</span></td><td>Add Custom</td></tr>
+          <tr class="help-shortcuts-group"><td colspan="2">View</td></tr>
+          <tr><td><span class="help-kbd">⌘⇧D</span></td><td>Toggle dark mode</td></tr>
+          <tr class="help-shortcuts-group"><td colspan="2">Text Editing</td></tr>
+          <tr><td><span class="help-kbd">⌘B</span></td><td>Bold (in rich-text body fields)</td></tr>
+          <tr><td><span class="help-kbd">Enter</span></td><td>Bible Lookup — fetch verse</td></tr>
+        </tbody>
+      </table>
+    `,
+  },
+]; }
 
 function initHelp() {
   const modal = document.getElementById('help-modal');
@@ -6901,11 +11042,11 @@ function initHelp() {
   const close = document.getElementById('help-modal-close');
   if (!modal) return;
 
-  nav.innerHTML = HELP_SECTIONS.map((s, i) =>
+  nav.innerHTML = helpSections().map((s, i) =>
     `<button class="help-nav-btn${i === 0 ? ' active' : ''}" data-section="${s.id}">${s.label}</button>`
   ).join('');
 
-  body.innerHTML = HELP_SECTIONS.map((s, i) =>
+  body.innerHTML = helpSections().map((s, i) =>
     `<div class="help-section${i === 0 ? ' active' : ''}" id="help-sec-${s.id}">${s.html}</div>`
   ).join('');
 
@@ -6969,42 +11110,55 @@ function applyTheme(dark) {
 
 function toggleTheme() {
   const isDark = document.body.classList.contains('dark');
-  localStorage.setItem(THEME_KEY, isDark ? 'light' : 'dark');
+  const next = isDark ? 'light' : 'dark';
+  state.config.theme = next;
+  try { localStorage.setItem(THEME_KEY, next); } catch (_) {}
+  saveState();
   applyTheme(!isDark);
 }
 
 function initTheme() {
-  const saved = localStorage.getItem(THEME_KEY);
+  let saved = state.config.theme || '';
+  try { if (!saved) saved = localStorage.getItem(THEME_KEY); } catch (_) {}
   const prefersDark = window.matchMedia?.('(prefers-color-scheme: dark)').matches;
   applyTheme(saved === 'dark' || (saved === null && prefersDark));
 }
 
 // ─── Init ─────────────────────────────────────────────────────────────────────
 
-initTheme();
-const _tvEl = document.getElementById('titlebar-version');
-if (_tvEl) _tvEl.textContent = 'v' + APP_VERSION;
-loadState();
-syncUidCounter();
-attachHeaderHandlers();
-initDecks();
-initHelp();
-initGenHistory();
-initLibrary();
-initChangelog();
-document.querySelector('header h1')?.addEventListener('click', () => {
-  state.activeId = null;
+async function bootstrap() {
+  const _tvEl = document.getElementById('titlebar-version');
+  if (_tvEl) _tvEl.textContent = 'v' + APP_VERSION;
+
+  await loadState();
+  initTheme();
+  syncUidCounter();
+  attachHeaderHandlers();
+  initDecks();
+  initHelp();
+  initTooltip();
+  initDiagnostics();
+  initGenHistory();
+  initLibrary();
+  initChangelog();
+  document.querySelector('header h1')?.addEventListener('click', () => {
+    state.activeId = null;
+    render();
+  });
+  syncHeaderInputs();
   render();
-});
-syncHeaderInputs();
-render();
-updateStatusDot();
+  updateStatusDot();
+  maybeShowMachineSetup();
 
-// Background: check Pro7 status, load fonts, check for updates
-checkPro7(true);
-loadFonts();
-checkForUpdates();
-setInterval(() => checkForUpdates(), 6 * 60 * 60 * 1000); // re-check every 6h
+  // Background: check Pro7 status, load fonts, check for updates
+  checkPro7(true);
+  loadFonts();
+  checkForUpdates();
+  setInterval(() => checkForUpdates(), 6 * 60 * 60 * 1000); // re-check every 6h
 
-// Poll Pro7 every 10s — reconnects automatically when Pro7 opens
-setInterval(() => checkPro7(true), 10000);
+  // Poll Pro7 every 10s — reconnects automatically when Pro7 opens
+  setInterval(() => checkPro7(true), 10000);
+}
+
+window.addEventListener('pagehide', saveStateBeforeUnload);
+bootstrap();
