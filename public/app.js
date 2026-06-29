@@ -2,9 +2,14 @@
 
 // ─── Version & Changelog ──────────────────────────────────────────────────────
 
-const APP_VERSION = '4.4.4';
+const APP_VERSION = '4.4.5';
 
 const CHANGELOG = [
+  {
+    version: '4.4.5',
+    date: '2026-06-29',
+    changes: ["Text tab grid: row labels are now Title Case (Body, Bold, Title, Point, Live Badge)."],
+  },
   {
     version: '4.4.4',
     date: '2026-06-29',
@@ -5246,23 +5251,23 @@ function renderGlobalPanel(panel, schemeOptionsHTML) {
 function renderSchemeGrid(sv, rs, dis) {
   const sections = [
     { label: 'Display 1', rows: [
-      { id: 'body1',  lbl: 'body',        fontF: 'bodyFont',      advK: 'bodyFontAdv',      sizeF: 'bodySize' },
-      { id: 'bold1',  lbl: 'bold',        fontF: null, typoKey: 'boldFont', advK: 'boldFontAdv',      sizeF: null },
-      { id: 'title1', lbl: 'title',       fontF: 'titleFont',     advK: 'titleFontAdv',     sizeF: 'titleSize' },
-      { id: 'point1', lbl: 'point',       fontF: 'pointFont',     advK: 'pointFontAdv',     sizeF: 'pointSize' },
+      { id: 'body1',  lbl: 'Body',        fontF: 'bodyFont',      advK: 'bodyFontAdv',      sizeF: 'bodySize' },
+      { id: 'bold1',  lbl: 'Bold',        fontF: null, typoKey: 'boldFont', advK: 'boldFontAdv',      sizeF: null },
+      { id: 'title1', lbl: 'Title',       fontF: 'titleFont',     advK: 'titleFontAdv',     sizeF: 'titleSize' },
+      { id: 'point1', lbl: 'Point',       fontF: 'pointFont',     advK: 'pointFontAdv',     sizeF: 'pointSize' },
     ]},
     { label: 'Display 2', rows: [
-      { id: 'body2',  lbl: 'body',        fontF: 'propBodyFont',  advK: 'propBodyFontAdv',  sizeF: 'propBodySize' },
-      { id: 'bold2',  lbl: 'bold',        fontF: null, typoKey: 'boldFont', advK: 'propBoldFontAdv',  sizeF: null },
-      { id: 'title2', lbl: 'title',       fontF: 'propTitleFont', advK: 'propTitleFontAdv', sizeF: 'propTitleSize' },
-      { id: 'point2', lbl: 'point',       fontF: 'propPointFont', advK: 'propPointFontAdv', sizeF: 'propPointSize' },
+      { id: 'body2',  lbl: 'Body',        fontF: 'propBodyFont',  advK: 'propBodyFontAdv',  sizeF: 'propBodySize' },
+      { id: 'bold2',  lbl: 'Bold',        fontF: null, typoKey: 'boldFont', advK: 'propBoldFontAdv',  sizeF: null },
+      { id: 'title2', lbl: 'Title',       fontF: 'propTitleFont', advK: 'propTitleFontAdv', sizeF: 'propTitleSize' },
+      { id: 'point2', lbl: 'Point',       fontF: 'propPointFont', advK: 'propPointFontAdv', sizeF: 'propPointSize' },
     ]},
     { label: 'Display 3', rows: [
       { id: 'notes',  lbl: 'Slide Notes', fontF: 'notesFont',     advK: 'notesFontAdv',     sizeF: 'notesSize' },
     ]},
     { label: 'Utility', rows: [
       { id: 'se',    lbl: 'Utility',     fontF: 'startEndFont',  advK: 'startEndFontAdv',  sizeF: 'startEndSize' },
-      { id: 'live',  lbl: 'Live badge',  fontF: 'liveFont',      advK: 'liveFontAdv',      sizeF: 'liveSize' },
+      { id: 'live',  lbl: 'Live Badge',  fontF: 'liveFont',      advK: 'liveFontAdv',      sizeF: 'liveSize' },
       { id: 'queue', lbl: 'Queue',       fontF: 'queueFont',     advK: 'queueFontAdv',     sizeF: 'queueSize' },
     ]},
   ];
