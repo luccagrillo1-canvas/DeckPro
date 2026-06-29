@@ -2,9 +2,17 @@
 
 // ─── Version & Changelog ──────────────────────────────────────────────────────
 
-const APP_VERSION = '4.4.3';
+const APP_VERSION = '4.4.4';
 
 const CHANGELOG = [
+  {
+    version: '4.4.4',
+    date: '2026-06-29',
+    changes: [
+      "Text tab grid: scheme-overridden cells now show a green outline + subtle tint so you can see at a glance what's been customized vs. inheriting from Global.",
+      "Right-click any grid cell to reset it to its global default or push its value up to global.",
+    ],
+  },
   {
     version: '4.4.3',
     date: '2026-06-29',
@@ -5288,38 +5296,57 @@ function renderSchemeGrid(sv, rs, dis) {
     const adv     = sv[advK] || FONT_ADV_DEFAULTS();
     const noFont  = !fontF && !typoKey;
 
+    const fontTypoKey = fontF ? (FONT_FIELD_TO_TYPO_KEY[fontF] || null) : (typoKey || null);
+    const advRaw  = rs[advK];
+    const advDefs = FONT_ADV_DEFAULTS();
+    const advOv   = (field) => {
+      if (!advRaw) return false;
+      const v = advRaw[field];
+      if (v === undefined || v === null) return false;
+      const def = advDefs[field];
+      if (def === null) return true;
+      if (typeof def === 'number') return Number(v) !== Number(def);
+      if (typeof def === 'boolean') return !!v !== def;
+      return v !== def;
+    };
+    const fontOv   = fontTypoKey ? !!(rs.typography?.[fontTypoKey]) : false;
+    const sizeOv   = sizeF ? !!(rs.typography?.[sizeF]) : false;
+    const alignOv  = advOv('alignment');
+    const vAlignOv = advOv('verticalAlignment');
+    const sc = (ov) => ov ? ' sg-td-scheme' : '';
+
     const togCell  = (field) =>
-      `<td class="sg-td sg-td-tog"><button type="button" class="fav-toggle sg-tog ${adv[field] ? 'on' : ''}" data-scheme="${advK}" data-field="${field}" ${dis}></button></td>`;
+      `<td class="sg-td sg-td-tog${sc(advOv(field))}" data-scheme="${advK}" data-field="${field}"><button type="button" class="fav-toggle sg-tog ${adv[field] ? 'on' : ''}" data-scheme="${advK}" data-field="${field}" ${dis}></button></td>`;
     const haBtn    = (v, title) =>
-      `<td class="sg-td sg-td-align"><button type="button" class="sg-halign-btn sg-align-cell ${adv.alignment === v ? 'on' : ''}" data-scheme="${advK}" data-val="${v}" title="${title}" ${dis}></button></td>`;
+      `<td class="sg-td sg-td-align${sc(alignOv)}" data-scheme="${advK}" data-field="alignment"><button type="button" class="sg-halign-btn sg-align-cell ${adv.alignment === v ? 'on' : ''}" data-scheme="${advK}" data-val="${v}" title="${title}" ${dis}></button></td>`;
     const vaBtn    = (v, title) =>
-      `<td class="sg-td sg-td-align"><button type="button" class="sg-valign-btn sg-align-cell ${adv.verticalAlignment === v ? 'on' : ''}" data-scheme="${advK}" data-val="${v}" title="${title}" ${dis}></button></td>`;
+      `<td class="sg-td sg-td-align${sc(vAlignOv)}" data-scheme="${advK}" data-field="verticalAlignment"><button type="button" class="sg-valign-btn sg-align-cell ${adv.verticalAlignment === v ? 'on' : ''}" data-scheme="${advK}" data-val="${v}" title="${title}" ${dis}></button></td>`;
     const numCell  = (field, dflt, step) =>
-      `<td class="sg-td"><input type="number" class="fav-num sg-num" data-scheme="${advK}" data-field="${field}" value="${adv[field] ?? dflt}" step="${step}" ${dis}></td>`;
+      `<td class="sg-td${sc(advOv(field))}" data-scheme="${advK}" data-field="${field}"><input type="number" class="fav-num sg-num" data-scheme="${advK}" data-field="${field}" value="${adv[field] ?? dflt}" step="${step}" ${dis}></td>`;
     const colorCell = (field, fb) =>
-      `<td class="sg-td sg-td-color"><input type="color" class="sg-adv-color" data-scheme="${advK}" data-field="${field}" value="${colorVal(adv[field], fb)}" ${dis}></td>`;
+      `<td class="sg-td sg-td-color${sc(advOv(field))}" data-scheme="${advK}" data-field="${field}"><input type="color" class="sg-adv-color" data-scheme="${advK}" data-field="${field}" value="${colorVal(adv[field], fb)}" ${dis}></td>`;
 
     return `<tr class="sg-row" data-rowid="${id}">
       <th scope="row" class="sg-row-lbl">${esc(lbl)}</th>
-      <td class="sg-td sg-td-fam">${noFont ? '<span class="sg-na">—</span>'
+      <td class="sg-td sg-td-fam${sc(fontOv)}" data-typokey="${fontTypoKey || ''}">${noFont ? '<span class="sg-na">—</span>'
         : typoKey ? `<select class="sg-typo-fam sg-fam" id="sg-typo-fam-${id}" data-typokey="${typoKey}" ${dis}>${famOptsFn(curFam)}</select>`
         : `<select class="sf-fam-select sg-fam" id="sf-fam-${fontF}" ${dis}>${famOptsFn(curFam)}</select>`}</td>
-      <td class="sg-td sg-td-sty">${noFont ? '<span class="sg-na">—</span>'
+      <td class="sg-td sg-td-sty${sc(fontOv)}" data-typokey="${fontTypoKey || ''}">${noFont ? '<span class="sg-na">—</span>'
         : typoKey ? `<select class="sg-typo-sty sg-sty" id="sg-typo-sty-${id}" data-typokey="${typoKey}" ${dis}>${styOptsFn(curFam, ps)}</select>`
         : `<select class="sf-sty-select sg-sty" id="sf-sty-${fontF}" ${dis}>${styOptsFn(curFam, ps)}</select>`}</td>
-      <td class="sg-td sg-td-color"><input type="color" class="fav-color sg-color" data-scheme="${advK}" value="${colorVal(adv.color)}" ${dis}></td>
-      <td class="sg-td">${sizeF
+      <td class="sg-td sg-td-color${sc(advOv('color'))}" data-scheme="${advK}" data-field="color"><input type="color" class="fav-color sg-color" data-scheme="${advK}" value="${colorVal(adv.color)}" ${dis}></td>
+      <td class="sg-td${sc(sizeOv)}" data-typokey="${sizeF || ''}">${sizeF
         ? `<input type="number" class="sz-input sf-size sg-size" id="ss-${sizeF}" value="${sv[sizeF] ?? 44}" min="1" max="400" step="1" ${dis}>`
         : '<span class="sg-na">—</span>'}</td>
       ${togCell('bold')}${togCell('italic')}${togCell('underline')}${togCell('strikethrough')}
-      <td class="sg-td"><select class="fav-select sg-caps" data-scheme="${advK}" data-field="capitalization" ${dis}>
+      <td class="sg-td${sc(advOv('capitalization'))}" data-scheme="${advK}" data-field="capitalization"><select class="fav-select sg-caps" data-scheme="${advK}" data-field="capitalization" ${dis}>
         <option value="" ${adv.capitalization === '' ? 'selected' : ''}>—</option>
         <option value="allCaps" ${adv.capitalization === 'allCaps' ? 'selected' : ''}>ALL</option>
         <option value="titleCase" ${adv.capitalization === 'titleCase' ? 'selected' : ''}>Title</option>
         <option value="startCase" ${adv.capitalization === 'startCase' ? 'selected' : ''}>Start</option>
         <option value="allLower" ${adv.capitalization === 'allLower' ? 'selected' : ''}>lower</option>
       </select></td>
-      <td class="sg-td"><select class="fav-select sg-scale" data-scheme="${advK}" data-field="scaleBehavior" ${dis}>
+      <td class="sg-td${sc(advOv('scaleBehavior'))}" data-scheme="${advK}" data-field="scaleBehavior"><select class="fav-select sg-scale" data-scheme="${advK}" data-field="scaleBehavior" ${dis}>
         <option value="" ${!adv.scaleBehavior ? 'selected' : ''}>—</option>
         <option value="SCALE_BEHAVIOR_SCALE_FONT_DOWN" ${adv.scaleBehavior === 'SCALE_BEHAVIOR_SCALE_FONT_DOWN' ? 'selected' : ''}>↓</option>
         <option value="SCALE_BEHAVIOR_SCALE_FONT_UP_DOWN" ${adv.scaleBehavior === 'SCALE_BEHAVIOR_SCALE_FONT_UP_DOWN' ? 'selected' : ''}>↕</option>
@@ -5327,10 +5354,10 @@ function renderSchemeGrid(sv, rs, dis) {
       </select></td>
       ${haBtn('', 'Left')}${haBtn('center', 'Center')}${haBtn('right', 'Right')}${haBtn('justify', 'Justify')}
       ${vaBtn('', 'Top')}${vaBtn('middle', 'Middle')}${vaBtn('bottom', 'Bottom')}
-      <td class="sg-td sg-td-tog"><button type="button" class="fav-toggle sg-tog ${adv.strokeEnabled ? 'on' : ''}" data-scheme="${advK}" data-field="strokeEnabled" ${dis}></button></td>
+      <td class="sg-td sg-td-tog${sc(advOv('strokeEnabled'))}" data-scheme="${advK}" data-field="strokeEnabled"><button type="button" class="fav-toggle sg-tog ${adv.strokeEnabled ? 'on' : ''}" data-scheme="${advK}" data-field="strokeEnabled" ${dis}></button></td>
       ${numCell('strokeWidth', 1, 0.5)}
       ${colorCell('strokeColor', '#000000')}
-      <td class="sg-td sg-td-tog"><button type="button" class="fav-toggle sg-tog ${adv.shadowEnabled ? 'on' : ''}" data-scheme="${advK}" data-field="shadowEnabled" ${dis}></button></td>
+      <td class="sg-td sg-td-tog${sc(advOv('shadowEnabled'))}" data-scheme="${advK}" data-field="shadowEnabled"><button type="button" class="fav-toggle sg-tog ${adv.shadowEnabled ? 'on' : ''}" data-scheme="${advK}" data-field="shadowEnabled" ${dis}></button></td>
       ${colorCell('shadowColor', '#000000')}
       ${numCell('shadowAngle', 315, 15)}
       ${numCell('shadowOffset', 5, 0.5)}
@@ -6172,6 +6199,79 @@ function renderStylePanel(panel) {
     panel.querySelectorAll('#style-tab-text .sg-row').forEach(r =>
       r.classList.toggle('sg-row-sel', r.dataset.rowid === rowId));
   }
+
+  // Scheme grid: right-click context menu (reset / push-to-global)
+  if (!document.getElementById('sg-ctx-menu')) {
+    const m = document.createElement('div');
+    m.id = 'sg-ctx-menu';
+    m.innerHTML =
+      `<button id="sg-ctx-reset" type="button">↺ Reset to global</button>` +
+      `<button id="sg-ctx-push" type="button">↑ Push to global</button>` +
+      `<button id="sg-ctx-reset-def" type="button">↺ Reset to default</button>`;
+    document.body.appendChild(m);
+    document.addEventListener('click', e => {
+      const m2 = document.getElementById('sg-ctx-menu');
+      if (m2 && !m2.contains(e.target)) m2.style.display = 'none';
+    });
+  }
+  const _sgCtx = document.getElementById('sg-ctx-menu');
+  document.getElementById('sg-ctx-reset').onclick = () => {
+    const s = getScheme(); if (!s) return;
+    const key = _sgCtx.dataset.typokey;
+    if (!key) return;
+    ensureSchemeTypography(s);
+    s.typography[key] = null;
+    saveState(); renderStylePanel(panel); _sgCtx.style.display = 'none';
+  };
+  document.getElementById('sg-ctx-push').onclick = () => {
+    const s = getScheme(); if (!s) return;
+    const key = _sgCtx.dataset.typokey;
+    if (!key) return;
+    ensureSchemeTypography(s); ensureGlobalTypography();
+    state.globalTypography[key] = s.typography[key] ?? resolveSchemeTypography(s)[key];
+    s.typography[key] = null;
+    saveState(); renderStylePanel(panel); _sgCtx.style.display = 'none';
+  };
+  document.getElementById('sg-ctx-reset-def').onclick = () => {
+    const s = getScheme(); if (!s) return;
+    const advKey = _sgCtx.dataset.scheme;
+    const field  = _sgCtx.dataset.field;
+    if (advKey && field && s[advKey]) {
+      s[advKey][field] = FONT_ADV_DEFAULTS()[field];
+      saveState(); renderStylePanel(panel);
+    }
+    _sgCtx.style.display = 'none';
+  };
+  panel.querySelectorAll('#style-tab-text .sg-td').forEach(td => {
+    td.addEventListener('contextmenu', e => {
+      e.preventDefault();
+      const typoKey = td.dataset.typokey || '';
+      const advKey  = td.dataset.scheme  || '';
+      const advFld  = td.dataset.field   || '';
+      _sgCtx.dataset.typokey = typoKey;
+      _sgCtx.dataset.scheme  = advKey;
+      _sgCtx.dataset.field   = advFld;
+      const s = getScheme();
+      const isOvTypo = !!(typoKey && s?.typography?.[typoKey]);
+      const isOvAdv  = !!(advKey && advFld && s?.[advKey] != null && (() => {
+        const v = s[advKey][advFld], def = FONT_ADV_DEFAULTS()[advFld];
+        if (v === undefined || v === null) return false;
+        if (def === null) return true;
+        if (typeof def === 'number') return Number(v) !== Number(def);
+        if (typeof def === 'boolean') return !!v !== def;
+        return v !== def;
+      })());
+      const resetBtn    = document.getElementById('sg-ctx-reset');
+      const pushBtn     = document.getElementById('sg-ctx-push');
+      const resetDefBtn = document.getElementById('sg-ctx-reset-def');
+      resetBtn.style.display    = (typoKey && isOvTypo) ? '' : 'none';
+      pushBtn.style.display     = typoKey ? '' : 'none';
+      resetDefBtn.style.display = (!typoKey && advKey && isOvAdv) ? '' : 'none';
+      const hasItems = (typoKey && isOvTypo) || typoKey || (!typoKey && advKey && isOvAdv);
+      if (!hasItems) return;
+      _sgCtx.style.cssText = `display:block;position:fixed;left:${e.clientX}px;top:${e.clientY}px;`;
+    });
+  });
 
   // Layout numeric inputs — update value + refresh alignment button states in-place
   document.querySelectorAll('.layout-num').forEach(inp => {
