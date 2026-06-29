@@ -2,9 +2,16 @@
 
 // ─── Version & Changelog ──────────────────────────────────────────────────────
 
-const APP_VERSION = '4.4.1';
+const APP_VERSION = '4.4.2';
 
 const CHANGELOG = [
+  {
+    version: '4.4.2',
+    date: '2026-06-29',
+    changes: [
+      "Text tab grid: bold rows (Display 1 + Display 2) now show editable font family and weight selects — they route through the typography palette system (same as the Palette tab's Bold/ALT slot) so changes propagate correctly.",
+    ],
+  },
   {
     version: '4.4.1',
     date: '2026-06-29',
@@ -5227,13 +5234,13 @@ function renderSchemeGrid(sv, rs, dis) {
   const sections = [
     { label: 'Display 1', rows: [
       { id: 'body1',  lbl: 'body',        fontF: 'bodyFont',      advK: 'bodyFontAdv',      sizeF: 'bodySize' },
-      { id: 'bold1',  lbl: 'bold',        fontF: null,            advK: 'boldFontAdv',      sizeF: null },
+      { id: 'bold1',  lbl: 'bold',        fontF: null, typoKey: 'boldFont', advK: 'boldFontAdv',      sizeF: null },
       { id: 'title1', lbl: 'title',       fontF: 'titleFont',     advK: 'titleFontAdv',     sizeF: 'titleSize' },
       { id: 'point1', lbl: 'point',       fontF: 'pointFont',     advK: 'pointFontAdv',     sizeF: 'pointSize' },
     ]},
     { label: 'Display 2', rows: [
       { id: 'body2',  lbl: 'body',        fontF: 'propBodyFont',  advK: 'propBodyFontAdv',  sizeF: 'propBodySize' },
-      { id: 'bold2',  lbl: 'bold',        fontF: null,            advK: 'propBoldFontAdv',  sizeF: null },
+      { id: 'bold2',  lbl: 'bold',        fontF: null, typoKey: 'boldFont', advK: 'propBoldFontAdv',  sizeF: null },
       { id: 'title2', lbl: 'title',       fontF: 'propTitleFont', advK: 'propTitleFontAdv', sizeF: 'propTitleSize' },
       { id: 'point2', lbl: 'point',       fontF: 'propPointFont', advK: 'propPointFontAdv', sizeF: 'propPointSize' },
     ]},
@@ -5270,11 +5277,11 @@ function renderSchemeGrid(sv, rs, dis) {
 
   const NUM_COLS = 34;
 
-  const dataRow = ({ id, lbl, fontF, advK, sizeF }) => {
-    const ps      = fontF ? (sv[fontF] || '') : '';
-    const curFam  = fontF ? parseFontPS(ps).family : '';
+  const dataRow = ({ id, lbl, fontF, typoKey, advK, sizeF }) => {
+    const ps      = fontF ? (sv[fontF] || '') : (typoKey ? (sv[typoKey] || '') : '');
+    const curFam  = (fontF || typoKey) ? parseFontPS(ps).family : '';
     const adv     = sv[advK] || FONT_ADV_DEFAULTS();
-    const noFont  = !fontF;
+    const noFont  = !fontF && !typoKey;
 
     const togCell  = (field) =>
       `<td class="sg-td sg-td-tog"><button type="button" class="fav-toggle sg-tog ${adv[field] ? 'on' : ''}" data-scheme="${advK}" data-field="${field}" ${dis}></button></td>`;
@@ -5290,8 +5297,10 @@ function renderSchemeGrid(sv, rs, dis) {
     return `<tr class="sg-row" data-rowid="${id}">
       <th scope="row" class="sg-row-lbl">${esc(lbl)}</th>
       <td class="sg-td sg-td-fam">${noFont ? '<span class="sg-na">—</span>'
+        : typoKey ? `<select class="sg-typo-fam sg-fam" id="sg-typo-fam-${id}" data-typokey="${typoKey}" ${dis}>${famOptsFn(curFam)}</select>`
         : `<select class="sf-fam-select sg-fam" id="sf-fam-${fontF}" ${dis}>${famOptsFn(curFam)}</select>`}</td>
       <td class="sg-td sg-td-sty">${noFont ? '<span class="sg-na">—</span>'
+        : typoKey ? `<select class="sg-typo-sty sg-sty" id="sg-typo-sty-${id}" data-typokey="${typoKey}" ${dis}>${styOptsFn(curFam, ps)}</select>`
         : `<select class="sf-sty-select sg-sty" id="sf-sty-${fontF}" ${dis}>${styOptsFn(curFam, ps)}</select>`}</td>
       <td class="sg-td sg-td-color"><input type="color" class="fav-color sg-color" data-scheme="${advK}" value="${colorVal(adv.color)}" ${dis}></td>
       <td class="sg-td">${sizeF
@@ -6059,6 +6068,30 @@ function renderStylePanel(panel) {
         if (picker) picker.value = full;
         saveState();
       }
+    });
+  });
+
+  // Scheme grid: typography-backed font selects (bold rows → s.typography.boldFont)
+  panel.querySelectorAll('.sg-typo-fam').forEach(sel => {
+    sel.addEventListener('change', e => {
+      const s = getScheme(); if (!s) return;
+      const key = sel.dataset.typokey;
+      const fam = e.target.value;
+      const styles = _fontFamilyMap?.[fam] || [];
+      const firstPS = styles[0]?.postscript || fam;
+      ensureSchemeTypography(s);
+      s.typography[key] = firstPS;
+      saveState();
+      renderStylePanel(panel);
+    });
+  });
+  panel.querySelectorAll('.sg-typo-sty').forEach(sel => {
+    sel.addEventListener('change', e => {
+      const s = getScheme(); if (!s) return;
+      const key = sel.dataset.typokey;
+      ensureSchemeTypography(s);
+      s.typography[key] = sel.value;
+      saveState();
     });
   });
 
