@@ -2,9 +2,14 @@
 
 // ─── Version & Changelog ──────────────────────────────────────────────────────
 
-const APP_VERSION = '4.4.2';
+const APP_VERSION = '4.4.3';
 
 const CHANGELOG = [
+  {
+    version: '4.4.3',
+    date: '2026-06-29',
+    changes: ["Text tab canvas preview widened to 700px."],
+  },
   {
     version: '4.4.2',
     date: '2026-06-29',

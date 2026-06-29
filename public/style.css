@@ -4160,7 +4160,7 @@ body.dark .g-tip-title { color: #ff8a4c; }
 }
 
 /* Compact canvas preview in Text tab */
-.sg-lp-compact .lp-wrap { max-width: 530px; }
+.sg-lp-compact .lp-wrap { max-width: 700px; }
 .sg-lp-compact .lp-hint { display: none; }
 
 /* ─── Scheme grid (Text tab) ────────────────────────────────────────────── */
