@@ -2,9 +2,17 @@
 
 // ─── Version & Changelog ──────────────────────────────────────────────────────
 
-const APP_VERSION = '4.4.9';
+const APP_VERSION = '4.5.0';
 
 const CHANGELOG = [
+  {
+    version: '4.5.0',
+    date: '2026-06-30',
+    changes: [
+      "Removed the protected \"Default\" scheme — all schemes are now equal; any can be renamed, deleted, or left unlocked.",
+      "Global panel redesigned: now shows the same Text + Layout spreadsheet grids as a regular scheme, but read-only, so you can see exactly what your global defaults look like.",
+    ],
+  },
   {
     version: '4.4.9',
     date: '2026-06-30',
@@ -1779,8 +1787,7 @@ const DEFAULT_SCHEME_TYPOGRAPHY = () => Object.fromEntries(TYPOGRAPHY_KEYS.map(k
 const DEFAULT_STYLE_SCHEME = () => ({
   id:          'default',
   name:        'Default',
-  isDefault:   true,
-  isLocked:    true,
+  isLocked:    false,
   typography:  DEFAULT_SCHEME_TYPOGRAPHY(),
   macros:            [],  // per-scheme macro list (name, uuid, color, triggers)
   stageDisplays:     [],  // per-scheme stage display entries [{id, name, uuid, triggers}]
@@ -2032,7 +2039,6 @@ function styleForExport(scheme) {
   const {
     id: _sid,
     name: _sname,
-    isDefault: _sd,
     isLocked: _sl,
     typography: _typo,
     ...style
@@ -2233,10 +2239,9 @@ function applySavedState(saved) {
         // Drop the removed orphan fields if an old scheme carried them.
         delete merged.titleText; delete merged.titleShadow;
         delete merged.boldFont;  delete merged.propBoldFont;
-        // Ensure isDefault is set correctly by scheme id
-        merged.isDefault = (merged.id === 'default');
-        // For migrated saves without isLocked, lock only the default scheme
-        if (p.isLocked === undefined) merged.isLocked = merged.isDefault;
+        // Strip legacy isDefault flag — all schemes are equal now
+        delete merged.isDefault;
+        if (p.isLocked === undefined) merged.isLocked = false;
         // Merge buildOrders — fill any missing tab keys with defaults
         merged.buildOrders = deepClone({ ...DEF.buildOrders, ...(out.buildOrders || {}) });
         // Migrate old 'this slide' → 'body', and drop the retired 'atem_gradient'
@@ -4873,6 +4878,23 @@ function fontAdvPanel(schemeKey, label, scheme, locked, extraColorFields = []) {
 }
 
 // Compact layout table for the Advanced section
+function lyRows() {
+  return [
+    { label: dn('mainScreen'), type: 'head' },
+    { label: 'Canvas',       cols: ['—','—','canvasW','canvasH'] },
+    { label: 'Body',         cols: ['bodyX','bodyY','bodyW','bodyH'], region: 'body' },
+    { label: 'Point',        cols: ['pointX','pointY','pointW','pointH'], region: 'point' },
+    { label: 'Title',        cols: ['titleX','titleY','titleW','titleH'], autoY: { field: 'autoTitleY', gapField: 'titleAutoGap' }, region: 'header' },
+    { label: 'Utility',      cols: ['startEndX','startEndY','startEndW','startEndH'], region: 'startEnd' },
+    { label: 'Live',         cols: ['liveX','liveY','liveW','liveH'], region: 'live' },
+    { label: 'Queue',        cols: ['queueX','queueY','queueW','queueH'], region: 'queue' },
+    { label: dn('ledWall'),  type: 'head', head: 'prop' },
+    { label: 'Canvas',       cols: [null,null,'propCanvasW','propCanvasH'] },
+    { label: 'Prop body',    cols: ['propBodyX','propBodyY','propBodyW','propBodyH'], region: 'propBody' },
+    { label: 'Prop title',   cols: ['propTitleX','propTitleY','propTitleW','propTitleH'], autoY: { field: 'propAutoTitleY', gapField: 'propTitleAutoGap' }, region: 'propHeader' },
+  ];
+}
+
 function lyTable(rows, scheme, dis) {
   const DEF = DEFAULT_STYLE_SCHEME();
   const ov = (f) => {
@@ -5219,59 +5241,58 @@ function renderPaletteTab(rawScheme, t, dis) {
 function renderGlobalPanel(panel, schemeOptionsHTML) {
   ensureGlobalTypography();
   const g = state.globalTypography;
-  const fontRow = (key, name, desc) => {
-    const val = g[key] || '';
-    const { family, style } = parseFontPS(val);
-    return `<div class="palette-slot">
-      <div class="palette-slot-hd">
-        <div class="palette-slot-info"><span class="palette-slot-name">${esc(name)}</span><span class="palette-slot-desc">${esc(desc)}</span></div>
-        <span class="inherit-badge global">Global</span>
-      </div>
-      <div class="palette-slot-val">${esc(family)}${style ? ` · ${esc(style)}` : ''}</div>
-    </div>`;
-  };
-  const colorRow = (key, name) => {
-    const val = normalizeHexColor(g[key] || '#ffffff');
-    const pickerVal = val.startsWith('#') ? val : '#' + val;
-    return `<div class="palette-slot">
-      <div class="palette-slot-hd">
-        <div class="palette-slot-info"><span class="palette-slot-name">${esc(name)}</span></div>
-        <span class="inherit-badge global">Global</span>
-      </div>
-      <span class="color-input-wrap font-color-inline">
-        <input type="color" value="${pickerVal}" disabled>
-        <input type="text" class="color-hex" value="${(val||'').replace(/^#/,'')}" disabled>
-      </span>
-    </div>`;
-  };
+
+  // Build a fake scheme whose typography IS the global — so no overrides show
+  const gScheme = { ...DEFAULT_STYLE_SCHEME(), typography: { ...g } };
+  const sv = applyTypographyToStyle(gScheme);
+  const rs = { ...DEFAULT_STYLE_SCHEME(), typography: {} };
+
+  const _gTab = (_styleTab && ['text','layout'].includes(_styleTab)) ? _styleTab : 'text';
+
   panel.innerHTML = `<div class="slide-form">
-    <h2>Global Defaults</h2>
-    <p class="scheme-intro">Your house-style — the base every scheme builds on. Read-only here. To update, push a value from any scheme.</p>
+    <h2>Schemes</h2>
+    <p class="scheme-intro">
+      A scheme controls how every slide looks — fonts, sizes, colours, animations and positions.
+      Pick one to use it, or duplicate it to make your own.
+    </p>
     <div class="scheme-toolbar">
       <select id="style-scheme-select" class="scheme-tb-select" title="Switch view">
         <option value="__global__" selected>◈ Global</option>
         ${schemeOptionsHTML}
       </select>
     </div>
-    <div class="global-view-banner">Read-only — push values from a scheme to update these defaults.</div>
-    <div class="tcard"><div class="tcard-hd">Fonts</div>
-      ${fontRow('font1',    'Font 1',    'Body · Point · Utility · Notes · Queue · Live')}
-      ${fontRow('font2',    'Font 2',    'Title · Response Card title')}
-      ${fontRow('boldFont', 'Bold / ALT','Emphasis spans')}
+    <div class="global-view-banner">Global defaults — read-only. Push a value from any scheme to update.</div>
+
+    <div class="style-tabs">
+      <button class="style-tab${_gTab === 'text'   ? ' active' : ''}" data-gtab="text">Text</button>
+      <button class="style-tab${_gTab === 'layout' ? ' active' : ''}" data-gtab="layout">Layout</button>
     </div>
-    <div class="tcard"><div class="tcard-hd">Colors</div>
-      ${colorRow('colorNeutral', 'Neutral')}
-      ${colorRow('colorAccent',  'Accent')}
-    </div>
-    <div class="tcard"><div class="tcard-hd">Sizes</div>
-      <div class="palette-sizes-grid">
-        ${SIZE_FIELDS.map(k => `<div class="palette-size-row"><span class="palette-size-lbl">${esc(k)}</span><span class="palette-size-val">${g[k] ?? DEFAULT_GLOBAL_SIZES[k]} pt</span></div>`).join('')}
+
+    <fieldset class="scheme-fields scheme-locked" disabled>
+      <div class="style-tab-body" id="g-tab-text"   ${_gTab !== 'text'   ? 'style="display:none"' : ''}>
+        <div class="sg-lp-compact">${layoutPreview(gScheme, null)}</div>
+        ${renderSchemeGrid(sv, rs, 'disabled')}
       </div>
-    </div>
+      <div class="style-tab-body" id="g-tab-layout" ${_gTab !== 'layout' ? 'style="display:none"' : ''}>
+        ${layoutPreview(gScheme, null)}
+        <p class="style-group-hint">Default element bounds (read-only).</p>
+        ${lyTable(lyRows(), gScheme, 'disabled')}
+      </div>
+    </fieldset>
   </div>`;
+
   document.getElementById('style-scheme-select')?.addEventListener('change', e => {
     state.activeSchemeId = e.target.value;
     renderStylePanel(panel);
+  });
+
+  panel.querySelectorAll('[data-gtab]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      _styleTab = btn.dataset.gtab;
+      panel.querySelectorAll('[data-gtab]').forEach(b => b.classList.toggle('active', b.dataset.gtab === _styleTab));
+      document.getElementById('g-tab-text').style.display   = _styleTab === 'text'   ? '' : 'none';
+      document.getElementById('g-tab-layout').style.display = _styleTab === 'layout' ? '' : 'none';
+    });
   });
 }
 
@@ -5509,7 +5530,7 @@ function renderStylePanel(panel) {
             <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><rect x="4.5" y="1" width="7.5" height="8.5" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M1 4v6.5A1.5 1.5 0 0 0 2.5 12H9" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
           </button>
           <button class="btn-scheme-icon btn-scheme-icon-danger" id="btn-scheme-delete" title="Delete scheme"
-            ${scheme.isDefault || state.styleSchemes.length <= 1 ? 'disabled' : ''}>
+            ${state.styleSchemes.length <= 1 ? 'disabled' : ''}>
             <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 3.5h9M5 3.5V2h3v1.5M4 3.5l.5 7h4l.5-7" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
           </button>
           <button class="btn-scheme-lock ${locked ? 'locked' : 'unlocked'}" id="btn-scheme-lock"
@@ -5616,20 +5637,7 @@ function renderStylePanel(panel) {
       <div class="style-tab-body" id="style-tab-layout" ${_styleTab !== 'layout' ? 'style="display:none"' : ''}>
         ${layoutPreview(scheme, _layoutSel)}
         <p class="style-group-hint">X/Y/W/H in pixels; use the align buttons for quick centering.</p>
-        ${lyTable([
-          { label: dn('mainScreen'), type: 'head' },
-          { label: 'Canvas',       cols: ['—','—','canvasW','canvasH'] },
-          { label: 'Body',         cols: ['bodyX','bodyY','bodyW','bodyH'], region: 'body' },
-          { label: 'Point',        cols: ['pointX','pointY','pointW','pointH'], region: 'point' },
-          { label: 'Title',        cols: ['titleX','titleY','titleW','titleH'], autoY: { field: 'autoTitleY', gapField: 'titleAutoGap' }, region: 'header' },
-          { label: 'Utility',      cols: ['startEndX','startEndY','startEndW','startEndH'], region: 'startEnd' },
-          { label: 'Live',         cols: ['liveX','liveY','liveW','liveH'], region: 'live' },
-          { label: 'Queue',        cols: ['queueX','queueY','queueW','queueH'], region: 'queue' },
-          { label: dn('ledWall'),  type: 'head', head: 'prop' },
-          { label: 'Canvas',       cols: [null,null,'propCanvasW','propCanvasH'] },
-          { label: 'Prop body',    cols: ['propBodyX','propBodyY','propBodyW','propBodyH'], region: 'propBody' },
-          { label: 'Prop title',   cols: ['propTitleX','propTitleY','propTitleW','propTitleH'], autoY: { field: 'propAutoTitleY', gapField: 'propTitleAutoGap' }, region: 'propHeader' },
-        ], scheme, dis)}
+        ${lyTable(lyRows(), scheme, dis)}
       </div>
 
       </fieldset>
@@ -5733,7 +5741,7 @@ function renderStylePanel(panel) {
   });
   document.getElementById('btn-scheme-delete').addEventListener('click', () => {
     const s = getScheme();
-    if (!s || s.isDefault || state.styleSchemes.length <= 1) return;
+    if (!s || state.styleSchemes.length <= 1) return;
     state.styleSchemes  = state.styleSchemes.filter(p => p.id !== state.activeSchemeId);
     state.activeSchemeId = state.styleSchemes[0].id;
     saveState(); renderStylePanel(panel);
@@ -10147,14 +10155,6 @@ function renderNotesPanel() {
 let _lastActiveId = null;
 function render() {
   // Auto-lock: leaving the Schemes panel re-locks the default scheme so it
-  // can't be changed by accident (you have to unlock again to edit it).
-  if (_lastActiveId === 'style' && state.activeId !== 'style') {
-    let relocked = false;
-    for (const s of (state.styleSchemes || [])) {
-      if (s.isDefault && !s.isLocked) { s.isLocked = true; relocked = true; }
-    }
-    if (relocked) saveState();
-  }
   _lastActiveId = state.activeId;
 
   saveState();
