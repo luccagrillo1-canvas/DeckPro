@@ -2,9 +2,14 @@
 
 // ─── Version & Changelog ──────────────────────────────────────────────────────
 
-const APP_VERSION = '4.4.6';
+const APP_VERSION = '4.4.7';
 
 const CHANGELOG = [
+  {
+    version: '4.4.7',
+    date: '2026-06-30',
+    changes: ["Text tab grid: alignment button cells no longer show the green scheme-override border — the filled dot already indicates an active value."],
+  },
   {
     version: '4.4.6',
     date: '2026-06-30',
@@ -5328,9 +5333,9 @@ function renderSchemeGrid(sv, rs, dis) {
     const togCell  = (field) =>
       `<td class="sg-td sg-td-tog${sc(advOv(field))}" data-scheme="${advK}" data-field="${field}"><button type="button" class="fav-toggle sg-tog ${adv[field] ? 'on' : ''}" data-scheme="${advK}" data-field="${field}" ${dis}></button></td>`;
     const haBtn    = (v, title) =>
-      `<td class="sg-td sg-td-align${sc(alignOv)}" data-scheme="${advK}" data-field="alignment"><button type="button" class="sg-halign-btn sg-align-cell ${adv.alignment === v ? 'on' : ''}" data-scheme="${advK}" data-val="${v}" title="${title}" ${dis}></button></td>`;
+      `<td class="sg-td sg-td-align" data-scheme="${advK}" data-field="alignment"><button type="button" class="sg-halign-btn sg-align-cell ${adv.alignment === v ? 'on' : ''}" data-scheme="${advK}" data-val="${v}" title="${title}" ${dis}></button></td>`;
     const vaBtn    = (v, title) =>
-      `<td class="sg-td sg-td-align${sc(vAlignOv)}" data-scheme="${advK}" data-field="verticalAlignment"><button type="button" class="sg-valign-btn sg-align-cell ${adv.verticalAlignment === v ? 'on' : ''}" data-scheme="${advK}" data-val="${v}" title="${title}" ${dis}></button></td>`;
+      `<td class="sg-td sg-td-align" data-scheme="${advK}" data-field="verticalAlignment"><button type="button" class="sg-valign-btn sg-align-cell ${adv.verticalAlignment === v ? 'on' : ''}" data-scheme="${advK}" data-val="${v}" title="${title}" ${dis}></button></td>`;
     const numCell  = (field, dflt, step) =>
       `<td class="sg-td${sc(advOv(field))}" data-scheme="${advK}" data-field="${field}"><input type="number" class="fav-num sg-num" data-scheme="${advK}" data-field="${field}" value="${adv[field] ?? dflt}" step="${step}" ${dis}></td>`;
     const colorCell = (field, fb) =>
