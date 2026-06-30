@@ -2,9 +2,14 @@
 
 // ─── Version & Changelog ──────────────────────────────────────────────────────
 
-const APP_VERSION = '4.4.8';
+const APP_VERSION = '4.4.9';
 
 const CHANGELOG = [
+  {
+    version: '4.4.9',
+    date: '2026-06-30',
+    changes: ["Layout tab redesigned as a spreadsheet grid matching the Text tab style — sticky headers, section rows, override highlighting (green tint + green text on values that differ from defaults), and right-click → Reset to default on any changed cell."],
+  },
   {
     version: '4.4.8',
     date: '2026-06-30',
@@ -4869,54 +4874,45 @@ function fontAdvPanel(schemeKey, label, scheme, locked, extraColorFields = []) {
 
 // Compact layout table for the Advanced section
 function lyTable(rows, scheme, dis) {
-  const inp = (f, step = '0.01') => f
-    ? `<input type="number" class="layout-num" id="ly-${f}" value="${scheme[f] ?? ''}" step="${step}" ${dis}>`
-    : `<span class="ly-dash">—</span>`;
+  const DEF = DEFAULT_STYLE_SCHEME();
+  const ov = (f) => {
+    if (!f || f === '—') return false;
+    const v = scheme[f], d = DEF[f];
+    if (v === undefined || v === null || d === undefined) return false;
+    if (typeof d === 'number') return Math.abs(Number(v) - d) > 0.01;
+    return v !== d;
+  };
 
-  // Track whether we're in the prop canvas section
+  const numTd = (f) => {
+    if (!f || f === '—') return `<td class="sg-td"><span class="sg-na">—</span></td>`;
+    const o = ov(f) ? ' sg-td-scheme' : '';
+    return `<td class="sg-td${o}" data-ly-field="${f}">` +
+      `<input type="number" class="sg-num layout-num" id="ly-${f}" value="${scheme[f] ?? ''}" step="0.01" ${dis}></td>`;
+  };
+
   let inProp = false;
 
   const bodyRows = rows.map(row => {
     if (row.type === 'head') {
       if (row.head === 'prop') inProp = true;
-      return `<tr class="ly-section-head"><td colspan="6">${esc(row.label)}</td></tr>`;
+      return `<tr class="sg-section-hd"><th colspan="8">${esc(row.label)}</th></tr>`;
     }
     const [c0, c1, c2, c3] = row.cols;
-
-    const yDimmed = row.autoY && scheme[row.autoY.field];
-    const yTd = `<td${yDimmed ? ' class="ly-y-dimmed"' : ''}>${inp(c1)}</td>`;
-
-    let extraCells = row.extra
-      ? row.extra.map(([lbl, f]) =>
-          `<td class="ly-extra-cell"><span class="ly-extra-lbl">${lbl}</span>${inp(f, '0.5')}</td>`
-        ).join('')
-      : '';
-
-    if (row.autoY) {
-      const { field, gapField } = row.autoY;
-      const checked = scheme[field] ? 'checked' : '';
-      extraCells += `
-        <td class="ly-extra-cell ly-auto-y-cell">
-          <label class="ly-auto-y-chk-lbl">
-            <input type="checkbox" class="ly-auto-y-chk" id="ly-${field}" ${checked} ${dis}>
-            Auto Y
-          </label>
-        </td>
-        <td class="ly-extra-cell">
-          <span class="ly-extra-lbl">Gap</span>
-          <input type="number" class="layout-num" id="ly-${gapField}" value="${scheme[gapField] ?? 16}" step="1" ${dis}>
-        </td>`;
-    }
-
-    // Alignment buttons — only for rows that have both X/Y and W/H fields
     const hasX = c0 && c0 !== '—';
     const hasY = c1 && c1 !== '—';
     const hasW = c2 && c2 !== '—';
     const hasH = c3 && c3 !== '—';
-    const canAlign = (hasX || hasY) && !dis;
     const prop = inProp;
 
-    // Compute which alignment is currently active (within 0.5px tolerance)
+    // Y cell — dimmed when auto-Y is on
+    const yDimmed = row.autoY && scheme[row.autoY.field];
+    const yTd = !hasY
+      ? `<td class="sg-td"><span class="sg-na">—</span></td>`
+      : `<td class="sg-td${ov(c1) ? ' sg-td-scheme' : ''}${yDimmed ? ' ly-y-dimmed' : ''}" data-ly-field="${c1}">` +
+        `<input type="number" class="sg-num layout-num" id="ly-${c1}" value="${scheme[c1] ?? ''}" step="0.01" ${dis}></td>`;
+
+    // Alignment buttons
+    const canAlign = (hasX || hasY) && !dis;
     const near = (a, b) => Math.abs((a ?? NaN) - b) < 0.6;
     const cW = prop ? (scheme.propCanvasW ?? 3200) : (scheme.canvasW ?? 1920);
     const cH = prop ? (scheme.propCanvasH ?? 1280) : (scheme.canvasH ?? 1080);
@@ -4936,49 +4932,66 @@ function lyTable(rows, scheme, dis) {
     }
     const ab = (align) => `class="ly-align-btn${hActive.has(align) || vActive.has(align) ? ' active' : ''}"`;
 
-    const alignBtns = canAlign ? `
-      <td class="ly-align-cell">
-        <div class="ly-align-group">
-          ${hasX && hasW ? `
-            <button ${ab('h-left')}  data-align="h-left"  data-xf="${c0}" data-wf="${c2}" data-prop="${prop}" title="Align left">
-              <svg width="12" height="12" viewBox="0 0 12 12"><rect x="1" y="1" width="1.5" height="10" fill="currentColor" rx=".5"/><rect x="3" y="3" width="7" height="2.5" fill="currentColor" rx=".5"/><rect x="3" y="6.5" width="5" height="2.5" fill="currentColor" rx=".5"/></svg>
-            </button>
-            <button ${ab('h-center')} data-align="h-center" data-xf="${c0}" data-wf="${c2}" data-prop="${prop}" title="Center horizontally">
-              <svg width="12" height="12" viewBox="0 0 12 12"><rect x="5.25" y="1" width="1.5" height="10" fill="currentColor" rx=".5"/><rect x="2" y="3" width="8" height="2.5" fill="currentColor" rx=".5"/><rect x="3" y="6.5" width="6" height="2.5" fill="currentColor" rx=".5"/></svg>
-            </button>
-            <button ${ab('h-right')}  data-align="h-right"  data-xf="${c0}" data-wf="${c2}" data-prop="${prop}" title="Align right">
-              <svg width="12" height="12" viewBox="0 0 12 12"><rect x="9.5" y="1" width="1.5" height="10" fill="currentColor" rx=".5"/><rect x="2" y="3" width="7" height="2.5" fill="currentColor" rx=".5"/><rect x="4" y="6.5" width="5" height="2.5" fill="currentColor" rx=".5"/></svg>
-            </button>
-          ` : '<button class="ly-align-btn" style="visibility:hidden"></button><button class="ly-align-btn" style="visibility:hidden"></button><button class="ly-align-btn" style="visibility:hidden"></button>'}
-          ${hasY && hasH ? `
-            <button ${ab('v-top')}    data-align="v-top"    data-yf="${c1}" data-hf="${c3}" data-prop="${prop}" title="Align top">
-              <svg width="12" height="12" viewBox="0 0 12 12"><rect x="1" y="1" width="10" height="1.5" fill="currentColor" rx=".5"/><rect x="3" y="3" width="2.5" height="7" fill="currentColor" rx=".5"/><rect x="6.5" y="3" width="2.5" height="5" fill="currentColor" rx=".5"/></svg>
-            </button>
-            <button ${ab('v-middle')}  data-align="v-middle"  data-yf="${c1}" data-hf="${c3}" data-prop="${prop}" title="Center vertically">
-              <svg width="12" height="12" viewBox="0 0 12 12"><rect x="1" y="5.25" width="10" height="1.5" fill="currentColor" rx=".5"/><rect x="3" y="2" width="2.5" height="8" fill="currentColor" rx=".5"/><rect x="6.5" y="3" width="2.5" height="6" fill="currentColor" rx=".5"/></svg>
-            </button>
-            <button ${ab('v-bottom')}  data-align="v-bottom"  data-yf="${c1}" data-hf="${c3}" data-prop="${prop}" title="Align bottom">
-              <svg width="12" height="12" viewBox="0 0 12 12"><rect x="1" y="9.5" width="10" height="1.5" fill="currentColor" rx=".5"/><rect x="3" y="2" width="2.5" height="7" fill="currentColor" rx=".5"/><rect x="6.5" y="4" width="2.5" height="5" fill="currentColor" rx=".5"/></svg>
-            </button>
-          ` : '<button class="ly-align-btn" style="visibility:hidden"></button><button class="ly-align-btn" style="visibility:hidden"></button><button class="ly-align-btn" style="visibility:hidden"></button>'}
-        </div>
-      </td>` : '<td></td>';
+    const alignCell = canAlign ? `<td class="sg-td" style="padding:2px 4px;white-space:nowrap">
+      <div class="ly-align-group">
+        ${hasX && hasW ? `
+          <button ${ab('h-left')}   data-align="h-left"   data-xf="${c0}" data-wf="${c2}" data-prop="${prop}" title="Align left"><svg width="12" height="12" viewBox="0 0 12 12"><rect x="1" y="1" width="1.5" height="10" fill="currentColor" rx=".5"/><rect x="3" y="3" width="7" height="2.5" fill="currentColor" rx=".5"/><rect x="3" y="6.5" width="5" height="2.5" fill="currentColor" rx=".5"/></svg></button>
+          <button ${ab('h-center')} data-align="h-center" data-xf="${c0}" data-wf="${c2}" data-prop="${prop}" title="Center horizontally"><svg width="12" height="12" viewBox="0 0 12 12"><rect x="5.25" y="1" width="1.5" height="10" fill="currentColor" rx=".5"/><rect x="2" y="3" width="8" height="2.5" fill="currentColor" rx=".5"/><rect x="3" y="6.5" width="6" height="2.5" fill="currentColor" rx=".5"/></svg></button>
+          <button ${ab('h-right')}  data-align="h-right"  data-xf="${c0}" data-wf="${c2}" data-prop="${prop}" title="Align right"><svg width="12" height="12" viewBox="0 0 12 12"><rect x="9.5" y="1" width="1.5" height="10" fill="currentColor" rx=".5"/><rect x="2" y="3" width="7" height="2.5" fill="currentColor" rx=".5"/><rect x="4" y="6.5" width="5" height="2.5" fill="currentColor" rx=".5"/></svg></button>
+        ` : '<button class="ly-align-btn" style="visibility:hidden"></button><button class="ly-align-btn" style="visibility:hidden"></button><button class="ly-align-btn" style="visibility:hidden"></button>'}
+        ${hasY && hasH ? `
+          <button ${ab('v-top')}    data-align="v-top"    data-yf="${c1}" data-hf="${c3}" data-prop="${prop}" title="Align top"><svg width="12" height="12" viewBox="0 0 12 12"><rect x="1" y="1" width="10" height="1.5" fill="currentColor" rx=".5"/><rect x="3" y="3" width="2.5" height="7" fill="currentColor" rx=".5"/><rect x="6.5" y="3" width="2.5" height="5" fill="currentColor" rx=".5"/></svg></button>
+          <button ${ab('v-middle')} data-align="v-middle" data-yf="${c1}" data-hf="${c3}" data-prop="${prop}" title="Center vertically"><svg width="12" height="12" viewBox="0 0 12 12"><rect x="1" y="5.25" width="10" height="1.5" fill="currentColor" rx=".5"/><rect x="3" y="2" width="2.5" height="8" fill="currentColor" rx=".5"/><rect x="6.5" y="3" width="2.5" height="6" fill="currentColor" rx=".5"/></svg></button>
+          <button ${ab('v-bottom')} data-align="v-bottom" data-yf="${c1}" data-hf="${c3}" data-prop="${prop}" title="Align bottom"><svg width="12" height="12" viewBox="0 0 12 12"><rect x="1" y="9.5" width="10" height="1.5" fill="currentColor" rx=".5"/><rect x="3" y="2" width="2.5" height="7" fill="currentColor" rx=".5"/><rect x="6.5" y="4" width="2.5" height="5" fill="currentColor" rx=".5"/></svg></button>
+        ` : '<button class="ly-align-btn" style="visibility:hidden"></button><button class="ly-align-btn" style="visibility:hidden"></button><button class="ly-align-btn" style="visibility:hidden"></button>'}
+      </div>
+    </td>` : `<td class="sg-td"></td>`;
 
-    return `<tr${row.region ? ` data-region="${row.region}"` : ''}>
-      <td class="ly-row-name${row.region ? ' ly-row-name-click' : ''}">${esc(row.label)}</td>
-      <td>${inp(c0)}</td>
+    // Auto Y + Gap — always emit 2 cells for consistent column count
+    let autoTds = `<td class="sg-td"></td><td class="sg-td"></td>`;
+    if (row.autoY) {
+      const { field, gapField } = row.autoY;
+      const checked = scheme[field] ? 'checked' : '';
+      const gapOv = ov(gapField) ? ' sg-td-scheme' : '';
+      autoTds = `<td class="sg-td">
+          <label class="ly-auto-y-chk-lbl">
+            <input type="checkbox" class="ly-auto-y-chk" id="ly-${field}" ${checked} ${dis}>
+            Auto
+          </label>
+        </td>
+        <td class="sg-td${gapOv}" data-ly-field="${gapField}">
+          <input type="number" class="sg-num layout-num" id="ly-${gapField}" value="${scheme[gapField] ?? 16}" step="1" ${dis}>
+        </td>`;
+    }
+
+    return `<tr class="sg-row"${row.region ? ` data-region="${row.region}"` : ''}>
+      <td class="sg-row-lbl${row.region ? ' ly-row-name-click' : ''}">${esc(row.label)}</td>
+      ${numTd(c0)}
       ${yTd}
-      <td>${inp(c2)}</td>
-      <td>${inp(c3)}</td>
-      ${alignBtns}
-      ${extraCells}
+      ${numTd(c2)}
+      ${numTd(c3)}
+      ${alignCell}
+      ${autoTds}
     </tr>`;
   }).join('');
 
-  return `<table class="ly-table">
-    <thead><tr>
-      <th></th><th>X</th><th>Y</th><th>W</th><th>H</th><th></th>
-    </tr></thead>
+  return `<table class="sg-table">
+    <thead>
+      <tr class="sg-grp-row">
+        <th rowspan="2" class="sg-corner"></th>
+        <th colspan="2" class="sg-grp">Position</th>
+        <th colspan="2" class="sg-grp">Size</th>
+        <th rowspan="2" class="sg-hd-solo">Align</th>
+        <th rowspan="2" class="sg-hd-solo">Auto Y</th>
+        <th rowspan="2" class="sg-hd-solo">Gap</th>
+      </tr>
+      <tr class="sg-col-row">
+        <th class="sg-col">X</th>
+        <th class="sg-col">Y</th>
+        <th class="sg-col">W</th>
+        <th class="sg-col">H</th>
+      </tr>
+    </thead>
     <tbody>${bodyRows}</tbody>
   </table>`;
 }
@@ -6222,6 +6235,7 @@ function renderStylePanel(panel) {
     });
   }
   const _sgCtx = document.getElementById('sg-ctx-menu');
+  _sgCtx.dataset.lyfield = _sgCtx.dataset.lyfield || '';
   document.getElementById('sg-ctx-reset').onclick = () => {
     const s = getScheme(); if (!s) return;
     const key = _sgCtx.dataset.typokey;
@@ -6241,9 +6255,13 @@ function renderStylePanel(panel) {
   };
   document.getElementById('sg-ctx-reset-def').onclick = () => {
     const s = getScheme(); if (!s) return;
-    const advKey = _sgCtx.dataset.scheme;
-    const field  = _sgCtx.dataset.field;
-    if (advKey && field && s[advKey]) {
+    const lyField = _sgCtx.dataset.lyfield;
+    const advKey  = _sgCtx.dataset.scheme;
+    const field   = _sgCtx.dataset.field;
+    if (lyField) {
+      s[lyField] = DEFAULT_STYLE_SCHEME()[lyField];
+      saveState(); renderStylePanel(panel);
+    } else if (advKey && field && s[advKey]) {
       s[advKey][field] = FONT_ADV_DEFAULTS()[field];
       saveState(); renderStylePanel(panel);
     }
@@ -6255,6 +6273,7 @@ function renderStylePanel(panel) {
       const typoKey = td.dataset.typokey || '';
       const advKey  = td.dataset.scheme  || '';
       const advFld  = td.dataset.field   || '';
+      _sgCtx.dataset.lyfield = '';
       _sgCtx.dataset.typokey = typoKey;
       _sgCtx.dataset.scheme  = advKey;
       _sgCtx.dataset.field   = advFld;
@@ -6280,6 +6299,29 @@ function renderStylePanel(panel) {
     });
   });
 
+  // Layout cells — right-click to reset a field to its default value
+  panel.querySelectorAll('#style-tab-layout .sg-td[data-ly-field]').forEach(td => {
+    td.addEventListener('contextmenu', e => {
+      e.preventDefault();
+      const lyField = td.dataset.lyField;
+      const s = getScheme();
+      const DEF = DEFAULT_STYLE_SCHEME();
+      const d = DEF[lyField], v = s?.[lyField];
+      const isOv = v !== undefined && v !== null && d !== undefined && (
+        typeof d === 'number' ? Math.abs(Number(v) - d) > 0.01 : v !== d
+      );
+      if (!isOv) return;
+      _sgCtx.dataset.lyfield = lyField;
+      _sgCtx.dataset.typokey = '';
+      _sgCtx.dataset.scheme  = '';
+      _sgCtx.dataset.field   = '';
+      document.getElementById('sg-ctx-reset').style.display    = 'none';
+      document.getElementById('sg-ctx-push').style.display     = 'none';
+      document.getElementById('sg-ctx-reset-def').style.display = '';
+      _sgCtx.style.cssText = `display:block;position:fixed;left:${e.clientX}px;top:${e.clientY}px;`;
+    });
+  });
+
   // Layout numeric inputs — update value + refresh alignment button states in-place
   document.querySelectorAll('.layout-num').forEach(inp => {
     inp.addEventListener('input', () => {
@@ -6288,6 +6330,16 @@ function renderStylePanel(panel) {
       s[field] = parseFloat(inp.value) ?? 0;
       saveState();
       refreshAlignBtns(panel, s);
+      // Update override highlight live
+      const td = inp.closest('.sg-td[data-ly-field]');
+      if (td) {
+        const DEF = DEFAULT_STYLE_SCHEME();
+        const d = DEF[field], v = s[field];
+        const isOv = d !== undefined && v !== null && (
+          typeof d === 'number' ? Math.abs(Number(v) - d) > 0.01 : v !== d
+        );
+        td.classList.toggle('sg-td-scheme', isOv);
+      }
     });
   });
 

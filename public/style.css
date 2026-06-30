@@ -1897,9 +1897,16 @@ details[open].settings-disclosure .settings-disclosure-summary::before { transfo
 .lp-region-gradient .lp-region-lbl { color: rgba(255,255,255,.4); }
 .lp-region-queue { background: rgba(255,255,255,.06); }
 /* Selected layout table row + clickable row name */
-.ly-row-selected > td { background: color-mix(in srgb, var(--blue) 15%, transparent); }
+.ly-row-selected > td,
+.ly-row-selected > .sg-td,
+.ly-row-selected > .sg-row-lbl { background: color-mix(in srgb, var(--blue) 15%, transparent) !important; }
 .ly-row-name-click { cursor: pointer; }
 .ly-row-name-click:hover { color: var(--blue); }
+/* Layout grid in sg-table style */
+#style-tab-layout .sg-corner { min-width: 72px; }
+#style-tab-layout .sg-td { min-width: 52px; }
+#style-tab-layout .sg-num { width: 52px; }
+.ly-auto-y-chk-lbl { font-size: 10px; display: flex; align-items: center; gap: 3px; white-space: nowrap; color: var(--muted); }
 
 @media (max-width: 560px) {
   .tcard-cols.tcard-2, .sp-grid, .lp-wrap { grid-template-columns: minmax(0,1fr); }
