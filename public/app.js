@@ -2,9 +2,14 @@
 
 // ─── Version & Changelog ──────────────────────────────────────────────────────
 
-const APP_VERSION = '4.4.5';
+const APP_VERSION = '4.4.6';
 
 const CHANGELOG = [
+  {
+    version: '4.4.6',
+    date: '2026-06-30',
+    changes: ["Removed the 'Show element fills' toggle from the Text tab."],
+  },
   {
     version: '4.4.5',
     date: '2026-06-29',
@@ -5527,11 +5532,6 @@ function renderStylePanel(panel) {
       <div class="style-tab-body" id="style-tab-text" ${_styleTab !== 'text' ? 'style="display:none"' : ''}>
         <div class="sg-lp-compact">${layoutPreview(scheme, _textSel)}</div>
 
-        <div class="style-fill-toggle-row ${locked ? 'disabled' : ''}" id="fill-toggle-row">
-          <div class="toggle ${scheme.fillEnabled ? 'on' : ''}" id="fill-toggle"></div>
-          <label>Show element fills</label>
-        </div>
-
         ${renderSchemeGrid(schemeView, scheme, dis)}
       </div>
 
@@ -5757,14 +5757,6 @@ function renderStylePanel(panel) {
       saveState();
       renderStylePanel(panel);
     });
-  });
-
-  // Fill toggle
-  document.getElementById('fill-toggle-row').addEventListener('click', () => {
-    const s = getScheme(); if (!s) return;
-    s.fillEnabled = !s.fillEnabled;
-    document.getElementById('fill-toggle').classList.toggle('on', s.fillEnabled);
-    saveState();
   });
 
   // Color pickers
