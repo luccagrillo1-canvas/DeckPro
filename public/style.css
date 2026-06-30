@@ -4298,9 +4298,14 @@ body.dark .g-tip-title { color: #ff8a4c; }
 
 /* Scheme-level override cell highlight */
 .sg-td.sg-td-scheme {
-  outline: 1.5px solid rgba(34,197,94,.55);
-  outline-offset: -1px;
-  background: rgba(34,197,94,.05);
+  background: rgba(34,197,94,.06);
+}
+.sg-td.sg-td-scheme select,
+.sg-td.sg-td-scheme input[type="number"] {
+  color: rgba(34,197,94,.85);
+}
+.sg-td.sg-td-scheme .sg-tog {
+  color: rgba(34,197,94,.85);
 }
 
 /* Scheme grid right-click context menu */

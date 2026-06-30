@@ -2,9 +2,14 @@
 
 // ─── Version & Changelog ──────────────────────────────────────────────────────
 
-const APP_VERSION = '4.4.7';
+const APP_VERSION = '4.4.8';
 
 const CHANGELOG = [
+  {
+    version: '4.4.8',
+    date: '2026-06-30',
+    changes: ["Text tab grid: scheme override cells now show a green tint + green border on the input/select inside, with no cell-level outline border."],
+  },
   {
     version: '4.4.7',
     date: '2026-06-30',
