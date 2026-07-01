@@ -2,9 +2,20 @@
 
 // ─── Version & Changelog ──────────────────────────────────────────────────────
 
-const APP_VERSION = '4.6.0';
+const APP_VERSION = '4.6.1';
 
 const CHANGELOG = [
+  {
+    version: '4.6.1',
+    date: '2026-07-01',
+    changes: [
+      "buildProp.js: prop reference (title bar) element now defaults to SCALE_BEHAVIOR_SCALE_FONT_DOWN — parity with builder.js fix in 4.6.0.",
+      "builder.js: point body yOffset reads pointFontAdv.yOffset first (with boldFontAdv fallback for compatibility) — matches buildProp.js behavior.",
+      "Test suite: added buildProp.test.js (27 tests) for prop cue structure, scaleBehavior defaults/overrides, canvas size, and multi-spec output.",
+      "Audit: full advFull sweep (17 checks each) now covers propBodyFontAdv, propTitleFontAdv, pointFontAdv, and startEndFontAdv. Added liveFontAdv and queueFontAdv checks. Total: 156 fields, 0 hard failures.",
+      "Audit: queueX/Y/W/H promoted to hard check; notesFontAdv.color reclassified as confirmed-dead (rtfNotes hardcodes white colortbl).",
+    ],
+  },
   {
     version: '4.6.0',
     date: '2026-07-01',
