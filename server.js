@@ -1,13 +1,13 @@
 'use strict';
 
 const express      = require('express');
+const fs           = require('fs');
 const path         = require('path');
 const os           = require('os');
 const http         = require('http');
 const https        = require('https');
 const { execSync } = require('child_process');
 const { encode, listPropsBackups, restorePropsBackup } = require('./encode');
-const { MACRO_DEFAULTS }   = require('./builder');
 const { extractScheme, listPresentations } = require('./extractScheme');
 const library              = require('./library');
 
@@ -15,11 +15,162 @@ const app  = express();
 const PORT = process.env.PORT || 3000;
 
 const DEFAULT_DIR = process.env.PRO7_DIR || path.join(os.homedir(), 'Documents', 'ProPresenter');
+const DATA_DIR = process.env.DECKPRO_DATA_DIR ||
+  path.join(os.homedir(), 'Library', 'Application Support', 'DeckPro');
+const STATE_FILE = path.join(DATA_DIR, 'state.json');
 
 library.open();
 
 app.use(express.json({ limit: '20mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
+
+function ensureDataDir() {
+  fs.mkdirSync(DATA_DIR, { recursive: true });
+}
+
+function readStateFile() {
+  try {
+    const raw = fs.readFileSync(STATE_FILE, 'utf8');
+    const parsed = JSON.parse(raw);
+    return parsed && parsed.state ? parsed.state : parsed;
+  } catch (err) {
+    if (err.code === 'ENOENT') return null;
+    throw err;
+  }
+}
+
+function writeStateFile(state) {
+  ensureDataDir();
+  const tmp = STATE_FILE + '.tmp';
+  fs.writeFileSync(tmp, JSON.stringify({
+    savedAt: new Date().toISOString(),
+    state,
+  }, null, 2));
+  fs.renameSync(tmp, STATE_FILE);
+}
+
+function activeLibraryPath(librariesDir, libraryOptions) {
+  try {
+    const libDataPath = path.join(librariesDir, 'LibraryData');
+    if (fs.existsSync(libDataPath)) {
+      const str = fs.readFileSync(libDataPath).toString('latin1');
+      const match = str.match(/file:\/\/\/([^\x00-\x1f\x7f]+?Libraries\/[^\x00-\x1f\x7f]+?)\//);
+      if (match) {
+        const decoded = decodeURIComponent('/' + match[1]);
+        if (fs.existsSync(decoded)) return decoded;
+      }
+    }
+  } catch (_) {}
+
+  try {
+    const sorted = [...libraryOptions].sort((a, b) => {
+      const ast = fs.statSync(a.path);
+      const bst = fs.statSync(b.path);
+      return bst.mtimeMs - ast.mtimeMs;
+    });
+    return sorted[0]?.path || '';
+  } catch (_) {
+    return libraryOptions[0]?.path || '';
+  }
+}
+
+function pro7WorkspaceCandidates() {
+  const base = path.join(os.homedir(), 'Library/Application Support/RenewedVision/ProPresenter');
+  const out = [];
+  const addCandidate = (root, dir) => {
+    const librariesDir = path.join(dir, 'Libraries');
+    const libraryOptions = fs.existsSync(librariesDir)
+      ? fs.readdirSync(librariesDir, { withFileTypes: true })
+          .filter(d => d.isDirectory())
+          .map(d => ({ name: d.name, path: path.join(librariesDir, d.name), active: false }))
+      : [];
+    const active = activeLibraryPath(librariesDir, libraryOptions);
+    for (const opt of libraryOptions) opt.active = opt.path === active;
+    out.push({
+      root,
+      path: dir,
+      exists: fs.existsSync(dir),
+      propsConfigExists: fs.existsSync(path.join(dir, 'Configuration/Props')),
+      librariesDir,
+      libraries: libraryOptions.map(lib => lib.name),
+      libraryOptions,
+      activeLibrary: active,
+    });
+  };
+
+  const documentsRoot = path.join(os.homedir(), 'Documents', 'ProPresenter');
+  if (fs.existsSync(documentsRoot)) addCandidate('Documents', documentsRoot);
+
+  for (const root of ['UserWorkspaces', 'Workspaces']) {
+    const rootDir = path.join(base, root);
+    if (!fs.existsSync(rootDir)) {
+      out.push({ root, path: rootDir, exists: false, libraries: [] });
+      continue;
+    }
+    const dirs = fs.readdirSync(rootDir, { withFileTypes: true })
+      .filter(d => d.isDirectory() && d.name.startsWith('ProPresenter'))
+      .map(d => path.join(rootDir, d.name));
+    for (const dir of dirs.length ? dirs : [path.join(rootDir, 'ProPresenter')]) {
+      addCandidate(root, dir);
+    }
+  }
+  return out;
+}
+
+// ── Durable app state ─────────────────────────────────────────────────────
+
+app.get('/api/state', (req, res) => {
+  try { res.json({ ok: true, state: readStateFile(), path: STATE_FILE }); }
+  catch (err) { res.status(500).json({ ok: false, error: err.message }); }
+});
+
+app.post('/api/state', (req, res) => {
+  try {
+    writeStateFile((req.body || {}).state || {});
+    res.json({ ok: true, path: STATE_FILE });
+  } catch (err) { res.status(500).json({ ok: false, error: err.message }); }
+});
+
+app.get('/api/setup/doctor', (req, res) => {
+  try {
+    ensureDataDir();
+    const libStatus = library.getStatus();
+
+    // Validate the saved pro7RootFolder from state (if any)
+    let savedFolderStatus = null;
+    try {
+      const state = readStateFile();
+      const savedRoot = state?.config?.pro7RootFolder || '';
+      if (savedRoot) {
+        const folderExists    = fs.existsSync(savedRoot);
+        const propsConfigPath = path.join(savedRoot, 'Configuration/Props');
+        const propsExists     = folderExists && fs.existsSync(propsConfigPath);
+        savedFolderStatus = {
+          path:        savedRoot,
+          exists:      folderExists,
+          propsExists,
+          ready:       folderExists && propsExists,
+          reason:      !folderExists ? 'Folder not found' :
+                       !propsExists ? 'Missing Configuration/Props' : null,
+        };
+      }
+    } catch (_) {}
+
+    res.json({
+      ok: true,
+      deckpro: {
+        dataDir: DATA_DIR,
+        stateFile: STATE_FILE,
+        stateFileExists: fs.existsSync(STATE_FILE),
+        libraryDir: libStatus.libraryDir,
+      },
+      pro7: {
+        candidates: pro7WorkspaceCandidates(),
+        savedFolderStatus,
+      },
+    });
+  } catch (err) { res.status(500).json({ ok: false, error: err.message }); }
+});
 
 // ── Deck Library ──────────────────────────────────────────────────────────
 
@@ -281,6 +432,18 @@ app.get('/api/pro7/macros', async (req, res) => {
   }
 });
 
+app.get('/api/pro7/stage-layouts', async (req, res) => {
+  const port     = parseInt(req.query.port) || 1025;
+  const password = req.query.password || '';
+  try {
+    const r = await pro7Fetch(port, password, '/v1/stage/layouts');
+    if (r.status !== 200) return res.json({ ok: false, error: `Pro7 returned ${r.status}` });
+    res.json({ ok: true, layouts: r.body });
+  } catch (err) {
+    res.json({ ok: false, error: err.message });
+  }
+});
+
 app.get('/api/pro7/props', async (req, res) => {
   const port     = parseInt(req.query.port) || 1025;
   const password = req.query.password || '';
@@ -409,6 +572,7 @@ function refToOsis(ref) {
 
 app.get('/api/bible/search', async (req, res) => {
   const { apiKey, bibleId, ref } = req.query;
+  const verseNumbers = req.query.verseNumbers === '1' || req.query.verseNumbers === 'true';
   if (!apiKey || !bibleId || !ref) return res.json({ ok: false, error: 'Missing params' });
 
   const passageId = refToOsis(ref);
@@ -417,13 +581,15 @@ app.get('/api/bible/search', async (req, res) => {
   try {
     // Request HTML, not text — HTML carries poetry structure (<p class="q1">/<p class="q2"> per line),
     // which lets us preserve hard line breaks. Plain-text mode flattens poetry into one paragraph.
-    const qs = 'content-type=html&include-notes=false&include-titles=false&include-chapter-numbers=false&include-verse-numbers=false&include-verse-spans=false';
+    // When verse numbers are wanted, ask the API to include them so we can mark verse boundaries.
+    const vn = verseNumbers ? 'true' : 'false';
+    const qs = `content-type=html&include-notes=false&include-titles=false&include-chapter-numbers=false&include-verse-numbers=${vn}&include-verse-spans=false`;
     const urlPath = `/v1/bibles/${encodeURIComponent(bibleId)}/passages/${encodeURIComponent(passageId)}?${qs}`;
     const r = await bibleFetch(apiKey, urlPath);
     if (r.status !== 200) return res.json({ ok: false, error: `API.Bible returned ${r.status}: ${JSON.stringify(r.body).slice(0, 300)}` });
 
     const raw  = r.body.data?.content || '';
-    const text = htmlPassageToText(raw);
+    const text = htmlPassageToText(raw, verseNumbers);
     const reference = r.body.data?.reference || ref;
 
     if (!text) return res.json({ ok: false, error: 'No text returned for that passage' });
@@ -438,8 +604,15 @@ app.get('/api/bible/search', async (req, res) => {
  * breaks. Each block (<p>, including poetry lines <p class="q1/q2">) and each <br>
  * becomes a newline; runs of horizontal whitespace collapse but newlines are kept.
  */
-function htmlPassageToText(html) {
-  return String(html || '')
+function htmlPassageToText(html, markVerses = false) {
+  let s = String(html || '');
+  if (markVerses) {
+    // API.Bible wraps verse numbers in <span ... class="v">N</span>. Convert each
+    // to a sentinel N so the client can split text into verse-number spans.
+    s = s.replace(/<span[^>]*class="[^"]*\bv\b[^"]*"[^>]*>\s*([\d–-]+)\s*<\/span>/gi,
+      (_, num) => `${num}`);
+  }
+  return s
     .replace(/<\/(p|div|h[1-6]|li|blockquote)>/gi, '\n')  // block ends → newline
     .replace(/<br\s*\/?>/gi, '\n')                          // explicit breaks → newline
     .replace(/<[^>]+>/g, '')                                // strip remaining tags
@@ -472,6 +645,30 @@ function parseGdriveId(url) {
   return null;
 }
 
+function resolveRedirect(currentUrl, location) {
+  try { return new URL(location, currentUrl).toString(); }
+  catch (_) { return location; }
+}
+
+function isHttpsUrl(url) {
+  try { return new URL(url).protocol === 'https:'; }
+  catch (_) { return false; }
+}
+
+function googleHtmlExportError(html, finalUrl = '') {
+  const sample = String(html || '').slice(0, 200000);
+  const lower = sample.toLowerCase();
+  if (/accounts\.google\.com|servicelogin/i.test(finalUrl) || /<title>\s*sign in/i.test(sample)) {
+    return 'Google is asking DeckPro to sign in. Share the doc as "Anyone with the link can view", then try again.';
+  }
+  if (lower.includes('you need access') || lower.includes('request access') ||
+      lower.includes('access denied') || lower.includes('not authorized') ||
+      lower.includes('permission denied')) {
+    return 'Google did not allow DeckPro to export that doc. Share it as "Anyone with the link can view", then try again.';
+  }
+  return null;
+}
+
 app.get('/api/gdrive-pdf', async (req, res) => {
   const { url } = req.query;
   if (!url) return res.status(400).json({ ok: false, error: 'Missing url' });
@@ -485,34 +682,56 @@ app.get('/api/gdrive-pdf', async (req, res) => {
 
   try {
     await new Promise((resolve, reject) => {
+      let settled = false;
+      const fail = (err) => {
+        if (settled) return;
+        settled = true;
+        reject(err instanceof Error ? err : new Error(String(err)));
+      };
+      const done = () => {
+        if (settled) return;
+        settled = true;
+        resolve();
+      };
       const doRequest = (targetUrl, redirectCount = 0) => {
-        if (redirectCount > 5) return reject(new Error('Too many redirects'));
-        const mod = targetUrl.startsWith('https') ? https : http;
-        const req2 = mod.get(targetUrl, {
-          headers: { 'User-Agent': 'Mozilla/5.0' },
-          timeout: 15000,
-        }, (r) => {
-          if (r.statusCode >= 300 && r.statusCode < 400 && r.headers.location) {
-            r.resume();
-            doRequest(r.headers.location, redirectCount + 1);
-            return;
-          }
-          if (r.statusCode !== 200) {
-            r.resume();
-            return reject(new Error(`Google returned ${r.statusCode} — make sure the file is shared "Anyone with the link"`));
-          }
-          const ct = r.headers['content-type'] || '';
-          if (!ct.includes('pdf')) {
-            r.resume();
-            return reject(new Error('The link did not return a PDF. Make sure the file is shared "Anyone with the link" and is a Google Doc or PDF.'));
-          }
-          res.setHeader('Content-Type', 'application/pdf');
-          res.setHeader('Content-Disposition', 'inline; filename="notes.pdf"');
-          r.pipe(res);
-          r.on('end', resolve);
-        });
-        req2.on('timeout', () => { req2.destroy(); reject(new Error('Request timed out')); });
-        req2.on('error', reject);
+        try {
+          if (redirectCount > 5) return fail(new Error('Too many redirects'));
+          const absoluteUrl = new URL(targetUrl).toString();
+          const mod = isHttpsUrl(absoluteUrl) ? https : http;
+          const req2 = mod.get(absoluteUrl, {
+            headers: { 'User-Agent': 'Mozilla/5.0' },
+            timeout: 15000,
+          }, (r) => {
+            try {
+              if (r.statusCode >= 300 && r.statusCode < 400 && r.headers.location) {
+                r.resume();
+                doRequest(resolveRedirect(absoluteUrl, r.headers.location), redirectCount + 1);
+                return;
+              }
+              if (r.statusCode !== 200) {
+                r.resume();
+                return fail(new Error(`Google returned ${r.statusCode} — make sure the file is shared "Anyone with the link"`));
+              }
+              const ct = r.headers['content-type'] || '';
+              if (!ct.includes('pdf')) {
+                r.resume();
+                return fail(new Error('The link did not return a PDF. Make sure the file is shared "Anyone with the link" and is a Google Doc or PDF.'));
+              }
+              res.setHeader('Content-Type', 'application/pdf');
+              res.setHeader('Content-Disposition', 'inline; filename="notes.pdf"');
+              r.pipe(res);
+              r.on('end', done);
+              r.on('error', fail);
+            } catch (err) {
+              r.resume();
+              fail(err);
+            }
+          });
+          req2.on('timeout', () => { req2.destroy(); fail(new Error('Request timed out')); });
+          req2.on('error', fail);
+        } catch (err) {
+          fail(err);
+        }
       };
       doRequest(fetchUrl);
     });
@@ -521,10 +740,90 @@ app.get('/api/gdrive-pdf', async (req, res) => {
   }
 });
 
-// ── Macro defaults ────────────────────────────────────────────────────────
+// ── Google Doc → HTML intake (rich Smart Notes) ───────────────────────────
+// Returns the doc as structured HTML so the client can render it in DeckPro's
+// own DOM and scan/suggest/drag/link. PDFs stay on the iframe viewer.
+app.get('/api/gdrive-html', async (req, res) => {
+  const { url } = req.query;
+  if (!url) return res.status(400).json({ ok: false, error: 'Missing url' });
 
-app.get('/api/macro-defaults', (req, res) => {
-  res.json({ ok: true, macros: MACRO_DEFAULTS });
+  const parsed = parseGdriveId(url);
+  if (!parsed) return res.status(400).json({ ok: false, error: 'Could not parse a Google Drive file ID from that URL' });
+  if (parsed.type !== 'doc') {
+    return res.json({ ok: false, error: 'Rich notes need a Google Doc (a /document/d/… link). Other files still load as a PDF.' });
+  }
+
+  const fetchUrl = `https://docs.google.com/document/d/${parsed.id}/export?format=html`;
+  try {
+    const html = await new Promise((resolve, reject) => {
+      let settled = false;
+      const fail = (err) => {
+        if (settled) return;
+        settled = true;
+        reject(err instanceof Error ? err : new Error(String(err)));
+      };
+      const done = (value) => {
+        if (settled) return;
+        settled = true;
+        resolve(value);
+      };
+      const doRequest = (targetUrl, redirectCount = 0) => {
+        try {
+          if (redirectCount > 5) return fail(new Error('Too many redirects'));
+          const absoluteUrl = new URL(targetUrl).toString();
+          const mod = isHttpsUrl(absoluteUrl) ? https : http;
+          const r2 = mod.get(absoluteUrl, { headers: { 'User-Agent': 'Mozilla/5.0' }, timeout: 15000 }, (r) => {
+            try {
+              if (r.statusCode >= 300 && r.statusCode < 400 && r.headers.location) {
+                r.resume();
+                doRequest(resolveRedirect(absoluteUrl, r.headers.location), redirectCount + 1);
+                return;
+              }
+              if (r.statusCode !== 200) {
+                r.resume();
+                return fail(new Error(`Google returned ${r.statusCode} — make sure the doc is shared "Anyone with the link"`));
+              }
+              const ct = r.headers['content-type'] || '';
+              if (!ct.includes('html')) {
+                r.resume();
+                return fail(new Error('That link did not return a Google Doc. Share it "Anyone with the link" and use the /document/d/… URL.'));
+              }
+              let buf = '';
+              r.setEncoding('utf8');
+              r.on('data', d => {
+                buf += d;
+                if (buf.length > 8 * 1024 * 1024) {
+                  fail(new Error('Doc too large (over 8 MB)'));
+                  r.destroy();
+                }
+              });
+              r.on('end', () => {
+                try {
+                  const exportError = googleHtmlExportError(buf, absoluteUrl);
+                  if (exportError) return fail(new Error(exportError));
+                  done(buf);
+                } catch (err) {
+                  fail(err);
+                }
+              });
+              r.on('error', fail);
+            } catch (err) {
+              r.resume();
+              fail(err);
+            }
+          });
+          r2.on('timeout', () => { r2.destroy(); fail(new Error('Request timed out')); });
+          r2.on('error', fail);
+        } catch (err) {
+          fail(err);
+        }
+      };
+      doRequest(fetchUrl);
+    });
+    res.json({ ok: true, html, id: parsed.id });
+  } catch (err) {
+    res.status(502).json({ ok: false, error: err.message });
+  }
 });
 
 // ── Self-update via GitHub Releases ───────────────────────────────────────
@@ -676,7 +975,7 @@ app.post('/api/generate', async (req, res) => {
     const patchesConfig = !!spec.deliverMode;
     let pro7WasRunning = false;
     let pro7Relaunched = false;
-    if (patchesConfig && spec.autoManagePro7 && pro7IsRunning()) {
+    if (patchesConfig && spec.autoManagePro7 === true && pro7IsRunning()) {
       pro7WasRunning = true;
       const quit = await quitPro7AndWait();
       if (!quit) {
@@ -697,12 +996,30 @@ app.post('/api/generate', async (req, res) => {
       presentationBytes: result.presentationBytes,
       props: result.props,
       propsBackup: result.propsBackup || null,
+      propsInstalled: result.propsInstalled !== false,
+      propsError: result.propsError || null,
       pro7Relaunched,
     });
   } catch (err) {
     console.error('Generate error:', err);
     res.status(500).json({ ok: false, error: err.message });
   }
+});
+
+app.use('/api', (err, req, res, next) => {
+  console.error('API error:', err);
+  if (res.headersSent) return next(err);
+  res.status(500).json({
+    ok: false,
+    error: err?.message || 'DeckPro hit an internal error while handling that request.',
+  });
+});
+
+app.use('/api', (req, res) => {
+  res.status(404).json({
+    ok: false,
+    error: `DeckPro's local server does not recognize ${req.originalUrl}. Use File > Redeploy once, then try again.`,
+  });
 });
 
 // When run directly (node server.js), start listening immediately.
@@ -713,5 +1030,7 @@ if (require.main === module) {
     console.log(`Default output dir: ${DEFAULT_DIR}`);
   });
 } else {
+  // Expose pure helpers for tests without changing the app export shape.
+  app.htmlPassageToText = htmlPassageToText;
   module.exports = app;
 }

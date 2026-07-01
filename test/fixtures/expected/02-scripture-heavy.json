@@ -1,0 +1,223 @@
+{
+  "cueCount": 7,
+  "cues": [
+    {
+      "name": null,
+      "actions": [
+        {
+          "type": "PRESENTATION_SLIDE",
+          "label": "START",
+          "transitionDuration": 0.6,
+          "bodies": [
+            {
+              "text": "START",
+              "super": false,
+              "bold": true
+            },
+            {
+              "text": "START",
+              "super": false,
+              "bold": false
+            },
+            {
+              "text": "Ephesians 5:18\nEphesians 5:19-21\nEphesians 5:19-21\n2 Corinthians 3:18\nEnd of Notes",
+              "super": false,
+              "bold": false
+            }
+          ]
+        },
+        {
+          "type": "CLEAR",
+          "clear": "CLEAR_TARGET_LAYER_PROP"
+        }
+      ]
+    },
+    {
+      "name": null,
+      "actions": [
+        {
+          "type": "PRESENTATION_SLIDE",
+          "label": "",
+          "transitionDuration": 0.6,
+          "bodies": [
+            {
+              "text": "Ephesians 5:18\nEphesians 5:19-21\nEphesians 5:19-21\n2 Corinthians 3:18\nEnd of Notes",
+              "super": false,
+              "bold": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": null,
+      "actions": [
+        {
+          "type": "PRESENTATION_SLIDE",
+          "label": "Ephesians 5:18",
+          "transitionDuration": 0.6,
+          "bodies": [
+            {
+              "text": "live",
+              "super": false,
+              "bold": false
+            },
+            {
+              "text": "Ephesians 5:18",
+              "super": false,
+              "bold": true
+            },
+            {
+              "text": "18 And do not get drunk with wine, but be filled with the Spirit.",
+              "super": true,
+              "bold": false
+            },
+            {
+              "text": "Ephesians 5:19-21\nEphesians 5:19-21\n2 Corinthians 3:18\nEnd of Notes",
+              "super": false,
+              "bold": false
+            }
+          ]
+        },
+        {
+          "type": "PROP",
+          "prop": "Ephesians 5:18"
+        }
+      ]
+    },
+    {
+      "name": null,
+      "actions": [
+        {
+          "type": "PRESENTATION_SLIDE",
+          "label": "Ephesians 5:19-21",
+          "transitionDuration": 0.6,
+          "bodies": [
+            {
+              "text": "live",
+              "super": false,
+              "bold": false
+            },
+            {
+              "text": "Ephesians 5:19-21",
+              "super": false,
+              "bold": true
+            },
+            {
+              "text": "19 speaking to one another with psalms, hymns, and songs from the Spirit.",
+              "super": true,
+              "bold": false
+            },
+            {
+              "text": "Ephesians 5:19-21\n2 Corinthians 3:18\nEnd of Notes",
+              "super": false,
+              "bold": false
+            }
+          ]
+        },
+        {
+          "type": "PROP",
+          "prop": "Ephesians 5:19-21"
+        }
+      ]
+    },
+    {
+      "name": null,
+      "actions": [
+        {
+          "type": "PRESENTATION_SLIDE",
+          "label": "Ephesians 5:19-21 (2)",
+          "transitionDuration": 0.6,
+          "bodies": [
+            {
+              "text": "live",
+              "super": false,
+              "bold": false
+            },
+            {
+              "text": "Ephesians 5:19-21",
+              "super": false,
+              "bold": true
+            },
+            {
+              "text": "20 always giving thanks to God the Father for everything.",
+              "super": true,
+              "bold": false
+            },
+            {
+              "text": "2 Corinthians 3:18\nEnd of Notes",
+              "super": false,
+              "bold": false
+            }
+          ]
+        },
+        {
+          "type": "PROP",
+          "prop": "Ephesians 5:19-21"
+        }
+      ]
+    },
+    {
+      "name": null,
+      "actions": [
+        {
+          "type": "PRESENTATION_SLIDE",
+          "label": "2 Corinthians 3:18",
+          "transitionDuration": 0.6,
+          "bodies": [
+            {
+              "text": "live",
+              "super": false,
+              "bold": false
+            },
+            {
+              "text": "2 Corinthians 3:18",
+              "super": false,
+              "bold": true
+            },
+            {
+              "text": "And we all, who with unveiled faces contemplate the Lord’s glory, are being transformed into his image.",
+              "super": false,
+              "bold": true
+            },
+            {
+              "text": "End of Notes",
+              "super": false,
+              "bold": false
+            }
+          ]
+        },
+        {
+          "type": "PROP",
+          "prop": "2 Corinthians 3:18"
+        }
+      ]
+    },
+    {
+      "name": null,
+      "actions": [
+        {
+          "type": "PRESENTATION_SLIDE",
+          "label": "End of Notes",
+          "transitionDuration": 0.6,
+          "bodies": [
+            {
+              "text": "End of Notes",
+              "super": false,
+              "bold": true
+            },
+            {
+              "text": "End of Notes",
+              "super": false,
+              "bold": false
+            }
+          ]
+        },
+        {
+          "type": "CLEAR",
+          "clear": "CLEAR_TARGET_LAYER_PROP"
+        }
+      ]
+    }
+  ]
+}

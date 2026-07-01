@@ -15,20 +15,26 @@ app.setAboutPanelOptions({
 
 let win;
 let serverStarted = false;
+let serverUrl = null;
+let serverInstance = null;
 
 // ─── Server ───────────────────────────────────────────────────────────────────
 
 function startServer() {
-  return new Promise((resolve) => {
-    if (serverStarted) return resolve();
+  return new Promise((resolve, reject) => {
+    if (serverStarted && serverUrl) return resolve(serverUrl);
     // Library storage lives under Electron's userData (Application Support/DeckPro)
     process.env.DECKPRO_DATA_DIR = app.getPath('userData');
     const expressApp = require('./server');
-    const PORT = 3000;
-    expressApp.listen(PORT, () => {
+    const server = expressApp.listen(0, '127.0.0.1');
+    server.once('listening', () => {
       serverStarted = true;
-      resolve();
+      serverInstance = server;
+      const { port } = server.address();
+      serverUrl = `http://127.0.0.1:${port}`;
+      resolve(serverUrl);
     });
+    server.once('error', reject);
   });
 }
 
@@ -96,7 +102,10 @@ function buildMenu() {
         {
           label: 'Redeploy',
           accelerator: 'CmdOrCtrl+Shift+R',
+          enabled: isDev,
+          visible: isDev,
           click: () => {
+            if (!isDev) return;
             const appDir = '/Users/grillo.lucca/LocalDocuments/Claude/pro7-decode';
             dialog.showMessageBox(win, {
               type: 'question',
@@ -183,16 +192,16 @@ function buildMenu() {
         },
         { type: 'separator' },
         {
-          label: 'Schemes',
+          label: 'Preferences',
           click: () => renderer(`
-            state.activeId = state.activeId === 'style' ? null : 'style';
+            state.activeId = state.activeId === 'settings' ? null : 'settings';
             render();
           `),
         },
         {
-          label: 'Settings',
+          label: 'Schemes',
           click: () => renderer(`
-            state.activeId = state.activeId === 'settings' ? null : 'settings';
+            state.activeId = state.activeId === 'style' ? null : 'style';
             render();
           `),
         },
@@ -344,9 +353,9 @@ function createWindow() {
 app.whenReady().then(async () => {
   buildMenu();
   createWindow();
-  await startServer();
-  await waitForServer('http://localhost:3000');
-  win.loadURL('http://localhost:3000');
+  const url = await startServer();
+  await waitForServer(url);
+  win.loadURL(url);
 
   // If launched after a rebuild or update, show a success toast once the page is ready
   if (process.argv.includes('--rebuilt')) {
@@ -367,6 +376,9 @@ app.whenReady().then(async () => {
 });
 
 app.on('window-all-closed', () => {
+  if (serverInstance) {
+    try { serverInstance.close(); } catch (_) {}
+  }
   if (process.platform !== 'darwin') app.quit();
 });
 

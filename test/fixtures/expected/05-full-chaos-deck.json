@@ -1,0 +1,711 @@
+{
+  "cueCount": 20,
+  "cues": [
+    {
+      "name": null,
+      "actions": [
+        {
+          "type": "PRESENTATION_SLIDE",
+          "label": "START",
+          "transitionDuration": 0.6,
+          "bodies": [
+            {
+              "text": "START",
+              "super": false,
+              "bold": true
+            },
+            {
+              "text": "START",
+              "super": false,
+              "bold": false
+            },
+            {
+              "text": "Psalm 23:1-2\nPsalm 23:1-2\nThree Things\nThree Things\nThree Things\nLong Point\nSermon Bumper\nBlank Hold\nCustom Build Slot\nTest 1:1\nResponse Card Blank\nResponse Card\nResponse 1\nResponse 2\nResponse 3\nResponse Card Hold\nEnd of Notes",
+              "super": false,
+              "bold": false
+            }
+          ]
+        },
+        {
+          "type": "CLEAR",
+          "clear": "CLEAR_TARGET_LAYER_PROP"
+        }
+      ]
+    },
+    {
+      "name": null,
+      "actions": [
+        {
+          "type": "PRESENTATION_SLIDE",
+          "label": "",
+          "transitionDuration": 0.6,
+          "bodies": [
+            {
+              "text": "Psalm 23:1-2\nPsalm 23:1-2\nThree Things\nThree Things\nThree Things\nLong Point\nSermon Bumper\nBlank Hold\nCustom Build Slot\nTest 1:1\nResponse Card Blank\nResponse Card\nResponse 1\nResponse 2\nResponse 3\nResponse Card Hold\nEnd of Notes",
+              "super": false,
+              "bold": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": null,
+      "actions": [
+        {
+          "type": "PRESENTATION_SLIDE",
+          "label": "Psalm 23:1-2",
+          "transitionDuration": 0.6,
+          "bodies": [
+            {
+              "text": "live",
+              "super": false,
+              "bold": false
+            },
+            {
+              "text": "Psalm 23:1-2",
+              "super": false,
+              "bold": true
+            },
+            {
+              "text": "1 The LORD is my shepherd; I shall not want.",
+              "super": true,
+              "bold": false
+            },
+            {
+              "text": "Psalm 23:1-2\nThree Things\nThree Things\nThree Things\nLong Point\nSermon Bumper\nBlank Hold\nCustom Build Slot\nTest 1:1\nResponse Card Blank\nResponse Card\nResponse 1\nResponse 2\nResponse 3\nResponse Card Hold\nEnd of Notes",
+              "super": false,
+              "bold": false
+            }
+          ]
+        },
+        {
+          "type": "PROP",
+          "prop": "Psalm 23:1-2"
+        },
+        {
+          "type": "MACRO",
+          "macro": "no logo"
+        },
+        {
+          "type": "MACRO",
+          "macro": "gradient"
+        },
+        {
+          "type": "STAGE_LAYOUT",
+          "stageLayout": "Msg",
+          "stageScreen": "Stage"
+        }
+      ]
+    },
+    {
+      "name": null,
+      "actions": [
+        {
+          "type": "PRESENTATION_SLIDE",
+          "label": "Psalm 23:1-2 (2)",
+          "transitionDuration": 0.6,
+          "bodies": [
+            {
+              "text": "live",
+              "super": false,
+              "bold": false
+            },
+            {
+              "text": "Psalm 23:1-2",
+              "super": false,
+              "bold": true
+            },
+            {
+              "text": "2 He makes me lie down in green pastures — beside still waters.",
+              "super": false,
+              "bold": true
+            },
+            {
+              "text": "Three Things\nThree Things\nThree Things\nLong Point\nSermon Bumper\nBlank Hold\nCustom Build Slot\nTest 1:1\nResponse Card Blank\nResponse Card\nResponse 1\nResponse 2\nResponse 3\nResponse Card Hold\nEnd of Notes",
+              "super": false,
+              "bold": false
+            }
+          ]
+        },
+        {
+          "type": "PROP",
+          "prop": "Psalm 23:1-2"
+        },
+        {
+          "type": "MACRO",
+          "macro": "no logo"
+        },
+        {
+          "type": "MACRO",
+          "macro": "gradient"
+        },
+        {
+          "type": "STAGE_LAYOUT",
+          "stageLayout": "Msg",
+          "stageScreen": "Stage"
+        }
+      ]
+    },
+    {
+      "name": null,
+      "actions": [
+        {
+          "type": "PRESENTATION_SLIDE",
+          "label": "Three Things",
+          "transitionDuration": 0.6,
+          "bodies": [
+            {
+              "text": "Trust the Shepherd",
+              "super": false,
+              "bold": true
+            },
+            {
+              "text": "live",
+              "super": false,
+              "bold": false
+            },
+            {
+              "text": "Three Things\nThree Things\nLong Point\nSermon Bumper\nBlank Hold\nCustom Build Slot\nTest 1:1\nResponse Card Blank\nResponse Card\nResponse 1\nResponse 2\nResponse 3\nResponse Card Hold\nEnd of Notes",
+              "super": false,
+              "bold": false
+            }
+          ]
+        },
+        {
+          "type": "PROP",
+          "prop": "ThreeThings_1"
+        },
+        {
+          "type": "MACRO",
+          "macro": "no logo"
+        },
+        {
+          "type": "MACRO",
+          "macro": "gradient"
+        },
+        {
+          "type": "STAGE_LAYOUT",
+          "stageLayout": "Msg",
+          "stageScreen": "Stage"
+        }
+      ]
+    },
+    {
+      "name": null,
+      "actions": [
+        {
+          "type": "PRESENTATION_SLIDE",
+          "label": "Three Things (2)",
+          "transitionDuration": 0.6,
+          "bodies": [
+            {
+              "text": "Follow His lead — daily",
+              "super": false,
+              "bold": true
+            },
+            {
+              "text": "live",
+              "super": false,
+              "bold": false
+            },
+            {
+              "text": "Three Things\nLong Point\nSermon Bumper\nBlank Hold\nCustom Build Slot\nTest 1:1\nResponse Card Blank\nResponse Card\nResponse 1\nResponse 2\nResponse 3\nResponse Card Hold\nEnd of Notes",
+              "super": false,
+              "bold": false
+            }
+          ]
+        },
+        {
+          "type": "PROP",
+          "prop": "ThreeThings_2"
+        },
+        {
+          "type": "MACRO",
+          "macro": "no logo"
+        },
+        {
+          "type": "MACRO",
+          "macro": "gradient"
+        },
+        {
+          "type": "STAGE_LAYOUT",
+          "stageLayout": "Msg",
+          "stageScreen": "Stage"
+        }
+      ]
+    },
+    {
+      "name": null,
+      "actions": [
+        {
+          "type": "PRESENTATION_SLIDE",
+          "label": "Three Things (3)",
+          "transitionDuration": 0.6,
+          "bodies": [
+            {
+              "text": "Rest in green pastures ?",
+              "super": false,
+              "bold": true
+            },
+            {
+              "text": "live",
+              "super": false,
+              "bold": false
+            },
+            {
+              "text": "Long Point\nSermon Bumper\nBlank Hold\nCustom Build Slot\nTest 1:1\nResponse Card Blank\nResponse Card\nResponse 1\nResponse 2\nResponse 3\nResponse Card Hold\nEnd of Notes",
+              "super": false,
+              "bold": false
+            }
+          ]
+        },
+        {
+          "type": "PROP",
+          "prop": "ThreeThings_3"
+        },
+        {
+          "type": "MACRO",
+          "macro": "no logo"
+        },
+        {
+          "type": "MACRO",
+          "macro": "gradient"
+        },
+        {
+          "type": "STAGE_LAYOUT",
+          "stageLayout": "Msg",
+          "stageScreen": "Stage"
+        }
+      ]
+    },
+    {
+      "name": null,
+      "actions": [
+        {
+          "type": "PRESENTATION_SLIDE",
+          "label": "Long Point",
+          "transitionDuration": 0.6,
+          "bodies": [
+            {
+              "text": "This is an unusually long single point with punctuation: quotes \"like this,\" a slash/here, an em–dash, and trailing ellipsis…",
+              "super": false,
+              "bold": true
+            },
+            {
+              "text": "live",
+              "super": false,
+              "bold": false
+            },
+            {
+              "text": "Sermon Bumper\nBlank Hold\nCustom Build Slot\nTest 1:1\nResponse Card Blank\nResponse Card\nResponse 1\nResponse 2\nResponse 3\nResponse Card Hold\nEnd of Notes",
+              "super": false,
+              "bold": false
+            }
+          ]
+        },
+        {
+          "type": "PROP",
+          "prop": "Long Point"
+        },
+        {
+          "type": "MACRO",
+          "macro": "no logo"
+        },
+        {
+          "type": "MACRO",
+          "macro": "gradient"
+        },
+        {
+          "type": "STAGE_LAYOUT",
+          "stageLayout": "Msg",
+          "stageScreen": "Stage"
+        }
+      ]
+    },
+    {
+      "name": null,
+      "actions": [
+        {
+          "type": "PRESENTATION_SLIDE",
+          "label": "",
+          "transitionDuration": 0.6,
+          "bodies": [
+            {
+              "text": "Sermon Bumper\nBlank Hold\nCustom Build Slot\nTest 1:1\nResponse Card Blank\nResponse Card\nResponse 1\nResponse 2\nResponse 3\nResponse Card Hold\nEnd of Notes",
+              "super": false,
+              "bold": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": null,
+      "actions": [
+        {
+          "type": "PRESENTATION_SLIDE",
+          "label": "Sermon Bumper",
+          "transitionDuration": 0.6,
+          "bodies": [
+            {
+              "text": "live",
+              "super": false,
+              "bold": false
+            },
+            {
+              "text": "Blank Hold\nCustom Build Slot\nTest 1:1\nResponse Card Blank\nResponse Card\nResponse 1\nResponse 2\nResponse 3\nResponse Card Hold\nEnd of Notes",
+              "super": false,
+              "bold": false
+            }
+          ]
+        },
+        {
+          "type": "CLEAR",
+          "clear": "CLEAR_TARGET_LAYER_PROP"
+        },
+        {
+          "type": "MACRO",
+          "macro": "no logo"
+        }
+      ]
+    },
+    {
+      "name": null,
+      "actions": [
+        {
+          "type": "PRESENTATION_SLIDE",
+          "label": "Blank Hold",
+          "transitionDuration": 0.6,
+          "bodies": [
+            {
+              "text": "Custom Build Slot\nTest 1:1\nResponse Card Blank\nResponse Card\nResponse 1\nResponse 2\nResponse 3\nResponse Card Hold\nEnd of Notes",
+              "super": false,
+              "bold": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": null,
+      "actions": [
+        {
+          "type": "PRESENTATION_SLIDE",
+          "label": "Custom Build Slot",
+          "transitionDuration": 0.6,
+          "bodies": [
+            {
+              "text": "Test 1:1\nResponse Card Blank\nResponse Card\nResponse 1\nResponse 2\nResponse 3\nResponse Card Hold\nEnd of Notes",
+              "super": false,
+              "bold": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": null,
+      "actions": [
+        {
+          "type": "PRESENTATION_SLIDE",
+          "label": "Empty Body Verse",
+          "transitionDuration": 0.6,
+          "bodies": [
+            {
+              "text": "live",
+              "super": false,
+              "bold": false
+            },
+            {
+              "text": "Test 1:1",
+              "super": false,
+              "bold": true
+            },
+            {
+              "text": "Response Card Blank\nResponse Card\nResponse 1\nResponse 2\nResponse 3\nResponse Card Hold\nEnd of Notes",
+              "super": false,
+              "bold": false
+            }
+          ]
+        },
+        {
+          "type": "PROP",
+          "prop": "Test 1:1"
+        },
+        {
+          "type": "MACRO",
+          "macro": "no logo"
+        },
+        {
+          "type": "MACRO",
+          "macro": "gradient"
+        },
+        {
+          "type": "STAGE_LAYOUT",
+          "stageLayout": "Msg",
+          "stageScreen": "Stage"
+        }
+      ]
+    },
+    {
+      "name": null,
+      "actions": [
+        {
+          "type": "PRESENTATION_SLIDE",
+          "label": "Response Card Blank",
+          "transitionDuration": 0.6,
+          "bodies": [
+            {
+              "text": "Response Card\nResponse 1\nResponse 2\nResponse 3\nResponse Card Hold\nEnd of Notes",
+              "super": false,
+              "bold": false
+            }
+          ]
+        },
+        {
+          "type": "STAGE_LAYOUT",
+          "stageLayout": "RC",
+          "stageScreen": "Stage"
+        }
+      ]
+    },
+    {
+      "name": null,
+      "actions": [
+        {
+          "type": "PRESENTATION_SLIDE",
+          "label": "Response Card",
+          "transitionDuration": 0.6,
+          "bodies": [
+            {
+              "text": "live",
+              "super": false,
+              "bold": false
+            },
+            {
+              "text": "Response Card",
+              "super": false,
+              "bold": true
+            },
+            {
+              "text": "I said yes to Jesus — emoji ? & \"quotes\"",
+              "super": false,
+              "bold": false
+            },
+            {
+              "text": "Response 1\nResponse 2\nResponse 3\nResponse Card Hold\nEnd of Notes",
+              "super": false,
+              "bold": false
+            }
+          ]
+        },
+        {
+          "type": "PROP",
+          "prop": "Response Card"
+        },
+        {
+          "type": "MACRO",
+          "macro": "gradient"
+        },
+        {
+          "type": "STAGE_LAYOUT",
+          "stageLayout": "RC",
+          "stageScreen": "Stage"
+        }
+      ]
+    },
+    {
+      "name": null,
+      "actions": [
+        {
+          "type": "PRESENTATION_SLIDE",
+          "label": "Response 1",
+          "transitionDuration": 0.6,
+          "bodies": [
+            {
+              "text": "live",
+              "super": false,
+              "bold": false
+            },
+            {
+              "text": "Response 1",
+              "super": false,
+              "bold": true
+            },
+            {
+              "text": "Option / one",
+              "super": false,
+              "bold": false
+            },
+            {
+              "text": "Response 2\nResponse 3\nResponse Card Hold\nEnd of Notes",
+              "super": false,
+              "bold": false
+            }
+          ]
+        },
+        {
+          "type": "PROP",
+          "prop": "Response Card"
+        },
+        {
+          "type": "MACRO",
+          "macro": "gradient"
+        },
+        {
+          "type": "STAGE_LAYOUT",
+          "stageLayout": "RC",
+          "stageScreen": "Stage"
+        }
+      ]
+    },
+    {
+      "name": null,
+      "actions": [
+        {
+          "type": "PRESENTATION_SLIDE",
+          "label": "Response 2",
+          "transitionDuration": 0.6,
+          "bodies": [
+            {
+              "text": "live",
+              "super": false,
+              "bold": false
+            },
+            {
+              "text": "Response 2",
+              "super": false,
+              "bold": true
+            },
+            {
+              "text": "Option — two",
+              "super": false,
+              "bold": false
+            },
+            {
+              "text": "Response 3\nResponse Card Hold\nEnd of Notes",
+              "super": false,
+              "bold": false
+            }
+          ]
+        },
+        {
+          "type": "PROP",
+          "prop": "Response Card"
+        },
+        {
+          "type": "MACRO",
+          "macro": "gradient"
+        },
+        {
+          "type": "STAGE_LAYOUT",
+          "stageLayout": "RC",
+          "stageScreen": "Stage"
+        }
+      ]
+    },
+    {
+      "name": null,
+      "actions": [
+        {
+          "type": "PRESENTATION_SLIDE",
+          "label": "Response 3",
+          "transitionDuration": 0.6,
+          "bodies": [
+            {
+              "text": "live",
+              "super": false,
+              "bold": false
+            },
+            {
+              "text": "Response 3",
+              "super": false,
+              "bold": true
+            },
+            {
+              "text": "Option… three",
+              "super": false,
+              "bold": false
+            },
+            {
+              "text": "Response Card Hold\nEnd of Notes",
+              "super": false,
+              "bold": false
+            }
+          ]
+        },
+        {
+          "type": "PROP",
+          "prop": "Response Card"
+        },
+        {
+          "type": "MACRO",
+          "macro": "gradient"
+        },
+        {
+          "type": "STAGE_LAYOUT",
+          "stageLayout": "RC",
+          "stageScreen": "Stage"
+        }
+      ]
+    },
+    {
+      "name": null,
+      "actions": [
+        {
+          "type": "PRESENTATION_SLIDE",
+          "label": "Response Card Hold",
+          "transitionDuration": 0.6,
+          "bodies": [
+            {
+              "text": "Response Card Hold",
+              "super": false,
+              "bold": true
+            },
+            {
+              "text": "End of Notes",
+              "super": false,
+              "bold": false
+            }
+          ]
+        },
+        {
+          "type": "PROP",
+          "prop": "Response Card"
+        },
+        {
+          "type": "STAGE_LAYOUT",
+          "stageLayout": "RC",
+          "stageScreen": "Stage"
+        }
+      ]
+    },
+    {
+      "name": null,
+      "actions": [
+        {
+          "type": "PRESENTATION_SLIDE",
+          "label": "End of Notes",
+          "transitionDuration": 0.6,
+          "bodies": [
+            {
+              "text": "End of Notes",
+              "super": false,
+              "bold": true
+            },
+            {
+              "text": "End of Notes",
+              "super": false,
+              "bold": false
+            }
+          ]
+        },
+        {
+          "type": "CLEAR",
+          "clear": "CLEAR_TARGET_LAYER_PROP"
+        }
+      ]
+    }
+  ]
+}

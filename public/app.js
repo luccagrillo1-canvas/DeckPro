@@ -2,9 +2,63 @@
 
 // ─── Version & Changelog ──────────────────────────────────────────────────────
 
-const APP_VERSION = '4.5.0';
+const APP_VERSION = '4.6.0';
 
 const CHANGELOG = [
+  {
+    version: '4.6.0',
+    date: '2026-07-01',
+    changes: [
+      "Version bump: 4.5.x introduced enough new features (global layout/fontAdv baselines, sidebar resize, live preview sync, alignment SVG icons, macro override ring badges, start/end chips) to warrant a minor-version increment.",
+      "buildProp.js: prop reference (title bar) element now inherits SCALE_BEHAVIOR_SCALE_FONT_DOWN by default, matching builder.js fix from 4.5.5 — parity between the two element builders.",
+      "Test suite: added buildProp.test.js (27 tests) covering scripture/point/revealing/response-card prop structure, scaleBehavior defaults and overrides, canvas size inheritance, and multi-spec output. Suite now runs 100 tests across 7 test files + 300-deck fuzz.",
+      "Audit: full advFull sweep (17 checks each) added for propBodyFontAdv, propTitleFontAdv, pointFontAdv, and startEndFontAdv — all major text-style objects now get full coverage. queueX/Y/W/H promoted to hard check (was soft). notesFontAdv.color reclassified as confirmed-dead (rtfNotes hardcodes white colortbl). Audit now covers 150 fields.",
+      "builder.js: point body yOffset now reads pointFontAdv.yOffset first, falling back to boldFontAdv.yOffset for backwards compatibility — matches buildProp.js behavior.",
+      "Audit: added liveFontAdv (color+RTF, marginLeft, marginTop) and queueFontAdv (color+RTF, marginLeft, marginTop) checks — these are user-facing scheme controls that previously had zero coverage. Audit now covers 156 fields.",
+    ],
+  },
+  {
+    version: '4.5.5',
+    date: '2026-07-01',
+    changes: [
+      "Sidebar collapse/expand: new chevron button in the Add Item header collapses the sidebar; a floating tab on the left edge re-opens it.",
+      "ALT format button now uses small-caps styling for a cleaner toolbar look.",
+      "Macro Override ring badge: slides with a macroOverride now show a hollow ring dot in the sidebar (distinct from the filled macro-trigger dot).",
+      "Notes mode button renamed from 'Auto' to 'Intelligent'.",
+      "Start/End slides now show macro and stage chips in the form heading (matching all other slide types).",
+      "Layout tab: position/size fields now update the canvas preview live without requiring a re-render.",
+      "Text tab: clicking a row highlights the matching canvas preview region (row → preview, bi-directional with the existing preview → row click).",
+      "Alignment icon buttons now use inline SVG icons instead of ○/● pseudo-elements, and show a grey tint on the button matching the global default value.",
+    ],
+  },
+  {
+    version: '4.5.4',
+    date: '2026-06-30',
+    changes: [
+      "Global adv baseline: caps, scale, alignment, formatting (bold/italic/underline/strike), stroke, and shadow fields now all support \"Push to global\" and \"Reset to global\" — right-click any text-tab cell to manage overrides. Green highlight means the value differs from the global baseline.",
+    ],
+  },
+  {
+    version: '4.5.3',
+    date: '2026-06-30',
+    changes: [
+      "Global layout baseline: layout fields (positions, sizes) now have a global default just like typography. New schemes inherit all layout from global. Right-click any layout cell to \"Push to global\" or \"Reset to global\" to manage overrides. The layout tab shows green only when a field differs from the global baseline.",
+    ],
+  },
+  {
+    version: '4.5.2',
+    date: '2026-06-30',
+    changes: [
+      "Response Card display 1 now uses the scheme's body + title elements (just like a scripture slide) — the response text as body, \"Response N\" as title. The full grid layout is display 2 only.",
+    ],
+  },
+  {
+    version: '4.5.1',
+    date: '2026-06-30',
+    changes: [
+      "Text tab override highlighting: cells now only show green when the scheme value actually differs from global — matching-global values (and null/inherited values) show no indicator.",
+    ],
+  },
   {
     version: '4.5.0',
     date: '2026-06-30',
@@ -1749,6 +1803,29 @@ const DEFAULT_GLOBAL_TYPOGRAPHY = () => ({
   ...DEFAULT_GLOBAL_SIZES,
 });
 
+// All position/size fields shown in the Layout tab grid.
+const LAYOUT_FIELDS = [
+  'canvasW','canvasH',
+  'bodyX','bodyY','bodyW','bodyH',
+  'pointX','pointY','pointW','pointH',
+  'titleX','titleY','titleW','titleH','autoTitleY','titleAutoGap',
+  'startEndX','startEndY','startEndW','startEndH',
+  'liveX','liveY','liveW','liveH',
+  'queueX','queueY','queueW','queueH',
+  'propCanvasW','propCanvasH',
+  'propBodyX','propBodyY','propBodyW','propBodyH',
+  'propTitleX','propTitleY','propTitleW','propTitleH','propAutoTitleY','propTitleAutoGap',
+];
+const DEFAULT_GLOBAL_LAYOUT = () => {
+  const d = DEFAULT_STYLE_SCHEME();
+  return Object.fromEntries(LAYOUT_FIELDS.map(k => [k, d[k]]));
+};
+function ensureGlobalLayout() {
+  const def = DEFAULT_GLOBAL_LAYOUT();
+  state.globalLayout = { ...def, ...(state.globalLayout || {}) };
+  return state.globalLayout;
+}
+
 const DEFAULT_GLOBAL_SIZES = {
   bodySize: 44,
   pointSize: 44,
@@ -1772,6 +1849,15 @@ const BOLD_FONT_FIELDS      = ['boldFont', 'propBoldFont'];
 const REGULAR_ADV_FIELDS    = ['bodyFontAdv', 'propBodyFontAdv', 'pointFontAdv', 'propPointFontAdv', 'startEndFontAdv', 'notesFontAdv', 'liveFontAdv', 'queueFontAdv'];
 const HIGHLIGHT_ADV_FIELDS  = ['titleFontAdv', 'propTitleFontAdv'];
 const BOLD_ADV_FIELDS       = ['boldFontAdv', 'propBoldFontAdv'];
+const ADV_SCHEME_KEYS = [...REGULAR_ADV_FIELDS, ...HIGHLIGHT_ADV_FIELDS, ...BOLD_ADV_FIELDS];
+const DEFAULT_GLOBAL_FONT_ADV = () => Object.fromEntries(ADV_SCHEME_KEYS.map(k => [k, FONT_ADV_DEFAULTS()]));
+function ensureGlobalFontAdv() {
+  if (!state.globalFontAdv) state.globalFontAdv = DEFAULT_GLOBAL_FONT_ADV();
+  for (const k of ADV_SCHEME_KEYS) {
+    state.globalFontAdv[k] = { ...FONT_ADV_DEFAULTS(), ...(state.globalFontAdv[k] || {}) };
+  }
+  return state.globalFontAdv;
+}
 const FONT_FIELD_TO_TYPO_KEY = Object.fromEntries([
   ...REGULAR_FONT_FIELDS.map(k => [k, 'font1']),
   ...HIGHLIGHT_FONT_FIELDS.map(k => [k, 'font2']),
@@ -1919,6 +2005,8 @@ const DEFAULT_STATE = () => ({
     },
   },
   globalTypography: DEFAULT_GLOBAL_TYPOGRAPHY(),
+  globalLayout:     DEFAULT_GLOBAL_LAYOUT(),
+  globalFontAdv:    DEFAULT_GLOBAL_FONT_ADV(),
   styleSchemes:  [DEFAULT_STYLE_SCHEME()],
   activeSchemeId: 'default',
   showBlanks: true,
@@ -2036,6 +2124,10 @@ function applyTypographyToStyle(scheme, global = ensureGlobalTypography()) {
 
 function styleForExport(scheme) {
   const resolved = applyTypographyToStyle(scheme || activeStyleScheme());
+  const glb = ensureGlobalLayout();
+  for (const f of LAYOUT_FIELDS) {
+    if (resolved[f] == null && glb[f] != null) resolved[f] = glb[f];
+  }
   const {
     id: _sid,
     name: _sname,
@@ -2282,6 +2374,17 @@ function applySavedState(saved) {
       if (scheme._needsTypographyMigration) delete scheme.typography;
       ensureSchemeTypography(scheme, state.globalTypography);
       delete scheme._needsTypographyMigration;
+    }
+    state.globalLayout = saved.globalLayout
+      ? { ...DEFAULT_GLOBAL_LAYOUT(), ...saved.globalLayout }
+      : DEFAULT_GLOBAL_LAYOUT();
+    if (saved.globalFontAdv) {
+      state.globalFontAdv = DEFAULT_GLOBAL_FONT_ADV();
+      for (const k of ADV_SCHEME_KEYS) {
+        state.globalFontAdv[k] = { ...FONT_ADV_DEFAULTS(), ...(saved.globalFontAdv[k] || {}) };
+      }
+    } else {
+      state.globalFontAdv = DEFAULT_GLOBAL_FONT_ADV();
     }
     // Support old 'activeStyleId' key for migration
     state.activeSchemeId = saved.activeSchemeId || saved.activeStyleId
@@ -2859,6 +2962,8 @@ function macroBadgeHTML(badge) {
   let icon = '';
   if (badge.icon === 'dot')
     icon = `<span class="badge-icon badge-macro-dot"${titleAttr}${badge.color ? ` style="background:${badge.color}"` : ''}></span>`;
+  else if (badge.icon === 'ring')
+    icon = `<span class="badge-icon badge-macro-ring"${titleAttr}${badge.color ? ` style="color:${badge.color}"` : ''}></span>`;
   else if (badge.icon === 'circle')       icon = '<span class="badge-icon badge-circle"></span>';
   else if (badge.icon === 'circle-slash') icon = '<span class="badge-icon badge-circle-slash"></span>';
   return `<span class="si-badge si-badge-macro ${badge.cls}">${icon}${badge.text ? esc(badge.text) : ''}</span>`;
@@ -2923,6 +3028,9 @@ function renderSidebar() {
     const hasBB          = slide.blankBefore && ['scripture', 'point', 'image'].includes(slide.type);
     // pos:N badge goes on the blank-before row (it is the Nth output cue); exclude it from the content slide
     const macroBadges    = getSlideMacroBadges(slide.type, ...(hasBB ? [] : [posKey]));
+    if (slide.macroOverride) {
+      macroBadges.push({ cls: 'macro-override', icon: 'ring', color: macroDisplayColor(slide.macroOverride), title: `Override: ${slide.macroOverride.name}` });
+    }
     const transBadge     = slide.transition?.type     ? slide.transition.type.toUpperCase()     : null;
     const propTransBadge = slide.propTransition?.type ? slide.propTransition.type.toUpperCase() : null;
 
@@ -4380,18 +4488,35 @@ function bestPro7Candidate(data) {
   return candidates.sort((a, b) => setupCandidateScore(b) - setupCandidateScore(a))[0] || null;
 }
 
-function setupScanText(data, cfg) {
+function setupScanHTML(data, cfg) {
   const candidates = (data.pro7?.candidates || []).filter(c => c.exists);
-  return [
-    `DeckPro data: ${data.deckpro.dataDir}`,
-    `Saved state: ${data.deckpro.stateFileExists ? 'yes' : 'not written yet'}`,
-    `Deck library: ${data.deckpro.libraryDir}`,
-    `Selected Pro7 folder: ${cfg.pro7RootFolder || 'auto-detect'}`,
-    `Pro7 folders found: ${candidates.length}`,
-    ...candidates.slice(0, 6).map(c =>
-      `- ${c.path}${c.libraries?.length ? ` (${c.libraries.join(', ')})` : ''}${c.propsConfigExists ? ' · Props ready' : ''}`
-    ),
-  ].join('\n');
+  const saved = data.pro7?.savedFolderStatus;
+  const tick  = ok  => `<span class="dr-${ok ? 'ok' : 'bad'}">${ok ? '✓' : '✗'}</span>`;
+  const warn  = msg => `<span class="dr-warn">⚠ ${esc(msg)}</span>`;
+
+  const rows = [
+    { label: 'DeckPro data',   value: esc(data.deckpro?.dataDir || '—') },
+    { label: 'State file',     value: data.deckpro?.stateFileExists ? tick(true) + ' saved' : tick(false) + ' not written yet' },
+    { label: 'Deck library',   value: esc(data.deckpro?.libraryDir || '—') },
+  ];
+
+  if (saved) {
+    rows.push({ label: 'Saved Pro7 folder', value: saved.ready
+      ? tick(true) + ' ' + esc(cfg.pro7RootFolder || '')
+      : tick(false) + ' ' + warn(saved.reason || 'Invalid') + ' ' + esc(cfg.pro7RootFolder || '') });
+    rows.push({ label: 'Configuration/Props', value: saved.propsExists ? tick(true) + ' found' : tick(false) + ' missing' });
+  }
+
+  const cRows = candidates.slice(0, 6).map(c => {
+    const libs = (c.libraries || []).join(', ') || '—';
+    return `<div class="dr-candidate">${tick(c.propsConfigExists)} <span class="dr-path">${esc(c.path)}</span>`
+      + `<span class="dr-meta">${esc(libs)}${c.propsConfigExists ? ' · Props ready' : ''}</span></div>`;
+  }).join('');
+
+  return `<div class="setup-doctor">`
+    + rows.map(r => `<div class="dr-row"><span class="dr-lbl">${esc(r.label)}</span><span class="dr-val">${r.value}</span></div>`).join('')
+    + (candidates.length ? `<div class="dr-section">Pro7 folders found (${candidates.length})</div>${cRows}` : `<div class="dr-section">No Pro7 folders found</div>`)
+    + `</div>`;
 }
 
 function pro7CandidateForRoot(data, rootPath) {
@@ -4467,7 +4592,7 @@ async function loadPro7LibrarySelect(select, cfg, rootPath) {
   }
 }
 
-function showMachineSetup(force = false) {
+async function showMachineSetup(force = false) {
   if (!force && state.config.setupComplete === true) return;
   document.querySelector('.setup-overlay')?.remove();
   const cfg = state.config;
@@ -4476,7 +4601,19 @@ function showMachineSetup(force = false) {
   const stageCount = (scheme?.stageDisplays || []).length;
   const bibleReady = !!(cfg.bibleApiKey && cfg.bibleId);
   const pro7Ready = !!pro7rt.connected;
-  const rootReady = !!cfg.pro7RootFolder;
+
+  // Validate the saved Pro7 folder path via the server (disk existence check).
+  // Start with an optimistic state while the scan loads.
+  let folderValidation = null; // null = not yet checked
+  let rootReady = !!cfg.pro7RootFolder;
+  let rootPillText = rootReady ? 'Ready' : 'Auto-detect';
+  // Kick off the scan asynchronously — the pill will update after the modal renders.
+  let _scanDataPromise = null;
+  if (cfg.pro7RootFolder) {
+    _scanDataPromise = fetchSetupScan().then(data => {
+      folderValidation = data.pro7?.savedFolderStatus || null;
+    }).catch(() => { folderValidation = null; });
+  }
   const overlay = document.createElement('div');
   overlay.className = 'setup-overlay';
   overlay.innerHTML = `
@@ -4505,7 +4642,7 @@ function showMachineSetup(force = false) {
         <section class="setup-card">
           <div class="setup-card-head">
             <span>Pro7 Folder</span>
-            ${setupStatusPill(rootReady, rootReady ? 'Ready' : 'Auto-detect')}
+            <span id="setup-root-pill">${setupStatusPill(rootReady, rootPillText)}</span>
           </div>
           <div class="setup-folder">
             <input type="text" id="setup-pro7-root" value="${esc(cfg.pro7RootFolder || '')}" readonly placeholder="Auto-detect">
@@ -4525,7 +4662,7 @@ function showMachineSetup(force = false) {
             <button class="btn-sm setup-action" id="setup-show-scan">Details</button>
             <span>Shows what DeckPro found on this machine.</span>
           </div>
-          <pre class="setup-scan" id="setup-scan" style="display:none"></pre>
+          <div class="setup-scan" id="setup-scan" style="display:none"></div>
         </section>
 
         <section class="setup-card">
@@ -4577,9 +4714,25 @@ function showMachineSetup(force = false) {
 
   overlay.querySelector('#setup-close').addEventListener('click', close);
   overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
-  overlay.querySelector('#setup-skip').addEventListener('click', finish);
+  // Skip closes the modal for this session only — does NOT mark setup complete.
+  // The machine will remain in the "needs setup" state and the modal will reappear
+  // on next launch until the user clicks Done with the checks passing.
+  overlay.querySelector('#setup-skip').addEventListener('click', close);
   overlay.querySelector('#setup-done').addEventListener('click', finish);
   loadPro7LibrarySelect(overlay.querySelector('#setup-pro7-library'), cfg, cfg.pro7RootFolder);
+
+  // After the scan resolves, update the Pro7 Folder pill with the real validation result.
+  if (_scanDataPromise) {
+    _scanDataPromise.then(() => {
+      const pillWrap = overlay.querySelector('#setup-root-pill');
+      if (!pillWrap) return;
+      if (folderValidation && !folderValidation.ready) {
+        pillWrap.innerHTML = setupStatusPill(false, folderValidation.reason || 'Folder not found');
+      } else if (folderValidation && folderValidation.ready) {
+        pillWrap.innerHTML = setupStatusPill(true, 'Ready');
+      }
+    });
+  }
 
   overlay.querySelector('#setup-pro7-library')?.addEventListener('change', e => {
     cfg.pro7LibraryFolder = e.target.value;
@@ -4708,11 +4861,11 @@ function showMachineSetup(force = false) {
       return;
     }
     box.style.display = '';
-    box.textContent = 'Scanning…';
+    box.innerHTML = '<div class="dr-scanning">Scanning…</div>';
     try {
-      box.textContent = setupScanText(await fetchSetupScan(), cfg);
+      box.innerHTML = setupScanHTML(await fetchSetupScan(), cfg);
     } catch (err) {
-      box.textContent = err.message || 'Scan failed';
+      box.innerHTML = `<div class="dr-row"><span class="dr-bad">✗</span> ${esc(err.message || 'Scan failed')}</div>`;
     }
   });
 }
@@ -4896,20 +5049,24 @@ function lyRows() {
 }
 
 function lyTable(rows, scheme, dis) {
-  const DEF = DEFAULT_STYLE_SCHEME();
+  const glb = !dis ? ensureGlobalLayout() : ensureGlobalLayout();
   const ov = (f) => {
-    if (!f || f === '—') return false;
-    const v = scheme[f], d = DEF[f];
-    if (v === undefined || v === null || d === undefined) return false;
-    if (typeof d === 'number') return Math.abs(Number(v) - d) > 0.01;
-    return v !== d;
+    if (!f || f === '—' || dis) return false;
+    const v = scheme[f];
+    if (v === undefined || v === null) return false;
+    const g = glb[f];
+    if (g === undefined) return false;
+    if (typeof g === 'number') return Math.abs(Number(v) - g) > 0.01;
+    return v !== g;
   };
+  // Resolve: null scheme field falls back to global
+  const rv = (f) => (f && f !== '—') ? (scheme[f] ?? glb[f] ?? '') : '';
 
   const numTd = (f) => {
     if (!f || f === '—') return `<td class="sg-td"><span class="sg-na">—</span></td>`;
     const o = ov(f) ? ' sg-td-scheme' : '';
     return `<td class="sg-td${o}" data-ly-field="${f}">` +
-      `<input type="number" class="sg-num layout-num" id="ly-${f}" value="${scheme[f] ?? ''}" step="0.01" ${dis}></td>`;
+      `<input type="number" class="sg-num layout-num" id="ly-${f}" value="${rv(f)}" step="0.01" ${dis}></td>`;
   };
 
   let inProp = false;
@@ -4927,19 +5084,19 @@ function lyTable(rows, scheme, dis) {
     const prop = inProp;
 
     // Y cell — dimmed when auto-Y is on
-    const yDimmed = row.autoY && scheme[row.autoY.field];
+    const yDimmed = row.autoY && (scheme[row.autoY.field] ?? glb[row.autoY.field]);
     const yTd = !hasY
       ? `<td class="sg-td"><span class="sg-na">—</span></td>`
       : `<td class="sg-td${ov(c1) ? ' sg-td-scheme' : ''}${yDimmed ? ' ly-y-dimmed' : ''}" data-ly-field="${c1}">` +
-        `<input type="number" class="sg-num layout-num" id="ly-${c1}" value="${scheme[c1] ?? ''}" step="0.01" ${dis}></td>`;
+        `<input type="number" class="sg-num layout-num" id="ly-${c1}" value="${rv(c1)}" step="0.01" ${dis}></td>`;
 
     // Alignment buttons
     const canAlign = (hasX || hasY) && !dis;
     const near = (a, b) => Math.abs((a ?? NaN) - b) < 0.6;
-    const cW = prop ? (scheme.propCanvasW ?? 3200) : (scheme.canvasW ?? 1920);
-    const cH = prop ? (scheme.propCanvasH ?? 1280) : (scheme.canvasH ?? 1080);
-    const curX = scheme[c0] ?? null, curW = scheme[c2] ?? null;
-    const curY = scheme[c1] ?? null, curH = scheme[c3] ?? null;
+    const cW = prop ? (rv('propCanvasW') || 3200) : (rv('canvasW') || 1920);
+    const cH = prop ? (rv('propCanvasH') || 1280) : (rv('canvasH') || 1080);
+    const curX = rv(c0) || null, curW = rv(c2) || null;
+    const curY = rv(c1) || null, curH = rv(c3) || null;
     const hActive = new Set();
     if (hasX && hasW && curX !== null && curW !== null) {
       if (near(curX, (cW - curW) / 2)) hActive.add('h-center');
@@ -4973,7 +5130,7 @@ function lyTable(rows, scheme, dis) {
     let autoTds = `<td class="sg-td"></td><td class="sg-td"></td>`;
     if (row.autoY) {
       const { field, gapField } = row.autoY;
-      const checked = scheme[field] ? 'checked' : '';
+      const checked = (scheme[field] ?? glb[field]) ? 'checked' : '';
       const gapOv = ov(gapField) ? ' sg-td-scheme' : '';
       autoTds = `<td class="sg-td">
           <label class="ly-auto-y-chk-lbl">
@@ -4982,7 +5139,7 @@ function lyTable(rows, scheme, dis) {
           </label>
         </td>
         <td class="sg-td${gapOv}" data-ly-field="${gapField}">
-          <input type="number" class="sg-num layout-num" id="ly-${gapField}" value="${scheme[gapField] ?? 16}" step="1" ${dis}>
+          <input type="number" class="sg-num layout-num" id="ly-${gapField}" value="${rv(gapField) || 16}" step="1" ${dis}>
         </td>`;
     }
 
@@ -5047,6 +5204,34 @@ function refreshAlignBtns(panel, scheme) {
     }
     btn.classList.toggle('active', active);
   });
+}
+
+function refreshSchemePreviews(panel, scheme) {
+  const sv = styleForExport(scheme);
+  const mainW = sv.canvasW || 1920, mainH = sv.canvasH || 1080;
+  const propW = sv.propCanvasW || 3200, propH = sv.propCanvasH || 1280;
+  const pct = (v, d) => (v / d * 100).toFixed(2) + '%';
+  const REGION = {
+    queue:     [sv.queueX??0, sv.queueY??0, sv.queueW??0, sv.queueH??0, mainW, mainH],
+    body:      [sv.bodyX??0, sv.bodyY??0, sv.bodyW??0, sv.bodyH??0, mainW, mainH],
+    point:     [sv.pointX??sv.bodyX??0, sv.pointY??sv.bodyY??0, sv.pointW??sv.bodyW??0, sv.pointH??sv.bodyH??0, mainW, mainH],
+    header:    [sv.titleX??0, sv.titleY??0, sv.titleW??0, sv.titleH??0, mainW, mainH],
+    startEnd:  [sv.startEndX??0, sv.startEndY??0, sv.startEndW??0, sv.startEndH??0, mainW, mainH],
+    live:      [sv.liveX??0, sv.liveY??0, sv.liveW??0, sv.liveH??0, mainW, mainH],
+    propBody:  [sv.propBodyX??0, sv.propBodyY??0, sv.propBodyW??0, sv.propBodyH??0, propW, propH],
+    propHeader:[sv.propTitleX??0, sv.propTitleY??0, sv.propTitleW??0, sv.propTitleH??0, propW, propH],
+  };
+  panel.querySelectorAll('.lp-region[data-region]').forEach(el => {
+    const d = REGION[el.dataset.region];
+    if (!d) return;
+    const [x, y, w, h, cw, ch] = d;
+    if (!w || !h) { el.style.display = 'none'; return; }
+    el.style.display = '';
+    el.style.left = pct(x, cw); el.style.top = pct(y, ch);
+    el.style.width = pct(w, cw); el.style.height = pct(h, ch);
+  });
+  panel.querySelectorAll('.lp-canvas[data-canvas="main"]').forEach(el => el.style.aspectRatio = `${mainW} / ${mainH}`);
+  panel.querySelectorAll('.lp-canvas[data-canvas="prop"]').forEach(el => el.style.aspectRatio = `${propW} / ${propH}`);
 }
 
 // ── Text-tab building blocks ────────────────────────────────────────────────
@@ -5148,20 +5333,21 @@ function schemePreviewPanel(scheme) {
 // Visual Layout preview — scaled Main + Prop canvases with clickable region boxes
 // linked to the layout table rows. (Phase 2; drag/resize is deferred — Phase 3.)
 function layoutPreview(scheme, sel) {
-  const mainW = scheme.canvasW || 1920, mainH = scheme.canvasH || 1080;
-  const propW = scheme.propCanvasW || 3200, propH = scheme.propCanvasH || 1280;
+  const sv = styleForExport(scheme);
+  const mainW = sv.canvasW || 1920, mainH = sv.canvasH || 1080;
+  const propW = sv.propCanvasW || 3200, propH = sv.propCanvasH || 1280;
   // [slug, label, x, y, w, h] — drawn back-to-front so small boxes sit on top
   const mainRegions = [
-    ['queue',     'Queue',        scheme.queueX ?? 0,    scheme.queueY ?? 0,    scheme.queueW ?? 0,     scheme.queueH ?? 0],
-    ['body',      'Body',         scheme.bodyX ?? 0,     scheme.bodyY ?? 0,     scheme.bodyW ?? 0,      scheme.bodyH ?? 0],
-    ['point',     'Point',        scheme.pointX ?? scheme.bodyX ?? 0, scheme.pointY ?? scheme.bodyY ?? 0, scheme.pointW ?? scheme.bodyW ?? 0, scheme.pointH ?? scheme.bodyH ?? 0],
-    ['header',    'Title',        scheme.titleX ?? 0,    scheme.titleY ?? 0,    scheme.titleW ?? 0,     scheme.titleH ?? 0],
-    ['startEnd',  'Utility',      scheme.startEndX ?? 0, scheme.startEndY ?? 0, scheme.startEndW ?? 0,  scheme.startEndH ?? 0],
-    ['live',      'Live',         scheme.liveX ?? 0,     scheme.liveY ?? 0,     scheme.liveW ?? 0,      scheme.liveH ?? 0],
+    ['queue',     'Queue',        sv.queueX ?? 0,    sv.queueY ?? 0,    sv.queueW ?? 0,     sv.queueH ?? 0],
+    ['body',      'Body',         sv.bodyX ?? 0,     sv.bodyY ?? 0,     sv.bodyW ?? 0,      sv.bodyH ?? 0],
+    ['point',     'Point',        sv.pointX ?? sv.bodyX ?? 0, sv.pointY ?? sv.bodyY ?? 0, sv.pointW ?? sv.bodyW ?? 0, sv.pointH ?? sv.bodyH ?? 0],
+    ['header',    'Title',        sv.titleX ?? 0,    sv.titleY ?? 0,    sv.titleW ?? 0,     sv.titleH ?? 0],
+    ['startEnd',  'Utility',      sv.startEndX ?? 0, sv.startEndY ?? 0, sv.startEndW ?? 0,  sv.startEndH ?? 0],
+    ['live',      'Live',         sv.liveX ?? 0,     sv.liveY ?? 0,     sv.liveW ?? 0,      sv.liveH ?? 0],
   ];
   const propRegions = [
-    ['propBody',   'Prop body',   scheme.propBodyX ?? 0, scheme.propBodyY ?? 0, scheme.propBodyW ?? 0,  scheme.propBodyH ?? 0],
-    ['propHeader', 'Prop title',  scheme.propTitleX ?? 0, scheme.propTitleY ?? 0, scheme.propTitleW ?? 0, scheme.propTitleH ?? 0],
+    ['propBody',   'Prop body',   sv.propBodyX ?? 0, sv.propBodyY ?? 0, sv.propBodyW ?? 0,  sv.propBodyH ?? 0],
+    ['propHeader', 'Prop title',  sv.propTitleX ?? 0, sv.propTitleY ?? 0, sv.propTitleW ?? 0, sv.propTitleH ?? 0],
   ];
   const box = (cw, ch) => ([slug, lbl, x, y, w, h]) => {
     if (!w || !h) return '';
@@ -5174,11 +5360,11 @@ function layoutPreview(scheme, sel) {
     <div class="lp-wrap">
       <div class="lp-canvas-block">
         <div class="lp-canvas-lbl">${dn('mainScreen')} · ${Math.round(mainW)}×${Math.round(mainH)}</div>
-        <div class="lp-canvas" style="aspect-ratio:${mainW} / ${mainH}">${mainRegions.map(box(mainW, mainH)).join('')}</div>
+        <div class="lp-canvas" data-canvas="main" style="aspect-ratio:${mainW} / ${mainH}">${mainRegions.map(box(mainW, mainH)).join('')}</div>
       </div>
       <div class="lp-canvas-block">
         <div class="lp-canvas-lbl">${dn('ledWall')} · ${Math.round(propW)}×${Math.round(propH)}</div>
-        <div class="lp-canvas" style="aspect-ratio:${propW} / ${propH}">${propRegions.map(box(propW, propH)).join('')}</div>
+        <div class="lp-canvas" data-canvas="prop" style="aspect-ratio:${propW} / ${propH}">${propRegions.map(box(propW, propH)).join('')}</div>
       </div>
     </div>
     <p class="style-group-hint" style="margin-top:8px">Click a region to highlight its row below. Boxes are drawn from this scheme's positions; off-canvas elements (e.g. Live) may sit outside the frame.</p>`;
@@ -5240,12 +5426,14 @@ function renderPaletteTab(rawScheme, t, dis) {
 
 function renderGlobalPanel(panel, schemeOptionsHTML) {
   ensureGlobalTypography();
+  ensureGlobalLayout();
+  ensureGlobalFontAdv();
   const g = state.globalTypography;
 
-  // Build a fake scheme whose typography IS the global — so no overrides show
-  const gScheme = { ...DEFAULT_STYLE_SCHEME(), typography: { ...g } };
+  // Build a fake scheme whose typography, layout and adv ARE the globals — so no overrides show
+  const gScheme = { ...DEFAULT_STYLE_SCHEME(), ...state.globalLayout, ...state.globalFontAdv, typography: { ...g } };
   const sv = applyTypographyToStyle(gScheme);
-  const rs = { ...DEFAULT_STYLE_SCHEME(), typography: {} };
+  const rs = { ...DEFAULT_STYLE_SCHEME(), ...state.globalFontAdv, typography: {} };
 
   const _gTab = (_styleTab && ['text','layout'].includes(_styleTab)) ? _styleTab : 'text';
 
@@ -5352,29 +5540,49 @@ function renderSchemeGrid(sv, rs, dis) {
 
     const fontTypoKey = fontF ? (FONT_FIELD_TO_TYPO_KEY[fontF] || null) : (typoKey || null);
     const advRaw  = rs[advK];
-    const advDefs = FONT_ADV_DEFAULTS();
+    const _globalAdv = ensureGlobalFontAdv()[advK] || FONT_ADV_DEFAULTS();
     const advOv   = (field) => {
       if (!advRaw) return false;
       const v = advRaw[field];
       if (v === undefined || v === null) return false;
-      const def = advDefs[field];
-      if (def === null) return true;
-      if (typeof def === 'number') return Number(v) !== Number(def);
+      const def = _globalAdv[field];
+      if (def === null || def === undefined) return false;
+      if (typeof def === 'number') return Math.abs(Number(v) - def) > 0.01;
       if (typeof def === 'boolean') return !!v !== def;
       return v !== def;
     };
-    const fontOv   = fontTypoKey ? !!(rs.typography?.[fontTypoKey]) : false;
-    const sizeOv   = sizeF ? !!(rs.typography?.[sizeF]) : false;
+    const _globalTypo = ensureGlobalTypography();
+    const fontOv   = fontTypoKey ? (rs.typography?.[fontTypoKey] != null && rs.typography?.[fontTypoKey] !== _globalTypo[fontTypoKey]) : false;
+    const sizeOv   = sizeF ? (rs.typography?.[sizeF] != null && Number(rs.typography?.[sizeF]) !== Number(_globalTypo[sizeF])) : false;
     const alignOv  = advOv('alignment');
     const vAlignOv = advOv('verticalAlignment');
     const sc = (ov) => ov ? ' sg-td-scheme' : '';
 
     const togCell  = (field) =>
       `<td class="sg-td sg-td-tog${sc(advOv(field))}" data-scheme="${advK}" data-field="${field}"><button type="button" class="fav-toggle sg-tog ${adv[field] ? 'on' : ''}" data-scheme="${advK}" data-field="${field}" ${dis}></button></td>`;
-    const haBtn    = (v, title) =>
-      `<td class="sg-td sg-td-align" data-scheme="${advK}" data-field="alignment"><button type="button" class="sg-halign-btn sg-align-cell ${adv.alignment === v ? 'on' : ''}" data-scheme="${advK}" data-val="${v}" title="${title}" ${dis}></button></td>`;
-    const vaBtn    = (v, title) =>
-      `<td class="sg-td sg-td-align" data-scheme="${advK}" data-field="verticalAlignment"><button type="button" class="sg-valign-btn sg-align-cell ${adv.verticalAlignment === v ? 'on' : ''}" data-scheme="${advK}" data-val="${v}" title="${title}" ${dis}></button></td>`;
+    const HA_ICONS = {
+      '':       `<svg viewBox="0 0 14 10" fill="none" stroke="currentColor" stroke-linecap="round" width="14" height="10"><path d="M1 2h12M1 5.5h7M1 9h9" stroke-width="1.4"/></svg>`,
+      center:   `<svg viewBox="0 0 14 10" fill="none" stroke="currentColor" stroke-linecap="round" width="14" height="10"><path d="M1 2h12M3.5 5.5h7M2.5 9h9" stroke-width="1.4"/></svg>`,
+      right:    `<svg viewBox="0 0 14 10" fill="none" stroke="currentColor" stroke-linecap="round" width="14" height="10"><path d="M1 2h12M6 5.5h7M4 9h9" stroke-width="1.4"/></svg>`,
+      justify:  `<svg viewBox="0 0 14 10" fill="none" stroke="currentColor" stroke-linecap="round" width="14" height="10"><path d="M1 2h12M1 5.5h12M1 9h9" stroke-width="1.4"/></svg>`,
+    };
+    const VA_ICONS = {
+      '':       `<svg viewBox="0 0 10 12" fill="none" stroke="currentColor" stroke-linecap="round" width="10" height="12"><path d="M1 2h8" stroke-width="2"/><path d="M2.5 5.5h5M2.5 9h5" stroke-width="1.4"/></svg>`,
+      middle:   `<svg viewBox="0 0 10 12" fill="none" stroke="currentColor" stroke-linecap="round" width="10" height="12"><path d="M2 3h6M2 6h6M2 9h6" stroke-width="1.4"/></svg>`,
+      bottom:   `<svg viewBox="0 0 10 12" fill="none" stroke="currentColor" stroke-linecap="round" width="10" height="12"><path d="M2.5 3h5M2.5 6.5h5" stroke-width="1.4"/><path d="M1 10h8" stroke-width="2"/></svg>`,
+    };
+    const glbAlign = _globalAdv.alignment ?? '';
+    const glbVAlign = _globalAdv.verticalAlignment ?? '';
+    const haBtn = (v, title) => {
+      const isOn = adv.alignment === v;
+      const isGlb = glbAlign === v;
+      return `<td class="sg-td sg-td-align${alignOv ? ' sg-td-scheme' : ''}" data-scheme="${advK}" data-field="alignment"><button type="button" class="sg-halign-btn sg-align-cell ${isOn ? 'on' : ''}${isGlb && !isOn ? ' sg-align-global' : ''}" data-scheme="${advK}" data-val="${v}" title="${title}" ${dis}>${HA_ICONS[v] || ''}</button></td>`;
+    };
+    const vaBtn = (v, title) => {
+      const isOn = adv.verticalAlignment === v;
+      const isGlb = glbVAlign === v;
+      return `<td class="sg-td sg-td-align${vAlignOv ? ' sg-td-scheme' : ''}" data-scheme="${advK}" data-field="verticalAlignment"><button type="button" class="sg-valign-btn sg-align-cell ${isOn ? 'on' : ''}${isGlb && !isOn ? ' sg-align-global' : ''}" data-scheme="${advK}" data-val="${v}" title="${title}" ${dis}>${VA_ICONS[v] || ''}</button></td>`;
+    };
     const numCell  = (field, dflt, step) =>
       `<td class="sg-td${sc(advOv(field))}" data-scheme="${advK}" data-field="${field}"><input type="number" class="fav-num sg-num" data-scheme="${advK}" data-field="${field}" value="${adv[field] ?? dflt}" step="${step}" ${dis}></td>`;
     const colorCell = (field, fb) =>
@@ -5728,8 +5936,8 @@ function renderStylePanel(panel) {
     renderStylePanel(panel);
   });
   document.getElementById('btn-scheme-new').addEventListener('click', () => {
-    const base = state.styleSchemes.find(s => s.isDefault) || DEFAULT_STYLE_SCHEME();
-    const p = { ...deepClone(base), id: 'scheme_' + Date.now(), name: 'New Scheme', isDefault: false, isLocked: false };
+    const p = { ...deepClone(DEFAULT_STYLE_SCHEME()), id: 'scheme_' + Date.now(), name: 'New Scheme', isLocked: false };
+    for (const f of LAYOUT_FIELDS) p[f] = null;
     state.styleSchemes.push(p); state.activeSchemeId = p.id;
     saveState(); renderStylePanel(panel);
   });
@@ -6214,6 +6422,25 @@ function renderStylePanel(panel) {
       }
     });
   });
+
+  // Text tab: clicking a row highlights the matching preview region
+  const TEXT_ROW_TO_REGION = {
+    body1: 'body', bold1: 'body', title1: 'header', point1: 'point',
+    body2: 'propBody', bold2: 'propBody', title2: 'propHeader', point2: 'propBody',
+    se: 'startEnd', live: 'live', queue: 'queue',
+  };
+  panel.querySelectorAll('#style-tab-text .sg-row[data-rowid]').forEach(row => {
+    row.addEventListener('click', () => {
+      const rowId = row.dataset.rowid;
+      const slug = TEXT_ROW_TO_REGION[rowId];
+      _textSel = slug || null;
+      panel.querySelectorAll('#style-tab-text .sg-row').forEach(r =>
+        r.classList.toggle('sg-row-sel', r.dataset.rowid === rowId));
+      panel.querySelectorAll('#style-tab-text .lp-region').forEach(r =>
+        r.classList.toggle('sel', !!slug && r.dataset.region === slug));
+    });
+  });
+
   // Restore selection highlight after re-render
   if (_textSel) {
     const TEXT_REGION_TO_ROW = {
@@ -6246,19 +6473,41 @@ function renderStylePanel(panel) {
   _sgCtx.dataset.lyfield = _sgCtx.dataset.lyfield || '';
   document.getElementById('sg-ctx-reset').onclick = () => {
     const s = getScheme(); if (!s) return;
-    const key = _sgCtx.dataset.typokey;
-    if (!key) return;
-    ensureSchemeTypography(s);
-    s.typography[key] = null;
+    const lyField = _sgCtx.dataset.lyfield;
+    const key     = _sgCtx.dataset.typokey;
+    const advKey  = _sgCtx.dataset.scheme;
+    const advFld  = _sgCtx.dataset.field;
+    if (lyField) {
+      s[lyField] = null;
+    } else if (advKey && advFld && s[advKey]) {
+      s[advKey][advFld] = (ensureGlobalFontAdv()[advKey] || FONT_ADV_DEFAULTS())[advFld];
+    } else {
+      if (!key) return;
+      ensureSchemeTypography(s);
+      s.typography[key] = null;
+    }
     saveState(); renderStylePanel(panel); _sgCtx.style.display = 'none';
   };
   document.getElementById('sg-ctx-push').onclick = () => {
     const s = getScheme(); if (!s) return;
-    const key = _sgCtx.dataset.typokey;
-    if (!key) return;
-    ensureSchemeTypography(s); ensureGlobalTypography();
-    state.globalTypography[key] = s.typography[key] ?? resolveSchemeTypography(s)[key];
-    s.typography[key] = null;
+    const lyField = _sgCtx.dataset.lyfield;
+    const key     = _sgCtx.dataset.typokey;
+    const advKey  = _sgCtx.dataset.scheme;
+    const advFld  = _sgCtx.dataset.field;
+    if (lyField) {
+      const glb = ensureGlobalLayout();
+      glb[lyField] = s[lyField] ?? glb[lyField];
+      s[lyField] = null;
+    } else if (advKey && advFld && s[advKey]) {
+      const glb = ensureGlobalFontAdv();
+      if (!glb[advKey]) glb[advKey] = FONT_ADV_DEFAULTS();
+      glb[advKey][advFld] = s[advKey][advFld];
+    } else {
+      if (!key) return;
+      ensureSchemeTypography(s); ensureGlobalTypography();
+      state.globalTypography[key] = s.typography[key] ?? resolveSchemeTypography(s)[key];
+      s.typography[key] = null;
+    }
     saveState(); renderStylePanel(panel); _sgCtx.style.display = 'none';
   };
   document.getElementById('sg-ctx-reset-def').onclick = () => {
@@ -6288,44 +6537,42 @@ function renderStylePanel(panel) {
       const s = getScheme();
       const isOvTypo = !!(typoKey && s?.typography?.[typoKey]);
       const isOvAdv  = !!(advKey && advFld && s?.[advKey] != null && (() => {
-        const v = s[advKey][advFld], def = FONT_ADV_DEFAULTS()[advFld];
+        const v = s[advKey][advFld];
+        const def = (ensureGlobalFontAdv()[advKey] || FONT_ADV_DEFAULTS())[advFld];
         if (v === undefined || v === null) return false;
-        if (def === null) return true;
-        if (typeof def === 'number') return Number(v) !== Number(def);
+        if (def === null || def === undefined) return false;
+        if (typeof def === 'number') return Math.abs(Number(v) - def) > 0.01;
         if (typeof def === 'boolean') return !!v !== def;
         return v !== def;
       })());
       const resetBtn    = document.getElementById('sg-ctx-reset');
       const pushBtn     = document.getElementById('sg-ctx-push');
       const resetDefBtn = document.getElementById('sg-ctx-reset-def');
-      resetBtn.style.display    = (typoKey && isOvTypo) ? '' : 'none';
-      pushBtn.style.display     = typoKey ? '' : 'none';
-      resetDefBtn.style.display = (!typoKey && advKey && isOvAdv) ? '' : 'none';
-      const hasItems = (typoKey && isOvTypo) || typoKey || (!typoKey && advKey && isOvAdv);
+      resetBtn.style.display    = (typoKey && isOvTypo) || (advKey && advFld && isOvAdv) ? '' : 'none';
+      pushBtn.style.display     = (typoKey || (advKey && advFld)) ? '' : 'none';
+      resetDefBtn.style.display = 'none';
+      const hasItems = typoKey || (advKey && advFld);
       if (!hasItems) return;
       _sgCtx.style.cssText = `display:block;position:fixed;left:${e.clientX}px;top:${e.clientY}px;`;
     });
   });
 
-  // Layout cells — right-click to reset a field to its default value
+  // Layout cells — right-click to push to global or reset to global
   panel.querySelectorAll('#style-tab-layout .sg-td[data-ly-field]').forEach(td => {
     td.addEventListener('contextmenu', e => {
       e.preventDefault();
       const lyField = td.dataset.lyField;
       const s = getScheme();
-      const DEF = DEFAULT_STYLE_SCHEME();
-      const d = DEF[lyField], v = s?.[lyField];
-      const isOv = v !== undefined && v !== null && d !== undefined && (
-        typeof d === 'number' ? Math.abs(Number(v) - d) > 0.01 : v !== d
-      );
+      const v = s?.[lyField];
+      const isOv = v !== undefined && v !== null;
       if (!isOv) return;
       _sgCtx.dataset.lyfield = lyField;
       _sgCtx.dataset.typokey = '';
       _sgCtx.dataset.scheme  = '';
       _sgCtx.dataset.field   = '';
-      document.getElementById('sg-ctx-reset').style.display    = 'none';
-      document.getElementById('sg-ctx-push').style.display     = 'none';
-      document.getElementById('sg-ctx-reset-def').style.display = '';
+      document.getElementById('sg-ctx-reset').style.display     = '';
+      document.getElementById('sg-ctx-push').style.display      = '';
+      document.getElementById('sg-ctx-reset-def').style.display = 'none';
       _sgCtx.style.cssText = `display:block;position:fixed;left:${e.clientX}px;top:${e.clientY}px;`;
     });
   });
@@ -6338,13 +6585,14 @@ function renderStylePanel(panel) {
       s[field] = parseFloat(inp.value) ?? 0;
       saveState();
       refreshAlignBtns(panel, s);
+      refreshSchemePreviews(panel, s);
       // Update override highlight live
       const td = inp.closest('.sg-td[data-ly-field]');
       if (td) {
-        const DEF = DEFAULT_STYLE_SCHEME();
-        const d = DEF[field], v = s[field];
-        const isOv = d !== undefined && v !== null && (
-          typeof d === 'number' ? Math.abs(Number(v) - d) > 0.01 : v !== d
+        const glb = ensureGlobalLayout();
+        const g = glb[field], v = s[field];
+        const isOv = g !== undefined && v !== null && (
+          typeof g === 'number' ? Math.abs(Number(v) - g) > 0.01 : v !== g
         );
         td.classList.toggle('sg-td-scheme', isOv);
       }
@@ -6356,8 +6604,9 @@ function renderStylePanel(panel) {
     btn.addEventListener('click', () => {
       const s = getScheme(); if (!s) return;
       const isProp  = btn.dataset.prop === 'true';
-      const cW = isProp ? (s.propCanvasW ?? 3200) : (s.canvasW ?? 1920);
-      const cH = isProp ? (s.propCanvasH ?? 1280) : (s.canvasH ?? 1080);
+      const glb = ensureGlobalLayout();
+      const cW = isProp ? (s.propCanvasW ?? glb.propCanvasW ?? 3200) : (s.canvasW ?? glb.canvasW ?? 1920);
+      const cH = isProp ? (s.propCanvasH ?? glb.propCanvasH ?? 1280) : (s.canvasH ?? glb.canvasH ?? 1080);
       const align = btn.dataset.align;
 
       if (align === 'h-left') {
@@ -6527,7 +6776,7 @@ function richEditor(id, spans) {
         <button class="btn-fmt" id="${id}-italic"    type="button" data-tip-key="italic"><i>I</i></button>
         <button class="btn-fmt" id="${id}-underline" type="button" data-tip-key="underline"><u>U</u></button>
         <span class="rich-toolbar-sep"></span>
-        <button class="btn-fmt btn-fmt-alt" id="${id}-alt" type="button" data-tip-key="alt">ALT</button>
+        <button class="btn-fmt btn-fmt-alt" id="${id}-alt" type="button" data-tip-key="alt"><span class="btn-fmt-alt-lbl">ALT</span></button>
       </div>
       <div class="rich-content" id="${id}" contenteditable="true" spellcheck="true"
            data-placeholder="Enter text…">${spansToHtmlPreview(spans)}</div>
@@ -6644,10 +6893,12 @@ function startEndForm(slide) {
   const iconCls = isStart ? 'si-start' : 'si-end';
   const iconTxt = isStart ? 'S' : 'E';
   const defaultText = isStart ? 'Start of Notes' : 'End of Notes';
+  const posKey = slidePosKey(slide);
   return `
     <div class="slide-form">
       <h2>
         <input type="text" class="slide-title-input" id="f-label" spellcheck="true" value="${esc(slide.label || defaultText)}" placeholder="${defaultText}">
+        ${macroChipsHTML(slide.type, posKey)}${stageDisplayChipsHTML(slide.type, posKey)}
       </h2>
       <div class="field">
         <label>Screen Text</label>
@@ -7726,6 +7977,33 @@ function attachHeaderHandlers() {
   document.getElementById('btn-notes-close')?.addEventListener('click', toggleNotes);
   document.getElementById('btn-notes-open')?.addEventListener('click', toggleNotes);
 
+  // Sidebar drag-to-resize
+  const sidebarEl = document.querySelector('.sidebar');
+  const sidebarHandle = document.getElementById('sidebar-resize-handle');
+  if (sidebarHandle && sidebarEl) {
+    sidebarHandle.addEventListener('mousedown', e => {
+      e.preventDefault();
+      const startX = e.clientX;
+      const startW = sidebarEl.offsetWidth;
+      sidebarHandle.classList.add('dragging');
+      const shield = document.createElement('div');
+      shield.style.cssText = 'position:fixed;inset:0;z-index:99998;cursor:col-resize';
+      document.body.appendChild(shield);
+      const onMove = mv => {
+        const newW = Math.max(160, Math.min(520, startW + (mv.clientX - startX)));
+        sidebarEl.style.width = `${newW}px`;
+      };
+      const onUp = () => {
+        sidebarHandle.classList.remove('dragging');
+        shield.remove();
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+      };
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+    });
+  }
+
   // Outline / Speaker Notes tabs
   document.querySelectorAll('.notes-tab').forEach(tab => {
     tab.addEventListener('click', () => {
@@ -8637,6 +8915,9 @@ async function runGenerate(btn, deliverMode = false) {
       hideDeliveryOverlay();
       addGenHistoryEntry(data);
       showGenerateModal(data, spec);
+      if (data.propsInstalled === false) {
+        toast('warn', 'Deck exported — props not installed', data.propsError || 'Configuration/Props not found');
+      }
     } else {
       hideDeliveryOverlay();
       toast('error', 'Export failed', data.error || 'Unknown error');
@@ -10519,6 +10800,8 @@ async function newDeck({ series = '', title = '', date = '', schemeId = null, sp
   if (!fromTemplateId) {
     s.styleSchemes = state.styleSchemes;
     s.globalTypography = state.globalTypography;
+    s.globalLayout = state.globalLayout;
+    s.globalFontAdv = state.globalFontAdv;
   }
   s.activeSchemeId = schemeId || s.activeSchemeId || state.activeSchemeId;
   s.currentDeckId  = crypto.randomUUID();

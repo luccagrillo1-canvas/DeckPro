@@ -1,0 +1,316 @@
+{
+  "cueCount": 10,
+  "cues": [
+    {
+      "name": null,
+      "actions": [
+        {
+          "type": "PRESENTATION_SLIDE",
+          "label": "START",
+          "transitionDuration": 0.6,
+          "bodies": [
+            {
+              "text": "START",
+              "super": false,
+              "bold": true
+            },
+            {
+              "text": "START",
+              "super": false,
+              "bold": false
+            },
+            {
+              "text": "Romans 10:9\nRespond Today\nResponse Card Blank\nResponse Card\nResponse 1\nResponse 2\nResponse 3\nResponse Card Hold\nEnd of Notes",
+              "super": false,
+              "bold": false
+            }
+          ]
+        },
+        {
+          "type": "CLEAR",
+          "clear": "CLEAR_TARGET_LAYER_PROP"
+        }
+      ]
+    },
+    {
+      "name": null,
+      "actions": [
+        {
+          "type": "PRESENTATION_SLIDE",
+          "label": "Romans 10:9",
+          "transitionDuration": 0.6,
+          "bodies": [
+            {
+              "text": "live",
+              "super": false,
+              "bold": false
+            },
+            {
+              "text": "Romans 10:9",
+              "super": false,
+              "bold": true
+            },
+            {
+              "text": "If you declare with your mouth that Jesus is Lord, you will be saved.",
+              "super": false,
+              "bold": false
+            },
+            {
+              "text": "Respond Today\nResponse Card Blank\nResponse Card\nResponse 1\nResponse 2\nResponse 3\nResponse Card Hold\nEnd of Notes",
+              "super": false,
+              "bold": false
+            }
+          ]
+        },
+        {
+          "type": "PROP",
+          "prop": "Romans 10:9"
+        }
+      ]
+    },
+    {
+      "name": null,
+      "actions": [
+        {
+          "type": "PRESENTATION_SLIDE",
+          "label": "Respond Today",
+          "transitionDuration": 0.6,
+          "bodies": [
+            {
+              "text": "Respond Today",
+              "super": false,
+              "bold": true
+            },
+            {
+              "text": "live",
+              "super": false,
+              "bold": false
+            },
+            {
+              "text": "Response Card Blank\nResponse Card\nResponse 1\nResponse 2\nResponse 3\nResponse Card Hold\nEnd of Notes",
+              "super": false,
+              "bold": false
+            }
+          ]
+        },
+        {
+          "type": "PROP",
+          "prop": "Respond Today"
+        }
+      ]
+    },
+    {
+      "name": null,
+      "actions": [
+        {
+          "type": "PRESENTATION_SLIDE",
+          "label": "Response Card Blank",
+          "transitionDuration": 0.6,
+          "bodies": [
+            {
+              "text": "Response Card\nResponse 1\nResponse 2\nResponse 3\nResponse Card Hold\nEnd of Notes",
+              "super": false,
+              "bold": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": null,
+      "actions": [
+        {
+          "type": "PRESENTATION_SLIDE",
+          "label": "Response Card",
+          "transitionDuration": 0.6,
+          "bodies": [
+            {
+              "text": "live",
+              "super": false,
+              "bold": false
+            },
+            {
+              "text": "Response Card",
+              "super": false,
+              "bold": true
+            },
+            {
+              "text": "I have decided to follow Jesus today!",
+              "super": false,
+              "bold": false
+            },
+            {
+              "text": "Response 1\nResponse 2\nResponse 3\nResponse Card Hold\nEnd of Notes",
+              "super": false,
+              "bold": false
+            }
+          ]
+        },
+        {
+          "type": "PROP",
+          "prop": "Response Card"
+        }
+      ]
+    },
+    {
+      "name": null,
+      "actions": [
+        {
+          "type": "PRESENTATION_SLIDE",
+          "label": "Response 1",
+          "transitionDuration": 0.6,
+          "bodies": [
+            {
+              "text": "live",
+              "super": false,
+              "bold": false
+            },
+            {
+              "text": "Response 1",
+              "super": false,
+              "bold": true
+            },
+            {
+              "text": "I am committing my life to Christ.",
+              "super": false,
+              "bold": false
+            },
+            {
+              "text": "Response 2\nResponse 3\nResponse Card Hold\nEnd of Notes",
+              "super": false,
+              "bold": false
+            }
+          ]
+        },
+        {
+          "type": "PROP",
+          "prop": "Response Card"
+        }
+      ]
+    },
+    {
+      "name": null,
+      "actions": [
+        {
+          "type": "PRESENTATION_SLIDE",
+          "label": "Response 2",
+          "transitionDuration": 0.6,
+          "bodies": [
+            {
+              "text": "live",
+              "super": false,
+              "bold": false
+            },
+            {
+              "text": "Response 2",
+              "super": false,
+              "bold": true
+            },
+            {
+              "text": "I am recommitting my life to Christ.",
+              "super": false,
+              "bold": false
+            },
+            {
+              "text": "Response 3\nResponse Card Hold\nEnd of Notes",
+              "super": false,
+              "bold": false
+            }
+          ]
+        },
+        {
+          "type": "PROP",
+          "prop": "Response Card"
+        }
+      ]
+    },
+    {
+      "name": null,
+      "actions": [
+        {
+          "type": "PRESENTATION_SLIDE",
+          "label": "Response 3",
+          "transitionDuration": 0.6,
+          "bodies": [
+            {
+              "text": "live",
+              "super": false,
+              "bold": false
+            },
+            {
+              "text": "Response 3",
+              "super": false,
+              "bold": true
+            },
+            {
+              "text": "I want to learn more about following Jesus.",
+              "super": false,
+              "bold": false
+            },
+            {
+              "text": "Response Card Hold\nEnd of Notes",
+              "super": false,
+              "bold": false
+            }
+          ]
+        },
+        {
+          "type": "PROP",
+          "prop": "Response Card"
+        }
+      ]
+    },
+    {
+      "name": null,
+      "actions": [
+        {
+          "type": "PRESENTATION_SLIDE",
+          "label": "Response Card Hold",
+          "transitionDuration": 0.6,
+          "bodies": [
+            {
+              "text": "Response Card Hold",
+              "super": false,
+              "bold": true
+            },
+            {
+              "text": "End of Notes",
+              "super": false,
+              "bold": false
+            }
+          ]
+        },
+        {
+          "type": "PROP",
+          "prop": "Response Card"
+        }
+      ]
+    },
+    {
+      "name": null,
+      "actions": [
+        {
+          "type": "PRESENTATION_SLIDE",
+          "label": "End of Notes",
+          "transitionDuration": 0.6,
+          "bodies": [
+            {
+              "text": "End of Notes",
+              "super": false,
+              "bold": true
+            },
+            {
+              "text": "End of Notes",
+              "super": false,
+              "bold": false
+            }
+          ]
+        },
+        {
+          "type": "CLEAR",
+          "clear": "CLEAR_TARGET_LAYER_PROP"
+        }
+      ]
+    }
+  ]
+}

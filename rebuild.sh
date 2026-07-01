@@ -29,6 +29,13 @@ echo "STEP:4:Refreshing system cache"
 LSREG="/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister"
 "$LSREG" -f /Applications/DeckPro.app >> "$LOG" 2>&1
 
+# ── 4b. Stop any legacy standalone dev server on 3000 ─────────────────────────
+# Newer app builds use their own private port, but an old server can still be
+# left behind from the double-click launcher and confuse manual browser tests.
+if lsof -ti tcp:3000 >> "$LOG" 2>&1; then
+  lsof -ti tcp:3000 | xargs kill -9 >> "$LOG" 2>&1 || true
+fi
+
 # ── 5. Launch new instance ────────────────────────────────────────────────────
 echo "STEP:5:Relaunching"
 open -n /Applications/DeckPro.app --args --rebuilt >> "$LOG" 2>&1

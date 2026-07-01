@@ -1,0 +1,33 @@
+{
+  "name": "05 Full Chaos Deck",
+  "includeResponseCard": true,
+  "qrEnabled": true,
+  "responses": { "decisionText": "I said yes to Jesus — emoji 🙏 & \"quotes\"", "r1": "Option / one", "r2": "Option — two", "r3": "Option… three" },
+  "stageScreen": { "screenName": "Stage", "screenUuid": "S" },
+  "stageDisplays": [
+    { "id": "sd1", "name": "RC", "uuid": "RCL", "triggers": ["rcBlank", "rcContent", "rcHold"] },
+    { "id": "sd2", "name": "Msg", "uuid": "ML",  "triggers": ["scripture", "point"] }
+  ],
+  "customMacros": [
+    { "id": "m1", "name": "no logo", "uuid": "NL", "color": "#fff", "triggers": ["scripture", "point", "image"] },
+    { "id": "m2", "name": "gradient", "uuid": "GR", "color": "#0cc", "triggers": ["scripture", "point", "rcContent"] }
+  ],
+  "slides": [
+    { "type": "start", "label": "START", "text": "START" },
+    { "type": "scripture", "label": "Psalm 23:1-2", "reference": "Psalm 23:1-2",
+      "bodies": [
+        [{ "text": "1", "verseNum": true, "super": true, "bold": false }, { "text": " ", "bold": false }, { "text": "The LORD is my shepherd; I shall not want.", "bold": false }],
+        [{ "text": "2", "verseNum": true, "super": false, "bold": false }, { "text": " ", "bold": false }, { "text": "He makes me lie down in green pastures — beside still waters.", "bold": true }]
+      ],
+      "propName": "Psalm 23:1-2", "blankBefore": true, "blankSpans": [{ "text": "intro", "bold": false }] },
+    { "type": "point", "mode": "revealing", "label": "Three Things", "title": "Three Things",
+      "bullets": ["Trust the Shepherd", "Follow His lead — daily", "Rest in green pastures 🌿"],
+      "propBaseName": "ThreeThings", "followReveal": "stacking" },
+    { "type": "point", "mode": "single", "label": "Long Point", "bodyText": "This is an unusually long single point with punctuation: quotes \"like this,\" a slash/here, an em–dash, and trailing ellipsis…", "propName": "Long Point", "customProp": true },
+    { "type": "image", "label": "Sermon Bumper", "blankBefore": true, "blankSpans": [{ "text": "bumper coming up", "bold": false }] },
+    { "type": "blank", "label": "Blank Hold", "spans": [] },
+    { "type": "custom", "label": "Custom Build Slot" },
+    { "type": "scripture", "label": "Empty Body Verse", "reference": "Test 1:1", "bodies": [[]], "propName": "Test 1:1" },
+    { "type": "end", "label": "End of Notes", "text": "End of Notes" }
+  ]
+}

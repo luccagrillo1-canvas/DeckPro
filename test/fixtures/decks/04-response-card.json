@@ -1,0 +1,18 @@
+{
+  "name": "04 Response Card",
+  "includeResponseCard": true,
+  "responses": {
+    "decisionText": "I have decided to follow Jesus today!",
+    "r1": "I am committing my life to Christ.",
+    "r2": "I am recommitting my life to Christ.",
+    "r3": "I want to learn more about following Jesus."
+  },
+  "slides": [
+    { "type": "start", "label": "START", "text": "START" },
+    { "type": "scripture", "label": "Romans 10:9", "reference": "Romans 10:9",
+      "bodies": [[{ "text": "If you declare with your mouth that Jesus is Lord, you will be saved.", "bold": false }]],
+      "propName": "Romans 10:9" },
+    { "type": "point", "mode": "single", "label": "Respond Today", "bodyText": "Respond Today", "propName": "Respond Today" },
+    { "type": "end", "label": "End of Notes", "text": "End of Notes" }
+  ]
+}

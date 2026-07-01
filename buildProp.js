@@ -65,12 +65,9 @@ const FONT_ADV_DEFAULTS = () => ({
 const DEFAULT_STYLE = {
   bodyFill:    '#2196f2',
   titleFill:   '#a9391a',
-  titleText:   '#f6d046',
-  titleShadow: '#ff2600',
   fillEnabled: false,
   bodyFont:     'Montserrat-Medium',
   propBodyFont: 'Montserrat-SemiBold',
-  boldFont:     'Montserrat-ExtraBold',
   pointFont:    'Montserrat-ExtraBold',
   titleFont:    'Montserrat-ExtraBold',
   startEndFont: 'Montserrat-ExtraBold',
@@ -84,14 +81,19 @@ const DEFAULT_STYLE = {
   propTransitionType:     'fade',
   propTransitionDuration: 0.6,
   // Advanced font styling
+  bodyFontAdv:     null,
   propBodyFontAdv: null,
   pointFontAdv:    null,
+  propPointFontAdv:null,
   titleFontAdv:    null,
+  propTitleFontAdv:null,
+  boldFontAdv:     null,
+  propBoldFontAdv: null,
   // Prop canvas
-  propCanvasW: 1920, propCanvasH: 1080,
+  propCanvasW: 3200, propCanvasH: 1280,
   // Prop element bounds
-  propBodyX: 0, propBodyY: 729.98, propBodyW: 1920, propBodyH: 350.02,
-  propTitleX: -0.18, propTitleY: 880, propTitleW: 1920.18, propTitleH: 50.51,
+  propBodyX: 0, propBodyY: 853, propBodyW: 3200, propBodyH: 427,
+  propTitleX: -0.30, propTitleY: 1040, propTitleW: 3200.30, propTitleH: 60,
 };
 
 // ─── Transitions ──────────────────────────────────────────────────────────
@@ -136,10 +138,8 @@ function resolveStyle(style = {}) {
     ...s,
     cFill:        { ...hexToColor(s.bodyFill),  alpha: fa },
     cTitleFill:   { ...hexToColor(s.titleFill), alpha: fa },
-    cTitleText:   hexToColor(s.titleText),
-    cTitleShadow: hexToColor(s.titleShadow),
   };
-  for (const k of ['propBodyFontAdv', 'titleFontAdv', 'boldFontAdv', 'pointFontAdv']) {
+  for (const k of ['bodyFontAdv', 'propBodyFontAdv', 'titleFontAdv', 'propTitleFontAdv', 'boldFontAdv', 'propBoldFontAdv', 'pointFontAdv', 'propPointFontAdv']) {
     out[k] = { ...FONT_ADV_DEFAULTS(), ...(s[k] || {}) };
   }
   return out;
@@ -151,12 +151,16 @@ function makePropStyle(rs) {
     ...rs,
     bodyFont:  rs.propBodyFont  || rs.bodyFont,
     bodySize:  rs.propBodySize  || rs.bodySize,
+    bodyFontAdv: rs.propBodyFontAdv ? { ...FONT_ADV_DEFAULTS(), ...rs.propBodyFontAdv } : rs.bodyFontAdv,
+    titleFont: rs.propTitleFont || rs.titleFont,
     titleSize: rs.propTitleSize || rs.titleSize,
-    // Bold spans inside body text on the LED wall
-    boldFont:    rs.propBoldFont || rs.boldFont,
+    titleFontAdv: rs.propTitleFontAdv ? { ...FONT_ADV_DEFAULTS(), ...rs.propTitleFontAdv } : rs.titleFontAdv,
+    // Emphasis (alt-span) advanced styling on the LED wall
+    boldFont: rs.propBoldFont || rs.boldFont || rs.propBodyFont || rs.bodyFont,
     boldFontAdv: rs.propBoldFontAdv ? { ...FONT_ADV_DEFAULTS(), ...rs.propBoldFontAdv } : rs.boldFontAdv,
-    // Point text on the LED wall has its own font entry, falling back to the prop bold / main fonts
-    pointFont:    rs.propPointFont || rs.pointFont || rs.propBoldFont || rs.boldFont,
+    // Point text on the LED wall has its own font entry, falling back to the main point font
+    pointFont:    rs.propPointFont || rs.pointFont,
+    pointSize:    rs.propPointSize || rs.pointSize || rs.propBodySize || rs.bodySize,
     pointFontAdv: rs.propPointFontAdv
       ? { ...FONT_ADV_DEFAULTS(), ...rs.propPointFontAdv }
       : (rs.pointFontAdv || (rs.propBoldFontAdv ? { ...FONT_ADV_DEFAULTS(), ...rs.propBoldFontAdv } : rs.boldFontAdv)),
@@ -182,7 +186,15 @@ function makeTextElement({ name, x, y, w, h, rtfData, font, fontSize, center, ch
     defaultTabInterval: 84,
     textList: {},
   };
-  if (center) paraStyle.alignment = 'ALIGNMENT_CENTER';
+  // Paragraph alignment follows the font's Advanced → Alignment when set,
+  // otherwise the element's default (centered for point/title, natural-left for body).
+  // LEFT is the proto default, so it's left unset (matches the RTF's natural-left).
+  const _al = adv && adv.alignment;
+  const _alignEnum = _al === 'right' ? 'ALIGNMENT_RIGHT'
+                   : _al === 'center' ? 'ALIGNMENT_CENTER'
+                   : _al === 'left' ? null
+                   : (center ? 'ALIGNMENT_CENTER' : null);
+  if (_alignEnum) paraStyle.alignment = _alignEnum;
 
   return {
     uuid: id,
@@ -196,16 +208,15 @@ function makeTextElement({ name, x, y, w, h, rtfData, font, fontSize, center, ch
     feather: { radius: 0.05 },
     text: {
       attributes: {
-        font: { name: font, size: Math.round(fontSize), family: 'Montserrat' },
-        textSolidFill: C_WHITE,
+        font: { name: font, size: fontSize, family: font },
+        textSolidFill: adv?.color ? hexToColor(adv.color) : C_WHITE,
         underlineStyle: {},
         paragraphStyle: paraStyle,
         strikethroughStyle: {},
-        strokeWidth: -1,
-        strokeColor: C_BLACK_A,
+        ...resolveTextStroke(adv),
         customAttributes: charCount ? [{ range: { end: charCount } }] : [],
       },
-      shadow: TXT_SHADOW,
+      shadow: resolveTextShadow(adv, TXT_SHADOW),
       rtfData,
       ...(resolveScaleBehavior(adv, scaleBehavior) !== undefined ? { scaleBehavior: resolveScaleBehavior(adv, scaleBehavior) } : {}),
       ...(vertAlign ? { verticalAlignment: vertAlign } : {}),
@@ -267,10 +278,10 @@ function resolveVertAlign(adv, defaultVal) {
 
 function resolveMargins(adv, defaults = {}) {
   return {
-    left:   (adv?.marginLeft   || 0) || (defaults.left   ?? 0),
-    top:    (adv?.marginTop    || 0) || (defaults.top    ?? 0),
-    right:  (adv?.marginRight  || 0) || (defaults.right  ?? 0),
-    bottom: (adv?.marginBottom || 0) || (defaults.bottom ?? 0),
+    left:   adv?.marginLeft   ?? defaults.left   ?? 0,
+    top:    adv?.marginTop    ?? defaults.top    ?? 0,
+    right:  adv?.marginRight  ?? defaults.right  ?? 0,
+    bottom: adv?.marginBottom ?? defaults.bottom ?? 0,
   };
 }
 
@@ -295,6 +306,20 @@ function resolveShadow(adv, defaultShadow) {
     color:   hexToColor(adv.shadowColor || '#000000'),
     opacity: (adv.shadowOpacity ?? 75) / 100,
   };
+}
+
+// TEXT-level stroke/shadow — what ProPresenter actually renders on the text
+// (mirrors builder.js; the element-level stroke/shadow above don't drive text).
+function resolveTextStroke(adv) {
+  if (!adv?.strokeEnabled) return { strokeWidth: -1, strokeColor: C_BLACK_A };
+  return {
+    strokeWidth: -(adv.strokeWidth ?? 1),
+    strokeColor: hexToColor(adv.strokeColor || '#000000'),
+  };
+}
+function resolveTextShadow(adv, defaultShadow) {
+  if (!adv?.shadowEnabled) return defaultShadow;
+  return { ...resolveShadow(adv, defaultShadow), enable: true };
 }
 
 // ─── Auto prop title Y estimation ────────────────────────────────────────
@@ -324,7 +349,7 @@ function estimatePropTitleY(spans, bw, prs) {
     totalLines += lines;
   }
   if (totalLines === 0) totalLines = 1;
-  const marginBottom = prs.bodyMarginBottom ?? 60;
+  const marginBottom = prs.propBodyFontAdv?.marginBottom ?? prs.bodyMarginBottom ?? 60;
   const estimatedTextH = totalLines * lineH;
   const textTop = by + bh - marginBottom - estimatedTextH;
   return Math.round(textTop - gap - th);
@@ -387,6 +412,7 @@ function buildScripturePropCue(spec, rs = {}) {
     fontSize: prs.titleSize || 60,
     center: true,
     charCount: reference.length,
+    scaleBehavior: 'SCALE_BEHAVIOR_SCALE_FONT_DOWN',
     vertAlign: resolveVertAlign(prs.titleFontAdv, 'VERTICAL_ALIGNMENT_MIDDLE'),
     margins: resolveMargins(prs.titleFontAdv, {}),
     adv: prs.titleFontAdv,
@@ -414,8 +440,8 @@ function buildPointSinglePropCue(spec, rs = {}) {
     name: 'body',
     x: bx, y: by + boldYOff, w: bw, h: bh,
     rtfData: bodyRtf,
-    font: prs.pointFont || prs.boldFont || 'Montserrat-ExtraBold',
-    fontSize: prs.bodySize || 80,
+    font: prs.pointFont || 'Montserrat-ExtraBold',
+    fontSize: prs.pointSize || prs.bodySize || 80,
     center: true,
     charCount: bodyText.length,
     vertAlign: 'VERTICAL_ALIGNMENT_BOTTOM',
@@ -449,17 +475,82 @@ function buildRevealingPointPropCue(spec, rs = {}) {
     name: 'body',
     x: bx, y: by + boldYOff, w: bw, h: bh,
     rtfData,
-    font: prs.boldFont || 'Montserrat-ExtraBold',
-    fontSize: prs.bodySize || 80,
+    font: prs.pointFont || 'Montserrat-ExtraBold',
+    fontSize: prs.pointSize || prs.bodySize || 80,
     center: true,
     charCount: plainText.length,
     vertAlign: 'VERTICAL_ALIGNMENT_BOTTOM',
     scaleBehavior: 'SCALE_BEHAVIOR_SCALE_FONT_DOWN',
     margins: { bottom: 60 },
-    adv: prs.boldFontAdv,
+    adv: prs.pointFontAdv || prs.boldFontAdv,
   }, prs);
 
   return makePropCue(propName, [makeSlot(bodyEl)], rs._propTransition ?? rs._transition, rs, spec.slotUuid ?? null);
+}
+
+// ─── Response Card prop cue ───────────────────────────────────────────────
+
+const RC_LAYOUT = {
+  title: { x: 325, y: 856, w: 2550, h: 400 },
+  mark:  { x: 310, w: 70, h: 150 },
+  row:   { x: 400, w: 2600, h: 150 },
+  rowYs: [150, 330, 510, 690],
+};
+const RC_MARK_LABELS = ['•', '1', '2', '3'];
+
+// Default Response Card elements for the LED wall prop (display 2). The base 5
+// (title + decision + 3 responses) plus any custom elements live per-scheme as
+// rs.rcElements; users edit name/text/position/style and add more via the UI.
+// font/size/color/align empty ('' or 0) = inherit the scheme's prop title/body.
+function DEFAULT_RC_ELEMENTS() {
+  return [
+    { id: 'rc-title',    role: 'title',    name: 'Response Card', text: 'Response Card', x: 325, y: 856, w: 2550, h: 400, font: '', size: 0, color: '', align: 'center' },
+    { id: 'rc-decision', role: 'decision', name: 'Decision',      text: '',              x: 400, y: 150, w: 2600, h: 150, font: '', size: 0, color: '', align: 'center' },
+    { id: 'rc-r1',       role: 'r1',       name: 'Response 1',     text: '',              x: 400, y: 330, w: 2600, h: 150, font: '', size: 0, color: '', align: 'center' },
+    { id: 'rc-r2',       role: 'r2',       name: 'Response 2',     text: '',              x: 400, y: 510, w: 2600, h: 150, font: '', size: 0, color: '', align: 'center' },
+    { id: 'rc-r3',       role: 'r3',       name: 'Response 3',     text: '',              x: 400, y: 690, w: 2600, h: 150, font: '', size: 0, color: '', align: 'center' },
+  ];
+}
+
+function responseRows(responses = {}) {
+  return [responses.decisionText || '', responses.r1 || '', responses.r2 || '', responses.r3 || ''];
+}
+
+function buildResponseCardPropCue(spec, rs = {}) {
+  const prs = makePropStyle(rs);
+  const responses = spec.responses || {};
+  // Per-scheme, fully-editable element list (display 2). Decision/R1–R3 text
+  // comes from the Response Card deck item; title/custom text from the element.
+  const defs = (Array.isArray(rs.rcElements) && rs.rcElements.length) ? rs.rcElements : DEFAULT_RC_ELEMENTS();
+  const roleText = {
+    decision: responses.decisionText || '',
+    r1: responses.r1 || '', r2: responses.r2 || '', r3: responses.r3 || '',
+  };
+  const elements = defs.map(el => {
+    const isTitle = el.role === 'title';
+    const text = (el.role in roleText) ? roleText[el.role] : (el.text || '');
+    // Empty font/size/color inherit the scheme's prop title/body styling.
+    const font  = el.font  || (isTitle ? (prs.titleFont || 'Montserrat-ExtraBold') : (prs.bodyFont || 'Montserrat-SemiBold'));
+    const size  = el.size  || (isTitle ? (prs.titleSize || 110) : (prs.bodySize || 80));
+    const color = el.color || ((isTitle ? prs.titleFontAdv : prs.bodyFontAdv) || {}).color || '';
+    const align = el.align || 'center';
+    // Mini-style so the shared RTF generator picks up this element's font/size/colour.
+    const elStyle = { bodyFont: font, bodySize: size, bodyFontAdv: { color, alignment: align } };
+    const elEl = makeTextElement({
+      name: el.name || 'response element',
+      x: el.x ?? 0, y: el.y ?? 0, w: el.w ?? 2600, h: el.h ?? 150,
+      rtfData: rtf.rtfResponseBody(text, elStyle),
+      font, fontSize: size,
+      center: align === 'center',
+      charCount: (text || '').length,
+      vertAlign: 'VERTICAL_ALIGNMENT_MIDDLE',
+      margins: {},
+      adv: { color, alignment: align },
+    }, prs);
+    return makeSlot(elEl);
+  });
+
+  return makePropCue(spec.propName || 'Response Card', elements, rs._propTransition ?? rs._transition, rs, spec.slotUuid ?? null);
 }
 
 // ─── PropDocument assembler ───────────────────────────────────────────────
@@ -471,6 +562,7 @@ function buildRevealingPointPropCue(spec, rs = {}) {
  *   { type: 'scripture',       propName, reference, bodies }
  *   { type: 'point-single',    propName, bodyText }
  *   { type: 'point-revealing', propName, title?, bullets, activeIdx }
+ *   { type: 'response-card',   propName, responses }
  * @returns {object} PropDocument-shaped JS object ready for encodePropDocument()
  */
 /**
@@ -511,6 +603,8 @@ function buildAllPropCues(propSpecs, style = {}) {
         return buildPointSinglePropCue(spec, cueRs);
       case 'point-revealing':
         return buildRevealingPointPropCue(spec, cueRs);
+      case 'response-card':
+        return buildResponseCardPropCue(spec, cueRs);
       case 'manual':
         // Blank cue — slot reserved, user builds the prop manually in Pro7
         return makePropCue(spec.propName, [], cueRs._propTransition ?? cueRs._transition, cueRs, spec.slotUuid ?? null);
@@ -541,6 +635,7 @@ module.exports = {
   buildScripturePropCue,
   buildPointSinglePropCue,
   buildRevealingPointPropCue,
+  buildResponseCardPropCue,
   buildAllPropCues,
   encodePropDocument,
   // Legacy aliases for any external callers

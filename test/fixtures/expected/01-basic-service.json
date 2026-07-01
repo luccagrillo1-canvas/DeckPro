@@ -1,0 +1,129 @@
+{
+  "cueCount": 4,
+  "cues": [
+    {
+      "name": null,
+      "actions": [
+        {
+          "type": "PRESENTATION_SLIDE",
+          "label": "START",
+          "transitionDuration": 0.6,
+          "bodies": [
+            {
+              "text": "START",
+              "super": false,
+              "bold": true
+            },
+            {
+              "text": "START",
+              "super": false,
+              "bold": false
+            },
+            {
+              "text": "John 13:35\nLove One Another\nEnd of Notes",
+              "super": false,
+              "bold": false
+            }
+          ]
+        },
+        {
+          "type": "CLEAR",
+          "clear": "CLEAR_TARGET_LAYER_PROP"
+        }
+      ]
+    },
+    {
+      "name": null,
+      "actions": [
+        {
+          "type": "PRESENTATION_SLIDE",
+          "label": "John 13:35",
+          "transitionDuration": 0.6,
+          "bodies": [
+            {
+              "text": "live",
+              "super": false,
+              "bold": false
+            },
+            {
+              "text": "John 13:35",
+              "super": false,
+              "bold": true
+            },
+            {
+              "text": "By this everyone will know that you are my disciples, if you love one another.",
+              "super": false,
+              "bold": true
+            },
+            {
+              "text": "Love One Another\nEnd of Notes",
+              "super": false,
+              "bold": false
+            }
+          ]
+        },
+        {
+          "type": "PROP",
+          "prop": "John 13:35"
+        }
+      ]
+    },
+    {
+      "name": null,
+      "actions": [
+        {
+          "type": "PRESENTATION_SLIDE",
+          "label": "Love One Another",
+          "transitionDuration": 0.6,
+          "bodies": [
+            {
+              "text": "Love One Another",
+              "super": false,
+              "bold": true
+            },
+            {
+              "text": "live",
+              "super": false,
+              "bold": false
+            },
+            {
+              "text": "End of Notes",
+              "super": false,
+              "bold": false
+            }
+          ]
+        },
+        {
+          "type": "PROP",
+          "prop": "Love One Another"
+        }
+      ]
+    },
+    {
+      "name": null,
+      "actions": [
+        {
+          "type": "PRESENTATION_SLIDE",
+          "label": "End of Notes",
+          "transitionDuration": 0.6,
+          "bodies": [
+            {
+              "text": "End of Notes",
+              "super": false,
+              "bold": true
+            },
+            {
+              "text": "End of Notes",
+              "super": false,
+              "bold": false
+            }
+          ]
+        },
+        {
+          "type": "CLEAR",
+          "clear": "CLEAR_TARGET_LAYER_PROP"
+        }
+      ]
+    }
+  ]
+}

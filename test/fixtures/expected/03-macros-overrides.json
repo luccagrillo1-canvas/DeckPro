@@ -1,0 +1,218 @@
+{
+  "cueCount": 6,
+  "cues": [
+    {
+      "name": null,
+      "actions": [
+        {
+          "type": "PRESENTATION_SLIDE",
+          "label": "START",
+          "transitionDuration": 0.6,
+          "bodies": [
+            {
+              "text": "START",
+              "super": false,
+              "bold": true
+            },
+            {
+              "text": "START",
+              "super": false,
+              "bold": false
+            },
+            {
+              "text": "Romans 12:2\nRenew Your Mind\nBackground Image\nHold\nEnd of Notes",
+              "super": false,
+              "bold": false
+            }
+          ]
+        },
+        {
+          "type": "CLEAR",
+          "clear": "CLEAR_TARGET_LAYER_PROP"
+        }
+      ]
+    },
+    {
+      "name": null,
+      "actions": [
+        {
+          "type": "PRESENTATION_SLIDE",
+          "label": "Romans 12:2",
+          "transitionDuration": 1.2,
+          "bodies": [
+            {
+              "text": "live",
+              "super": false,
+              "bold": false
+            },
+            {
+              "text": "Romans 12:2",
+              "super": false,
+              "bold": true
+            },
+            {
+              "text": "Be transformed by the renewing of your mind.",
+              "super": false,
+              "bold": false
+            },
+            {
+              "text": "Renew Your Mind\nBackground Image\nHold\nEnd of Notes",
+              "super": false,
+              "bold": false
+            }
+          ]
+        },
+        {
+          "type": "STAGE_LAYOUT",
+          "stageLayout": "Message",
+          "stageScreen": "Stage"
+        },
+        {
+          "type": "PROP",
+          "prop": "Romans 12:2"
+        },
+        {
+          "type": "MACRO",
+          "macro": "message content"
+        },
+        {
+          "type": "MACRO",
+          "macro": "no logo"
+        },
+        {
+          "type": "MACRO",
+          "macro": "gradient"
+        },
+        {
+          "type": "MACRO",
+          "macro": "special override"
+        }
+      ]
+    },
+    {
+      "name": null,
+      "actions": [
+        {
+          "type": "PRESENTATION_SLIDE",
+          "label": "Renew Your Mind",
+          "transitionDuration": null,
+          "bodies": [
+            {
+              "text": "Renew Your Mind",
+              "super": false,
+              "bold": true
+            },
+            {
+              "text": "live",
+              "super": false,
+              "bold": false
+            },
+            {
+              "text": "Background Image\nHold\nEnd of Notes",
+              "super": false,
+              "bold": false
+            }
+          ]
+        },
+        {
+          "type": "STAGE_LAYOUT",
+          "stageLayout": "Message",
+          "stageScreen": "Stage"
+        },
+        {
+          "type": "PROP",
+          "prop": "Renew Your Mind"
+        },
+        {
+          "type": "MACRO",
+          "macro": "no logo"
+        },
+        {
+          "type": "MACRO",
+          "macro": "gradient"
+        }
+      ]
+    },
+    {
+      "name": null,
+      "actions": [
+        {
+          "type": "PRESENTATION_SLIDE",
+          "label": "Background Image",
+          "transitionDuration": 0.6,
+          "bodies": [
+            {
+              "text": "live",
+              "super": false,
+              "bold": false
+            },
+            {
+              "text": "Hold\nEnd of Notes",
+              "super": false,
+              "bold": false
+            }
+          ]
+        },
+        {
+          "type": "CLEAR",
+          "clear": "CLEAR_TARGET_LAYER_PROP"
+        },
+        {
+          "type": "MACRO",
+          "macro": "no logo"
+        },
+        {
+          "type": "MACRO",
+          "macro": "image macro"
+        }
+      ]
+    },
+    {
+      "name": null,
+      "actions": [
+        {
+          "type": "PRESENTATION_SLIDE",
+          "label": "Hold",
+          "transitionDuration": 0.6,
+          "bodies": [
+            {
+              "text": "End of Notes",
+              "super": false,
+              "bold": false
+            }
+          ]
+        },
+        {
+          "type": "MACRO",
+          "macro": "logo"
+        }
+      ]
+    },
+    {
+      "name": null,
+      "actions": [
+        {
+          "type": "PRESENTATION_SLIDE",
+          "label": "End of Notes",
+          "transitionDuration": 0.6,
+          "bodies": [
+            {
+              "text": "End of Notes",
+              "super": false,
+              "bold": true
+            },
+            {
+              "text": "End of Notes",
+              "super": false,
+              "bold": false
+            }
+          ]
+        },
+        {
+          "type": "CLEAR",
+          "clear": "CLEAR_TARGET_LAYER_PROP"
+        }
+      ]
+    }
+  ]
+}

@@ -1,13 +1,13 @@
 {
   "name": "deckpro",
   "productName": "DeckPro",
-  "version": "4.5.0",
+  "version": "4.6.0",
   "description": "ProPresenter 7 slide deck builder for Canvas Church",
   "main": "main.js",
   "scripts": {
     "start": "node server.js",
     "electron": "electron .",
-    "test": "node rtf.test.js && node builder.test.js && node verse.test.js && node encode.test.js && node golden.test.js && node fuzz.test.js",
+    "test": "node rtf.test.js && node builder.test.js && node buildProp.test.js && node verse.test.js && node encode.test.js && node golden.test.js && node fuzz.test.js && node audit-scheme-fields.js",
     "preflight": "node scripts/preflight.js",
     "prebuild": "node scripts/preflight.js",
     "build": "electron-builder --mac",

@@ -50,27 +50,28 @@ const DEFAULT_STYLE = {
   // Fill colors (only used when fillEnabled is true)
   bodyFill:    '#2196f2',
   titleFill:   '#a9391a',
-  titleText:   '#f6d046',
-  titleShadow: '#ff2600',
   fillEnabled: false,
 
   // Fonts
   bodyFont:     'Montserrat-Medium',
   propBodyFont: 'Montserrat-SemiBold',
-  boldFont:     'Montserrat-ExtraBold',   // bold spans inside body text (main screen)
   pointFont:    'Montserrat-ExtraBold',   // point text (main screen)
   titleFont:    'Montserrat-ExtraBold',
   startEndFont: 'Montserrat-ExtraBold',
   notesFont:     'Montserrat-Medium',  // confidence-monitor slide notes
-  notesBoldFont: 'Montserrat-Black',
+  liveFont:      'HelveticaNeue',
+  queueFont:     'HelveticaNeue',
 
   // Sizes (pt)
   bodySize:      44,
+  pointSize:     44,
   titleSize:     60,
   startEndSize:  45,
   propBodySize:  80,
   propTitleSize: 110,
   notesSize:     50,
+  liveSize:      42,
+  queueSize:     32,
 
   // Transitions
   transitionType:     'fade',
@@ -79,14 +80,13 @@ const DEFAULT_STYLE = {
   // Build order per slide type (mirrors DEFAULT_STYLE_SCHEME in app.js)
   buildOrders: {
     content: [
-      { id: 'bo-c1', element: 'this slide',   dir: 'out', start: 'START_AFTER_PREVIOUS', delay: 60, transition: 'dissolve', duration: 0.6, enabled: true },
-      { id: 'bo-c2', element: 'title',         dir: 'out', start: 'START_WITH_PREVIOUS',  delay: 0,  transition: 'dissolve', duration: 0.6, enabled: true },
-      { id: 'bo-c3', element: 'atem_gradient', dir: 'out', start: 'START_WITH_PREVIOUS',  delay: 0,  transition: 'dissolve', duration: 0.6, enabled: true },
+      { id: 'bo-c1', element: 'body',  dir: 'out', start: 'START_AFTER_PREVIOUS', delay: 60, transition: 'dissolve', duration: 0.6, enabled: true },
+      { id: 'bo-c2', element: 'title', dir: 'out', start: 'START_WITH_PREVIOUS',  delay: 0,  transition: 'dissolve', duration: 0.6, enabled: true },
     ],
     point:   [],
     blank:   [],
     startEnd:[
-      { id: 'bo-se1', element: 'this slide', dir: 'in', start: 'START_WITH_SLIDE', delay: 1, transition: 'cut', duration: 0, enabled: true },
+      { id: 'bo-se1', element: 'body', dir: 'in', start: 'START_WITH_SLIDE', delay: 1, transition: 'cut', duration: 0, enabled: true },
     ],
   },
 
@@ -98,15 +98,17 @@ const DEFAULT_STYLE = {
   titleFontAdv:    null,
   startEndFontAdv: null,
   notesFontAdv:    null,
+  liveFontAdv:     null,
+  queueFontAdv:    null,
 
   // Canvas (presentation)
   canvasW: 1920, canvasH: 1080,
 
   // Element bounds — presentation
   bodyX: 0, bodyY: 729.98, bodyW: 1920, bodyH: 350.02,
+  pointX: 0, pointY: 729.98, pointW: 1920, pointH: 350.02,
   titleX: -0.18, titleY: 880, titleW: 1920.18, titleH: 50.51,
   startEndX: 0, startEndY: 900.14, startEndW: 1920, startEndH: 179.86,
-  gradientX: 0, gradientY: 351.77, gradientH: 728.23,
 };
 
 function hexToColor(hex) {
@@ -124,14 +126,12 @@ function resolveStyle(style = {}) {
   const s  = { ...DEFAULT_STYLE, ...style };
   const fa = s.fillEnabled ? 1 : 0;
   // Normalize fontAdv fields — merge with defaults so callers always get a full object
-  const ADKEY = ['bodyFontAdv', 'propBodyFontAdv', 'boldFontAdv', 'pointFontAdv', 'titleFontAdv', 'startEndFontAdv', 'notesFontAdv'];
+  const ADKEY = ['bodyFontAdv', 'propBodyFontAdv', 'boldFontAdv', 'pointFontAdv', 'titleFontAdv', 'startEndFontAdv', 'notesFontAdv', 'liveFontAdv', 'queueFontAdv'];
   const out = {
     ...s,
     cFill:        { ...hexToColor(s.bodyFill),  alpha: fa },
     cFill70:      { ...hexToColor(s.bodyFill),  alpha: s.fillEnabled ? 0.7 : 0 },
     cTitleFill:   { ...hexToColor(s.titleFill), alpha: fa },
-    cTitleText:   hexToColor(s.titleText),
-    cTitleShadow: hexToColor(s.titleShadow),
   };
   for (const k of ADKEY) {
     out[k] = { ...FONT_ADV_DEFAULTS(), ...(s[k] || {}) };
@@ -247,6 +247,7 @@ function makeBuildOut(start, delayTime) {
 // ─── Element slot ─────────────────────────────────────────────────────────
 
 function makeSlot(element, { buildIn, buildOut, info = 3 } = {}) {
+  if (!element) return null; // skip removed elements (e.g. gradient)
   const slot = { element, info };
   if (buildIn)  slot.buildIn  = { ...buildIn,  elementUUID: element.uuid };
   if (buildOut) slot.buildOut = { ...buildOut, elementUUID: element.uuid };
@@ -265,6 +266,7 @@ function applyBuildOrders(slots, entries) {
   // Build a name→slot map
   const byName = {};
   for (const slot of slots) {
+    if (!slot) continue;
     const name = slot.element?.name;
     if (name && !byName[name]) byName[name] = slot;
   }
@@ -303,10 +305,10 @@ function resolveVertAlign(adv, defaultVal) {
 
 function resolveMargins(adv, defaults = {}) {
   return {
-    left:   (adv?.marginLeft   || 0) || (defaults.left   ?? 0),
-    top:    (adv?.marginTop    || 0) || (defaults.top    ?? 0),
-    right:  (adv?.marginRight  || 0) || (defaults.right  ?? 0),
-    bottom: (adv?.marginBottom || 0) || (defaults.bottom ?? 0),
+    left:   adv?.marginLeft   ?? defaults.left   ?? 0,
+    top:    adv?.marginTop    ?? defaults.top    ?? 0,
+    right:  adv?.marginRight  ?? defaults.right  ?? 0,
+    bottom: adv?.marginBottom ?? defaults.bottom ?? 0,
   };
 }
 
@@ -333,6 +335,22 @@ function resolveShadow(adv, defaultShadow) {
   };
 }
 
+// ── TEXT-level stroke/shadow (what ProPresenter actually renders on the text) ──
+// ProPresenter draws the text outline from text.attributes.strokeWidth (negative
+// = outline) + strokeColor, and the text drop-shadow from text.shadow — NOT the
+// element-level stroke/shadow. Width N in the UI is stored as -N here.
+function resolveTextStroke(adv) {
+  if (!adv?.strokeEnabled) return { strokeWidth: -1, strokeColor: C_BLACK_A };
+  return {
+    strokeWidth: -(adv.strokeWidth ?? 1),
+    strokeColor: hexToColor(adv.strokeColor || '#000000'),
+  };
+}
+function resolveTextShadow(adv, defaultShadow) {
+  if (!adv?.shadowEnabled) return defaultShadow;
+  return { ...resolveShadow(adv, defaultShadow), enable: true };
+}
+
 // ─── Element builders ─────────────────────────────────────────────────────
 
 function bounds(x, y, w, h) {
@@ -353,16 +371,15 @@ function makeBodyElement({ name = 'body', x, y, w, h, rtfData, charCount }, rs =
     feather: { radius: 0.05 },
     text: {
       attributes: {
-        font: { name: rs.bodyFont || 'Montserrat-Medium', size: 44, family: 'Montserrat' },
-        textSolidFill: C_WHITE,
+        font: { name: rs.bodyFont || 'Montserrat-Medium', size: rs.bodySize || 44, family: 'Montserrat' },
+        textSolidFill: textColorFromAdv(rs.bodyFontAdv),
         underlineStyle: {},
         paragraphStyle: { lineHeightMultiple: 1, defaultTabInterval: 84, textList: {} },
         strikethroughStyle: {},
-        strokeWidth: -1,
-        strokeColor: C_BLACK_A,
+        ...resolveTextStroke(rs.bodyFontAdv),
         customAttributes: charCount ? [{ range: { end: charCount } }] : [],
       },
-      shadow: TXT_SHADOW_LO,
+      shadow: resolveTextShadow(rs.bodyFontAdv, TXT_SHADOW_LO),
       rtfData,
       scaleBehavior: resolveScaleBehavior(rs.bodyFontAdv, 'SCALE_BEHAVIOR_SCALE_FONT_DOWN'),
       verticalAlignment: resolveVertAlign(rs.bodyFontAdv, 'VERTICAL_ALIGNMENT_BOTTOM'),
@@ -384,6 +401,7 @@ function makePointBodyElement({ x, y, w, h, rtfData, text }, rs = {}) {
   x = x ?? 0; y = y ?? 729.98; w = w ?? 1920; h = h ?? 350.02;
   const id = uuid();
   const charCount = text.length;
+  const adv = rs.pointFontAdv || rs.boldFontAdv || {};
   return {
     uuid: id,
     name: 'body',
@@ -391,33 +409,33 @@ function makePointBodyElement({ x, y, w, h, rtfData, text }, rs = {}) {
     opacity: 1,
     path: RECT_PATH,
     fill: { color: rs.cFill || hexToColor('#2196f2') },
-    stroke: resolveStroke(rs.pointFontAdv || rs.boldFontAdv, { width: 3, color: C_WHITE }),
-    shadow: resolveShadow(rs.pointFontAdv || rs.boldFontAdv, EL_SHADOW_STD),
+    stroke: resolveStroke(adv, { width: 3, color: C_WHITE }),
+    shadow: resolveShadow(adv, EL_SHADOW_STD),
     feather: { radius: 0.05 },
     text: {
       attributes: {
-        font: { name: rs.pointFont || rs.boldFont || 'Montserrat-Black', size: 44, bold: true, family: 'Montserrat' },
+        font: { name: rs.pointFont || 'Montserrat-Black', size: rs.pointSize || rs.bodySize || 44, bold: true, family: rs.pointFont || 'Montserrat-Black' },
         capitalization: 'CAPITALIZATION_ALL_CAPS',
-        textSolidFill: C_WHITE,
+        textSolidFill: textColorFromAdv(rs.pointFontAdv || rs.boldFontAdv),
         underlineStyle: {},
-        paragraphStyle: { alignment: 'ALIGNMENT_CENTER', lineHeightMultiple: 1, defaultTabInterval: 84, textList: {} },
+        // Alignment follows Advanced → Alignment (default centered for points).
+        // 'left' omits the field (proto default / natural-left), matching the RTF.
+        paragraphStyle: { ...(adv.alignment === 'left' ? {} : { alignment: adv.alignment === 'right' ? 'ALIGNMENT_RIGHT' : 'ALIGNMENT_CENTER' }), lineHeightMultiple: 1, defaultTabInterval: 84, textList: {} },
         strikethroughStyle: {},
-        strokeWidth: -1,
-        strokeColor: C_BLACK_A,
+        ...resolveTextStroke(rs.pointFontAdv || rs.boldFontAdv),
         customAttributes: [
           { range: { end: charCount }, capitalization: 'CAPITALIZATION_ALL_CAPS' },
-          { range: { end: charCount } },
         ],
       },
-      shadow: TXT_SHADOW_LO,
+      shadow: resolveTextShadow(rs.pointFontAdv || rs.boldFontAdv, TXT_SHADOW_LO),
       rtfData,
-      scaleBehavior: resolveScaleBehavior(rs.pointFontAdv || rs.boldFontAdv, 'SCALE_BEHAVIOR_SCALE_FONT_DOWN'),
-      verticalAlignment: resolveVertAlign(rs.bodyFontAdv, 'VERTICAL_ALIGNMENT_BOTTOM'),
-      margins: resolveMargins(rs.bodyFontAdv, {
-        left:   rs.bodyMarginLeft   ?? 0,
-        top:    rs.bodyMarginTop    ?? 0,
-        right:  rs.bodyMarginRight  ?? 0,
-        bottom: rs.bodyMarginBottom ?? 60,
+      scaleBehavior: resolveScaleBehavior(adv, 'SCALE_BEHAVIOR_SCALE_FONT_DOWN'),
+      verticalAlignment: resolveVertAlign(adv, 'VERTICAL_ALIGNMENT_BOTTOM'),
+      margins: resolveMargins(adv, {
+        left:   rs.pointMarginLeft   ?? rs.bodyMarginLeft   ?? 0,
+        top:    rs.pointMarginTop    ?? rs.bodyMarginTop    ?? 0,
+        right:  rs.pointMarginRight  ?? rs.bodyMarginRight  ?? 0,
+        bottom: rs.pointMarginBottom ?? rs.bodyMarginBottom ?? 60,
       }),
       isSuperscriptStandardized: true,
       transformDelimiter: '  •  ',
@@ -446,20 +464,18 @@ function makeStartEndElement({ text }, rs = {}) {
     feather: { radius: 0.05 },
     text: {
       attributes: {
-        font: { name: rs.startEndFont || 'Montserrat-ExtraBold', size: 45, bold: true, family: 'Montserrat' },
+        font: { name: rs.startEndFont || 'Montserrat-ExtraBold', size: rs.startEndSize || 45, bold: true, family: rs.startEndFont || 'Montserrat-ExtraBold' },
         capitalization: 'CAPITALIZATION_ALL_CAPS',
-        textSolidFill: C_WHITE,
+        textSolidFill: textColorFromAdv(rs.startEndFontAdv),
         underlineStyle: {},
         paragraphStyle: { lineHeightMultiple: 1, defaultTabInterval: 84, textList: {} },
         strikethroughStyle: {},
-        strokeWidth: -1,
-        strokeColor: C_BLACK_A,
+        ...resolveTextStroke(rs.startEndFontAdv),
         customAttributes: [
           { range: { end: charCount }, capitalization: 'CAPITALIZATION_ALL_CAPS' },
-          { range: { end: charCount } },
         ],
       },
-      shadow: TXT_SHADOW_STD,
+      shadow: resolveTextShadow(rs.startEndFontAdv, TXT_SHADOW_STD),
       rtfData: rtf.rtfStartEnd(text, rs),
       scaleBehavior: resolveScaleBehavior(rs.startEndFontAdv, 'SCALE_BEHAVIOR_SCALE_FONT_DOWN'),
       verticalAlignment: resolveVertAlign(rs.startEndFontAdv, 'VERTICAL_ALIGNMENT_MIDDLE'),
@@ -492,8 +508,8 @@ function makeStartEndTitleEl({ text }, rs = {}) {
     feather: { radius: 0.05 },
     text: {
       attributes: {
-        font: { name: 'HelveticaNeue', size: 42, family: 'Helvetica Neue' },
-        textSolidFill: C_WHITE,
+        font: { name: rs.liveFont || 'HelveticaNeue', size: rs.liveSize || 42, family: rs.liveFont || 'Helvetica Neue' },
+        textSolidFill: textColorFromAdv(rs.liveFontAdv),
         underlineStyle: {},
         paragraphStyle: { alignment: 'ALIGNMENT_CENTER', lineHeightMultiple: 1, defaultTabInterval: 84, textList: {} },
         strikethroughStyle: {},
@@ -501,7 +517,7 @@ function makeStartEndTitleEl({ text }, rs = {}) {
         customAttributes: [{ range: { end: label.length } }],
       },
       shadow: TXT_SHADOW_STD,
-      rtfData: rtf.rtfLiveLabel(label),
+      rtfData: rtf.rtfLiveLabel(label, rs),
       verticalAlignment: 'VERTICAL_ALIGNMENT_MIDDLE',
       margins: {},
       isSuperscriptStandardized: true,
@@ -526,8 +542,8 @@ function makeLiveElement(rs = {}) {
     feather: { radius: 0.05 },
     text: {
       attributes: {
-        font: { name: 'HelveticaNeue', size: 42, family: 'Helvetica Neue' },
-        textSolidFill: C_WHITE,
+        font: { name: rs.liveFont || 'HelveticaNeue', size: rs.liveSize || 42, family: rs.liveFont || 'Helvetica Neue' },
+        textSolidFill: textColorFromAdv(rs.liveFontAdv),
         underlineStyle: {},
         paragraphStyle: { alignment: 'ALIGNMENT_CENTER', lineHeightMultiple: 1, defaultTabInterval: 84, textList: {} },
         strikethroughStyle: {},
@@ -535,9 +551,9 @@ function makeLiveElement(rs = {}) {
         customAttributes: [{ range: { end: 4 } }],
       },
       shadow: TXT_SHADOW_STD,
-      rtfData: rtf.rtfLive(),
+      rtfData: rtf.rtfLive(rs),
       verticalAlignment: 'VERTICAL_ALIGNMENT_MIDDLE',
-      margins: {},
+      margins: resolveMargins(rs.liveFontAdv, {}),
       isSuperscriptStandardized: true,
       transformDelimiter: '  •  ',
       chordPro: { color: C_CHORD },
@@ -587,7 +603,7 @@ function estimateTitleY(displayBody, bw, rs) {
   }
   if (totalLines === 0) totalLines = 1;
 
-  const marginBottom   = rs.bodyFontAdv?.marginBottom || (rs.bodyMarginBottom ?? 60);
+  const marginBottom   = rs.bodyFontAdv?.marginBottom ?? rs.bodyMarginBottom ?? 60;
   const estimatedTextH = totalLines * lineH;
   const textTop        = by + bh - marginBottom - estimatedTextH;
   return Math.round(textTop - gap - th);
@@ -610,28 +626,28 @@ function makeTitleElement({ reference, titleY }, rs = {}) {
     // Reference bar is fully scheme-driven — no hard-coded background fill,
     // text colour or shadow. Fill is transparent (no bar); text colour, stroke
     // and shadow all come from titleFontAdv. Arial / white are the only fallbacks.
-    fill: { color: { alpha: 0 } },
+    fill: { color: rs.cTitleFill || { alpha: 0 } },
     stroke: resolveStroke(rs.titleFontAdv, { width: 3, color: C_WHITE }),
     shadow: resolveShadow(rs.titleFontAdv, EL_SHADOW_STD),
     feather: { radius: 0.05 },
     text: {
       attributes: {
-        font: { name: rs.titleFont || 'Arial', size: 40, bold: true, family: rs.titleFont || 'Arial' },
+        font: { name: rs.titleFont || 'Arial', size: rs.titleSize || 40, bold: true, family: rs.titleFont || 'Arial' },
         capitalization: 'CAPITALIZATION_ALL_CAPS',
         textSolidFill: (rs.titleFontAdv && rs.titleFontAdv.color) ? hexToColor(rs.titleFontAdv.color) : C_WHITE,
         underlineStyle: {},
         paragraphStyle: { alignment: 'ALIGNMENT_CENTER', lineHeightMultiple: 1, paragraphSpacing: 20, defaultTabInterval: 84, textList: {} },
         strikethroughStyle: {},
-        strokeWidth: -1,
-        strokeColor: C_BLACK_A,
+        ...resolveTextStroke(rs.titleFontAdv),
         customAttributes: [
           { range: { end: charCount }, capitalization: 'CAPITALIZATION_ALL_CAPS' },
         ],
       },
-      shadow: TXT_SHADOW_LO,
+      shadow: resolveTextShadow(rs.titleFontAdv, TXT_SHADOW_LO),
       rtfData: rtf.rtfTitle(reference, rs),
       verticalAlignment: resolveVertAlign(rs.titleFontAdv, 'VERTICAL_ALIGNMENT_MIDDLE'),
       margins: resolveMargins(rs.titleFontAdv, { left: 25 }),
+      scaleBehavior: resolveScaleBehavior(rs.titleFontAdv, 'SCALE_BEHAVIOR_SCALE_FONT_DOWN'),
       isSuperscriptStandardized: true,
       transformDelimiter: '  •  ',
       chordPro: { color: C_CHORD },
@@ -640,51 +656,9 @@ function makeTitleElement({ reference, titleY }, rs = {}) {
   };
 }
 
-function makeGradientElement(rs = {}) {
-  const id = uuid();
-  const gx = rs.gradientX ?? 0;
-  const gy = rs.gradientY ?? 351.77;
-  const gw = rs.canvasW ?? 1920;
-  const gh = rs.gradientH ?? 728.23;
-  return {
-    uuid: id,
-    name: 'atem_gradient',
-    bounds: bounds(gx, gy, gw, gh),
-    opacity: 1,
-    path: RECT_PATH,
-    fill: {
-      gradient: {
-        angle: 90,
-        length: 1,
-        stops: [
-          { color: { alpha: 0.949999988079071 }, blendPoint: 0.5 },
-          { color: {},                            blendPoint: 0.5 },
-        ],
-      },
-      enable: true,
-    },
-    stroke: { width: 3, color: C_WHITE },
-    shadow: EL_SHADOW_STD,
-    feather: { radius: 0.05 },
-    text: {
-      attributes: {
-        font: { name: 'HelveticaNeue', size: 42, family: 'Helvetica Neue' },
-        textSolidFill: C_WHITE,
-        underlineStyle: {},
-        paragraphStyle: { alignment: 'ALIGNMENT_CENTER', lineHeightMultiple: 1, defaultTabInterval: 84, textList: {} },
-        strikethroughStyle: {},
-        strokeWidth: 0,
-      },
-      shadow: TXT_SHADOW_STD,
-      rtfData: rtf.rtfEmpty(),
-      verticalAlignment: 'VERTICAL_ALIGNMENT_MIDDLE',
-      margins: {},
-      isSuperscriptStandardized: true,
-      transformDelimiter: '  •  ',
-      chordPro: { color: C_CHORD },
-    },
-    textLineMask: {},
-  };
+function makeGradientElement() {
+  // Gradient is handled by a Pro7 macro — not generated by DeckPro.
+  return null;
 }
 
 /**
@@ -738,7 +712,23 @@ function makeQRElement() {
 
 // ─── Response card element builders ──────────────────────────────────────────
 
-/** Decorative "response N" label — Desire-Pro, tan, centered, y=847.8 */
+const RC_LAYOUT = {
+  title: { x: 325, y: 856, w: 2550, h: 400 },
+  mark:  { x: 310, w: 70, h: 150 },
+  row:   { x: 400, w: 2600, h: 150 },
+  rowYs: [150, 330, 510, 690],
+};
+const RC_MARK_LABELS = ['•', '1', '2', '3'];
+
+function rcResponses(responses = {}) {
+  return [responses.decisionText || '', responses.r1 || '', responses.r2 || '', responses.r3 || ''];
+}
+
+function textColorFromAdv(adv, fallback = C_WHITE) {
+  return adv?.color ? hexToColor(adv.color) : fallback;
+}
+
+/** Legacy decorative "response N" label — kept for backwards-compatible tests/tools. */
 function makeResponseLabelElement(n) {
   const id = uuid();
   return {
@@ -775,7 +765,7 @@ function makeResponseLabelElement(n) {
   };
 }
 
-/** Response body text element — Montserrat-Medium, centered, y=730 */
+/** Legacy single response body element — kept for backwards-compatible tests/tools. */
 function makeResponseBodyElement(text) {
   const id = uuid();
   const charCount = (text || '').length;
@@ -791,7 +781,7 @@ function makeResponseBodyElement(text) {
     feather: { radius: 0.05 },
     text: {
       attributes: {
-        font: { name: 'Montserrat-Medium', size: 45, family: 'Montserrat' },
+        font: { name: rs.bodyFont || 'Montserrat-Medium', size: rs.bodySize || 45, family: rs.bodyFont || 'Montserrat' },
         textSolidFill: C_WHITE,
         underlineStyle: {},
         paragraphStyle: { alignment: 'ALIGNMENT_CENTER', lineHeightMultiple: 1, defaultTabInterval: 84, textList: {} },
@@ -801,7 +791,7 @@ function makeResponseBodyElement(text) {
         customAttributes: charCount ? [{ range: { end: charCount } }] : [],
       },
       shadow: TXT_SHADOW_LO,
-      rtfData: rtf.rtfResponseBody(text),
+      rtfData: rtf.rtfResponseBody(text, rs),
       scaleBehavior: 'SCALE_BEHAVIOR_SCALE_FONT_DOWN',
       verticalAlignment: 'VERTICAL_ALIGNMENT_BOTTOM',
       margins: { bottom: 60 },
@@ -811,6 +801,142 @@ function makeResponseBodyElement(text) {
     },
     textLineMask: {},
   };
+}
+
+function makeResponseCardTitleElement(rs = {}) {
+  const id = uuid();
+  const text = 'Response Card';
+  const adv = rs.titleFontAdv || {};
+  return {
+    uuid: id,
+    name: 'response card',
+    bounds: bounds(RC_LAYOUT.title.x, RC_LAYOUT.title.y + (adv.yOffset ?? 0), RC_LAYOUT.title.w, RC_LAYOUT.title.h),
+    opacity: 1,
+    path: RECT_PATH,
+    fill: { color: { alpha: 0 } },
+    stroke: resolveStroke(adv, { width: 3, color: C_WHITE }),
+    shadow: resolveShadow(adv, EL_SHADOW_STD),
+    feather: { radius: 0.05 },
+    text: {
+      attributes: {
+        font: { name: rs.titleFont || 'Montserrat-ExtraBold', size: rs.titleSize || 60, bold: true, family: rs.titleFont || 'Montserrat' },
+        capitalization: 'CAPITALIZATION_ALL_CAPS',
+        textSolidFill: textColorFromAdv(adv),
+        underlineStyle: {},
+        paragraphStyle: { alignment: 'ALIGNMENT_CENTER', lineHeightMultiple: 1, defaultTabInterval: 84, textList: {} },
+        strikethroughStyle: {},
+        strokeWidth: -1,
+        strokeColor: C_BLACK_A,
+        customAttributes: [
+          { range: { end: text.length }, capitalization: 'CAPITALIZATION_ALL_CAPS' },
+        ],
+      },
+      shadow: TXT_SHADOW_LO,
+      rtfData: rtf.rtfTitle(text, rs),
+      ...(resolveScaleBehavior(adv, undefined) !== undefined ? { scaleBehavior: resolveScaleBehavior(adv, undefined) } : {}),
+      verticalAlignment: resolveVertAlign(adv, 'VERTICAL_ALIGNMENT_MIDDLE'),
+      margins: resolveMargins(adv, {}),
+      isSuperscriptStandardized: true,
+      transformDelimiter: '  •  ',
+      chordPro: { color: C_CHORD },
+    },
+    textLineMask: {},
+  };
+}
+
+function makeResponseCardRowElement(n, text, rs = {}) {
+  const id = uuid();
+  const adv = rs.bodyFontAdv || {};
+  const charCount = (text || '').length;
+  const y = RC_LAYOUT.rowYs[n - 1] ?? RC_LAYOUT.rowYs[0];
+  return {
+    uuid: id,
+    name: `response ${n}`,
+    bounds: bounds(RC_LAYOUT.row.x, y + (adv.yOffset ?? 0), RC_LAYOUT.row.w, RC_LAYOUT.row.h),
+    opacity: 1,
+    path: RECT_PATH,
+    fill: { color: { alpha: 0 } },
+    stroke: resolveStroke(adv, { width: 3, color: C_WHITE }),
+    shadow: resolveShadow(adv, EL_SHADOW_STD),
+    feather: { radius: 0.05 },
+    text: {
+      attributes: {
+        font: { name: rs.bodyFont || 'Montserrat-Medium', size: rs.bodySize || 44, family: rs.bodyFont || 'Montserrat' },
+        textSolidFill: textColorFromAdv(adv),
+        underlineStyle: {},
+        paragraphStyle: { alignment: 'ALIGNMENT_CENTER', lineHeightMultiple: 1, defaultTabInterval: 84, textList: {} },
+        strikethroughStyle: {},
+        strokeWidth: -1,
+        strokeColor: C_BLACK_A,
+        customAttributes: charCount ? [{ range: { end: charCount } }] : [],
+      },
+      shadow: TXT_SHADOW_LO,
+      rtfData: rtf.rtfResponseBody(text, rs),
+      ...(resolveScaleBehavior(adv, undefined) !== undefined ? { scaleBehavior: resolveScaleBehavior(adv, undefined) } : {}),
+      verticalAlignment: resolveVertAlign(adv, 'VERTICAL_ALIGNMENT_MIDDLE'),
+      margins: resolveMargins(adv, {}),
+      isSuperscriptStandardized: true,
+      transformDelimiter: '  •  ',
+      chordPro: { color: C_CHORD },
+    },
+    textLineMask: {},
+  };
+}
+
+function makeResponseCardMarkElement(n, rs = {}) {
+  const id = uuid();
+  const text = RC_MARK_LABELS[n - 1] || String(n);
+  const adv = rs.bodyFontAdv || {};
+  const y = RC_LAYOUT.rowYs[n - 1] ?? RC_LAYOUT.rowYs[0];
+  return {
+    uuid: id,
+    name: `mark ${n}`,
+    bounds: bounds(RC_LAYOUT.mark.x, y + (adv.yOffset ?? 0), RC_LAYOUT.mark.w, RC_LAYOUT.mark.h),
+    opacity: 1,
+    path: RECT_PATH,
+    fill: { color: { alpha: 0 } },
+    stroke: resolveStroke(adv, { width: 3, color: C_WHITE }),
+    shadow: resolveShadow(adv, EL_SHADOW_STD),
+    feather: { radius: 0.05 },
+    text: {
+      attributes: {
+        font: { name: rs.bodyFont || 'Montserrat-Medium', size: rs.bodySize || 44, family: rs.bodyFont || 'Montserrat' },
+        textSolidFill: textColorFromAdv(adv),
+        underlineStyle: {},
+        paragraphStyle: { alignment: 'ALIGNMENT_RIGHT', lineHeightMultiple: 1, defaultTabInterval: 84, textList: {} },
+        strikethroughStyle: {},
+        strokeWidth: -1,
+        strokeColor: C_BLACK_A,
+        customAttributes: [{ range: { end: text.length } }],
+      },
+      shadow: TXT_SHADOW_LO,
+      rtfData: rtf.rtfResponseMark(text, rs),
+      ...(resolveScaleBehavior(adv, undefined) !== undefined ? { scaleBehavior: resolveScaleBehavior(adv, undefined) } : {}),
+      verticalAlignment: resolveVertAlign(adv, 'VERTICAL_ALIGNMENT_MIDDLE'),
+      margins: resolveMargins(adv, {}),
+      isSuperscriptStandardized: true,
+      transformDelimiter: '  •  ',
+      chordPro: { color: C_CHORD },
+    },
+    textLineMask: {},
+  };
+}
+
+/** Display 1 RC slide: scheme body + title, just like a scripture slide. */
+function makeRCSlide1(label, bodyText, rs = {}) {
+  const bx = rs.bodyX ?? 0;
+  const by = rs.bodyY ?? 729.98;
+  const bw = rs.bodyW ?? rs.canvasW ?? 1920;
+  const bh = rs.bodyH ?? 350.02;
+  const bodyYOff = rs.bodyFontAdv?.yOffset ?? 0;
+  const spans = bodyText ? [{ text: bodyText }] : [];
+  const bodyRtf = rtf.rtfBody(spans, rs);
+  const titleY = rs.autoTitleY ? estimateTitleY(spans, bw, rs) : (rs.titleY ?? 880);
+  return [
+    makeSlot(makeLiveElement(rs), { info: 2 }),
+    makeSlot(makeTitleElement({ reference: label, titleY }, rs)),
+    makeSlot(makeBodyElement({ x: bx, y: by + bodyYOff, w: bw, h: bh, rtfData: bodyRtf, charCount: (bodyText || '').length }, rs)),
+  ];
 }
 
 /** Confidence monitor element for response slides — off-screen y=1135, full list */
@@ -917,9 +1043,9 @@ function makeQueueElement(labels, rs = {}) {
         customAttributes: [],
       },
       shadow: TXT_SHADOW_STD,
-      rtfData: rtf.rtfQueue(labels),
+      rtfData: rtf.rtfQueue(labels, rs),
       verticalAlignment: 'VERTICAL_ALIGNMENT_TOP',
-      margins: { left: 10, top: 10 },
+      margins: resolveMargins(rs.queueFontAdv, { left: 10, top: 10 }),
       isSuperscriptStandardized: true,
       transformDelimiter: '  •  ',
       chordPro: { color: C_CHORD },
@@ -964,7 +1090,19 @@ function makeBaseSlide(elements, explicitBuildOrder) {
   };
 }
 
+// First few words of a body (spans array or string) for the queue "ref + phrase" mode.
+function firstPhrase(body, words = 5) {
+  let t = '';
+  if (Array.isArray(body)) t = body.map(s => (s && s.text) || '').join('');
+  else t = String(body || '');
+  t = t.replace(/\s+/g, ' ').trim();
+  if (!t) return '';
+  const parts = t.split(' ');
+  return parts.slice(0, words).join(' ') + (parts.length > words ? '…' : '');
+}
+
 function makeSlideAction(label, elements, buildOrder, notesRtf) {
+  elements = (elements || []).filter(Boolean); // drop null slots (e.g. removed gradient)
   return {
     uuid: uuid(),
     label: { text: label },
@@ -1045,19 +1183,11 @@ function propAction(propName) {
   };
 }
 
-// Macro UUIDs (defaults — can be overridden per-spec via spec.macros)
-const MACRO_DEFAULTS = {
-  START:   '7C586E48-986E-4932-9219-7D6A64BE5B6C',
-  CONTENT: '8C15C594-8EE3-431C-B35C-B70B6AB91548',
-  BLANK:   '3AC673FE-0841-4391-81F7-F2042F312E1C',
-  LOGO:    '8CB7C31F-4B7E-41EE-96A5-D86F7CC8A71B',
-  NO_LOGO: 'DF162F4C-DA5D-4DE2-8379-3F369BC4BA07',
-};
-// Active macros for the current build — set by buildPresentation
-let MACRO = MACRO_DEFAULTS;
-
 // Stage screen config for the current build — set by buildPresentation
 let STAGE_SCREEN = {};
+
+// Scheme stage displays (trigger-based) for the current build — set by buildPresentation
+let SCHEME_STAGE_DISPLAYS = [];
 
 // ─── Cue type builders ────────────────────────────────────────────────────
 
@@ -1077,9 +1207,7 @@ function buildStartCue(spec, rs) {
     isEnabled: true,
     actions: [
       makeSlideAction(spec.label || 'START', slots, bo, notesRtf),
-      macroAction('Message - Start', MACRO.START),
       clearPropAction(),
-      macroAction('LOGO', MACRO.LOGO),
     ],
   };
 }
@@ -1101,7 +1229,6 @@ function buildEndCue(spec, rs) {
     actions: [
       makeSlideAction(spec.label || 'End of Notes', slots, bo, notesRtf),
       clearPropAction(),
-      macroAction('LOGO', MACRO.LOGO),
     ],
   };
 }
@@ -1123,7 +1250,9 @@ function buildBlankCue(spec, rs) {
       ...spec.stageLayout,
     }));
   }
-  actions.push(macroAction('LOGO', MACRO.LOGO));
+  if (spec.blankShowProp && spec.propName) {
+    actions.push(propAction(spec.propName));
+  }
   return {
     uuid: uuid(),
     _type: 'blank',
@@ -1151,7 +1280,8 @@ function buildScriptureCues(spec, rs) {
   }, []);
 
   return allBodies.map((body, idx) => {
-    // Strip newlines for main slide if requested (prop always keeps them)
+    // Strip newlines for main slide if requested (prop always keeps them).
+    // Verse numbers (if any) live as { verseNum, super } spans in the body content already.
     const displayBody = spec.stripNewlines
       ? (body || []).filter(s => s.text !== '\n')
       : (body || []);
@@ -1162,7 +1292,7 @@ function buildScriptureCues(spec, rs) {
     // Auto Title Y: estimate from line count if enabled; otherwise use scheme titleY directly
     const computedTitleY = rs.autoTitleY
       ? estimateTitleY(displayBody, bw, rs)
-      : (rs.titleY ?? (rs.bodyY ?? 729.98) + (rs.titleGapShort ?? 0));
+      : (rs.titleY ?? 880);
     const titleEl = makeTitleElement({ reference: spec.reference, titleY: computedTitleY }, rs);
     const bodyEl  = makeBodyElement({ x: bx, y: by + bodyYOff, w: bw, h: bh, rtfData: bodyRtf, charCount: plainBody.length }, rs);
     const gradEl  = makeGradientElement(rs);
@@ -1186,7 +1316,6 @@ function buildScriptureCues(spec, rs) {
       isEnabled: true,
       actions: [
         makeSlideAction(label, slots, bo, notesRtf),
-        macroAction('NO LOGO', MACRO.NO_LOGO),
         propAction(spec.propName ?? spec.reference ?? 'scripture'),
       ],
     };
@@ -1199,11 +1328,11 @@ function buildScriptureCues(spec, rs) {
  * mode='revealing' → N cues (one per bullet)
  */
 function buildPointCues(spec, rs) {
-  const bx = spec.bodyX ?? rs.bodyX ?? 0;
-  const by = rs.bodyY ?? 729.98;
-  const bw = spec.bodyW ?? rs.bodyW ?? rs.canvasW ?? 1920;
-  const bh = rs.bodyH ?? 350.02;
-  const boldYOff = rs.boldFontAdv?.yOffset ?? 0;
+  const bx = spec.bodyX ?? rs.pointX ?? rs.bodyX ?? 0;
+  const by = rs.pointY ?? rs.bodyY ?? 729.98;
+  const bw = spec.bodyW ?? rs.pointW ?? rs.bodyW ?? rs.canvasW ?? 1920;
+  const bh = rs.pointH ?? rs.bodyH ?? 350.02;
+  const boldYOff = rs.pointFontAdv?.yOffset ?? rs.boldFontAdv?.yOffset ?? 0;
 
   if (spec.mode === 'revealing') {
     const followReveal = spec.followReveal || 'single';
@@ -1227,12 +1356,12 @@ function buildPointCues(spec, rs) {
       let notesRtf;
       if (followReveal === 'stacking' && idx > 0) {
         const notesSpans = spec.bullets.slice(0, idx).flatMap(b => [
-          { text: rtf.bulletToText(b), bold: false },
-          { text: '\n', bold: false },
-        ]).concat([{ text: bulletText, bold: true }]);
+          { text: rtf.bulletToText(b), alt: false },
+          { text: '\n', alt: false },
+        ]).concat([{ text: bulletText, alt: true }]);
         notesRtf = rtf.rtfNotes(notesSpans, rs);
       } else {
-        notesRtf = rtf.rtfNotes([{ text: bulletText, bold: true }], rs);
+        notesRtf = rtf.rtfNotes([{ text: bulletText, alt: true }], rs);
       }
 
       return {
@@ -1243,7 +1372,6 @@ function buildPointCues(spec, rs) {
         isEnabled: true,
         actions: [
           makeSlideAction(label, slots, bo, notesRtf),
-          macroAction('NO LOGO', MACRO.NO_LOGO),
           propAction(propName),
         ],
       };
@@ -1263,7 +1391,7 @@ function buildPointCues(spec, rs) {
   ];
   const bo = applyBuildOrders(slots, rs.buildOrders?.point);
 
-  const notesRtf = rtf.rtfNotes([{ text: spec.bodyText || '', bold: true }], rs);
+  const notesRtf = rtf.rtfNotes([{ text: spec.bodyText || '', alt: true }], rs);
   return [{
     uuid: uuid(),
     _type: 'point',
@@ -1272,7 +1400,6 @@ function buildPointCues(spec, rs) {
     isEnabled: true,
     actions: [
       makeSlideAction(spec.label, slots, bo, notesRtf),
-      macroAction('NO LOGO', MACRO.NO_LOGO),
       propAction(spec.propName ?? spec.bodyText ?? 'point'),
     ],
   }];
@@ -1297,7 +1424,6 @@ function buildImageCue(spec, rs) {
     isEnabled: true,
     actions: [
       makeSlideAction(spec.label, slots, undefined, notesRtf),
-      macroAction('NO LOGO', MACRO.NO_LOGO),
       clearPropAction(),
     ],
   };
@@ -1305,26 +1431,24 @@ function buildImageCue(spec, rs) {
 
 /**
  * 6 response card cues (order: Blank → RC → R1 → R2 → R3 → Hold).
- * Confidence monitor content moves to slide notes — no off-screen 'this slide' element.
- * Stage layout actions on Blank and RC come from STAGE_SCREEN config.
- * responses: { decisionText, r1, r2, r3 }
+ * Content cues share the full response-card layout from the Pro7 reference:
+ * title + four response rows + four number marks.
+ * Stage layout actions are injected by the trigger-based step in buildPresentation.
  */
 function buildResponseCardCues(responses = {}, rs = {}) {
   const { decisionText = '', r1 = '', r2 = '', r3 = '' } = responses;
 
-  // Shared notes: full decision text + all responses (feeds confidence monitor)
-  const rcNotesSpans = [
-    { text: decisionText || '' },
-    { text: '\n1 — ' + (r1 || '') },
-    { text: '\n2 — ' + (r2 || '') },
-    { text: '\n3 — ' + (r3 || '') },
-  ];
-  const rcNotesRtf = rtf.rtfNotes(rcNotesSpans, rs) || emptyNotesRtf();
-
-  const ss = STAGE_SCREEN;
+  const DEFAULT_RC_NOTES = '{decision}\n1 — {r1}\n2 — {r2}\n3 — {r3}';
+  const notesText = (responses.notesTemplate || DEFAULT_RC_NOTES)
+    .replace(/\{decision(?:Text)?\}/g, decisionText || '')
+    .replace(/\{r1\}/g, r1 || '')
+    .replace(/\{r2\}/g, r2 || '')
+    .replace(/\{r3\}/g, r3 || '');
+  const rcNotesRtf = notesText.trim()
+    ? (rtf.rtfNotes([{ text: notesText }], rs) || emptyNotesRtf())
+    : emptyNotesRtf();
 
   // ── 1. Response Card Blank ───────────────────────────────────────────────────
-  // Black slide that triggers the RESPONSE CARD stage layout + LOGO macro
   const blankCue = {
     uuid: uuid(),
     completionActionType: 'COMPLETION_ACTION_TYPE_LAST',
@@ -1332,40 +1456,22 @@ function buildResponseCardCues(responses = {}, rs = {}) {
     isEnabled: true,
     actions: [
       makeSlideAction('Response Card Blank', [], null, rcNotesRtf),
-      macroAction('LOGO', MACRO.LOGO),
-      ...(ss.rcLayoutName ? [stageLayoutAction({
-        screenName: ss.screenName,
-        screenUuid: ss.screenUuid,
-        layoutName: ss.rcLayoutName,
-        layoutUuid: ss.rcLayoutUuid,
-      })] : []),
     ],
   };
 
-  // ── 2. Response Card (main — switches stage back to message, shows decision text) ──
+  // ── 2. Response Card (main full card layout) ────────────────────────────────
   const rcMainCue = {
     uuid: uuid(),
     completionActionType: 'COMPLETION_ACTION_TYPE_LAST',
     hotKey: {},
     isEnabled: true,
     actions: [
-      makeSlideAction('Response Card', [
-        makeSlot(makeLiveElement(rs), { info: 2 }),
-        makeSlot(makeResponseBodyElement(decisionText)),
-        makeSlot(makeGradientElement(rs), { info: 1 }),
-      ], null, rcNotesRtf),
-      macroAction('NO LOGO', MACRO.NO_LOGO),
-      ...(ss.messageLayoutName ? [stageLayoutAction({
-        screenName: ss.screenName,
-        screenUuid: ss.screenUuid,
-        layoutName: ss.messageLayoutName,
-        layoutUuid: ss.messageLayoutUuid,
-      })] : []),
+      makeSlideAction('Response Card', makeRCSlide1('Response Card', decisionText, rs), null, rcNotesRtf),
       propAction('Response Card'),
     ],
   };
 
-  // ── 3–5. Response 1, 2, 3 ───────────────────────────────────────────────────
+  // ── 3–5. Response 1, 2, 3 ──────────────────────────────────────────────────
   const responseCues = [r1, r2, r3].map((text, idx) => {
     const n = idx + 1;
     return {
@@ -1374,13 +1480,7 @@ function buildResponseCardCues(responses = {}, rs = {}) {
       hotKey: {},
       isEnabled: true,
       actions: [
-        makeSlideAction(`Response ${n}`, [
-          makeSlot(makeResponseLabelElement(n)),
-          makeSlot(makeLiveElement(rs), { info: 2 }),
-          makeSlot(makeResponseBodyElement(text)),
-          makeSlot(makeGradientElement(rs), { info: 1 }),
-        ], null, rcNotesRtf),
-        macroAction('NO LOGO', MACRO.NO_LOGO),
+        makeSlideAction(`Response ${n}`, makeRCSlide1(`Response ${n}`, text, rs), null, rcNotesRtf),
         propAction('Response Card'),
       ],
     };
@@ -1394,15 +1494,17 @@ function buildResponseCardCues(responses = {}, rs = {}) {
     isEnabled: true,
     actions: [
       makeSlideAction('Response Card Hold', [
-        makeSlot(makeLiveElement(rs), { info: 2 }),
-        makeSlot(makeResponseHoldTitleElement()),
+        makeSlot(makeStartEndElement({ text: 'Response Card Hold' }, rs)),
       ], null, rcNotesRtf),
-      macroAction('Message - Blank', MACRO.BLANK),
-      macroAction('NO LOGO', MACRO.NO_LOGO),
       propAction('Response Card'),
     ],
   };
 
+  blankCue._isRcBlank = true;
+  rcMainCue._isRcContent = true;
+  for (const c of responseCues) c._isRcContent = true;
+  holdCue._isRcHold = true;
+  for (const c of [blankCue, rcMainCue, ...responseCues, holdCue]) c._type = 'rc';
   return [blankCue, rcMainCue, ...responseCues, holdCue];
 }
 
@@ -1437,43 +1539,62 @@ function injectQRElement(cue) {
 // ─── Top-level presentation builder ───────────────────────────────────────
 
 function buildPresentation(spec, propUuidMap = {}) {
-  const { name, slides = [], qrEnabled = false, includeResponseCard = false, responses = {}, style = {}, macros: specMacros = {}, stageScreen: specStageScreen = {} } = spec;
+  const { name, slides = [], qrEnabled = false, includeResponseCard = false, responses = {}, style = {}, stageScreen: specStageScreen = {} } = spec;
   const rs = resolveStyle(style);
 
   // Install prop UUID map so propAction() uses coordinated UUIDs
   PROP_UUID_MAP = propUuidMap;
 
-  // Apply per-spec macro UUID overrides, restore defaults when done
-  MACRO = { ...MACRO_DEFAULTS, ...specMacros };
-
   // Stage screen config for this build
   STAGE_SCREEN = specStageScreen;
+
+  // Scheme stage displays (trigger-based) for this build
+  SCHEME_STAGE_DISPLAYS = spec.stageDisplays || [];
 
   // ── Step 1: Expand slides → raw cues with blank-before injection ──
   const rawCues = [];
 
+  let _slidePos = 0;
   for (const slide of slides) {
+    _slidePos++;
+    const _tagCues = (cues) => { for (const c of cues) c._slidePos = _slidePos; };
     if (slide.type === 'start') {
-      rawCues.push(buildStartCue(slide, rs));
+      const c = buildStartCue(slide, rs); c._slidePos = _slidePos; rawCues.push(c);
       continue;
     }
     if (slide.type === 'end') {
-      rawCues.push(buildEndCue(slide, rs));
+      const ec = buildEndCue(slide, rs); ec._slidePos = _slidePos; rawCues.push(ec);
       continue;
     }
-    if (slide.type === 'blank') {
+    if (slide.type === 'blank' || slide.type === 'custom') {
+      // Custom is an unfinished type — export it as a blank slide so its slot
+      // is preserved rather than silently dropped.
       const bc = buildBlankCue({
-        label:       slide.label || 'Blank',
+        label:       slide.label || (slide.type === 'custom' ? 'Custom' : 'Blank'),
         spans:       slide.spans || [],
         stageLayout: slide.stageLayout || null,
       }, rs);
       bc._slideTransition = slide.transition || null;
+      bc._macroOverride   = slide.macroOverride || null;
+      bc._slidePos        = _slidePos;
       rawCues.push(bc);
       continue;
     }
     if (slide.type === 'image') {
+      if (slide.blankBefore) {
+        const blankCue = buildBlankCue({
+          label: '',
+          spans: slide.blankSpans || [],
+        }, rs);
+        blankCue._isBlankBefore  = true;
+        blankCue._isContentBlank = true;
+        blankCue._slidePos       = _slidePos;
+        rawCues.push(blankCue);
+      }
       const ic = buildImageCue(slide, rs);
       ic._slideTransition = slide.transition || null;
+      ic._macroOverride   = slide.macroOverride || null;
+      ic._slidePos        = _slidePos;
       injectStageLayout(ic, slide.stageLayout);
       rawCues.push(ic);
       continue;
@@ -1487,14 +1608,24 @@ function buildPresentation(spec, propUuidMap = {}) {
           return acc.concat(bd || []);
         }, []);
         const blankSpans = bodySpans.some(s => s.text) ? bodySpans : (slide.blankSpans || []);
-        const blankCue = buildBlankCue({ label: '', spans: blankSpans }, rs);
+        const blankCue = buildBlankCue({
+          label: '', spans: blankSpans,
+          propName:     slide.propName || slide.reference || 'scripture',
+          blankShowProp: !!slide.blankShowProp,
+        }, rs);
         blankCue._isBlankBefore  = true;
         blankCue._isContentBlank = true;
+        blankCue._slidePos       = _slidePos;
         rawCues.push(blankCue);
       }
       const sc = buildScriptureCues(slide, rs);
-      sc.forEach(c => {
+      const scRef = slide.reference || slide.label || '';
+      sc.forEach((c, bi) => {
         c._slideTransition = slide.transition || null;
+        c._macroOverride   = slide.macroOverride || null;
+        c._slidePos        = _slidePos;
+        c._queueRef    = scRef;
+        c._queuePhrase = firstPhrase((slide.bodies || [])[bi] || (slide.bodies || [])[0]);
         injectStageLayout(c, slide.stageLayout);
       });
       rawCues.push(...sc);
@@ -1507,16 +1638,31 @@ function buildPresentation(spec, propUuidMap = {}) {
           ? (slide.bullets || []).filter(Boolean).map(b => rtf.bulletToText(b)).join('\n')
           : (slide.bodyText || '');
         const blankSpans = pointText
-          ? [{ text: pointText, bold: true }]
+          ? [{ text: pointText, alt: true }]
           : (slide.blankSpans || []);
-        const blankCue = buildBlankCue({ label: '', spans: blankSpans }, rs);
+        const blankPropName = slide.mode === 'revealing'
+          ? ((slide.bullets?.length) ? `${slide.propBaseName}_1` : null)
+          : (slide.propName || slide.bodyText || 'point');
+        const blankCue = buildBlankCue({
+          label: '', spans: blankSpans,
+          propName:     blankPropName,
+          blankShowProp: !!slide.blankShowProp,
+        }, rs);
         blankCue._isBlankBefore  = true;
         blankCue._isContentBlank = true;
+        blankCue._slidePos       = _slidePos;
         rawCues.push(blankCue);
       }
       const pc = buildPointCues(slide, rs);
-      pc.forEach(c => {
+      const ptRef = slide.label || slide.title || slide.bodyText || '';
+      pc.forEach((c, bi) => {
         c._slideTransition = slide.transition || null;
+        c._macroOverride   = slide.macroOverride || null;
+        c._slidePos        = _slidePos;
+        c._queueRef    = ptRef;
+        c._queuePhrase = slide.mode === 'revealing'
+          ? firstPhrase(rtf.bulletToText((slide.bullets || [])[bi] || (slide.bullets || [])[0] || ''))
+          : firstPhrase(slide.bodyText || '');
         injectStageLayout(c, slide.stageLayout);
       });
       rawCues.push(...pc);
@@ -1535,12 +1681,11 @@ function buildPresentation(spec, propUuidMap = {}) {
     }
   }
 
-  // ── Step 3: Inject Message-Content macro into cues[1] ──
-  if (rawCues.length > 1) {
-    rawCues[1].actions.push(macroAction('Message - Content', MACRO.CONTENT));
-  }
+  // ── Step 2b: Re-number _slidePos by output cue order so SLIDE #N matches the
+  //             Nth visible cue (blank-before cues get their own number). ──
+  rawCues.forEach((c, i) => { c._slidePos = i + 1; });
 
-  // ── Step 4: Inject QR elements into content + blank-before cues ──
+  // ── Step 3: Inject QR elements into content + blank-before cues ──
   if (qrEnabled) {
     for (const cue of rawCues) {
       if (cue._type === 'scripture' || cue._type === 'point' || cue._isContentBlank) {
@@ -1549,19 +1694,90 @@ function buildPresentation(spec, propUuidMap = {}) {
     }
   }
 
-  // ── Step 5: Compute queue and inject queue element into every cue ──
+  // ── Step 4: Inject macros from Schemes into matching cues ──
+  const customMacros = (spec.customMacros || []).filter(m => m.name && m.uuid && (m.triggers || []).length);
+  if (customMacros.length) {
+    for (const cue of rawCues) {
+      const t = cue._type;
+      const isBB = cue._isBlankBefore;
+      for (const m of customMacros) {
+        const tr = m.triggers;
+        const hits =
+          (tr.includes('start')       && t === 'start') ||
+          (tr.includes('end')         && t === 'end') ||
+          (tr.includes('scripture')   && t === 'scripture') ||
+          (tr.includes('point')       && t === 'point') ||
+          (tr.includes('blank')       && t === 'blank' && !isBB) ||
+          (tr.includes('blankBefore') && isBB) ||
+          (tr.includes('image')       && t === 'image') ||
+          (tr.includes('rcBlank')     && t === 'rc' && cue._isRcBlank) ||
+          (tr.includes('rcContent')   && t === 'rc' && cue._isRcContent) ||
+          (tr.includes('rcHold')      && t === 'rc' && cue._isRcHold) ||
+          (cue._slidePos && tr.includes(`pos:${cue._slidePos}`));
+        if (hits) cue.actions.push(macroAction(m.name, m.uuid));
+      }
+    }
+  }
+
+  // ── Step 4b: Per-slide macro override ──
+  for (const cue of rawCues) {
+    if (cue._macroOverride?.uuid) {
+      cue.actions.push(macroAction(cue._macroOverride.name || '', cue._macroOverride.uuid));
+    }
+  }
+
+  // ── Step 4c: Inject scheme stage display layout actions (trigger-based) ──
+  const activeStageDisplays = SCHEME_STAGE_DISPLAYS.filter(d => d.name && d.uuid && (d.triggers || []).length);
+  if (activeStageDisplays.length) {
+    for (const cue of rawCues) {
+      const t = cue._type;
+      const isBB = cue._isBlankBefore;
+      for (const d of activeStageDisplays) {
+        const tr = d.triggers;
+        const hits =
+          (tr.includes('start')       && t === 'start') ||
+          (tr.includes('end')         && t === 'end') ||
+          (tr.includes('scripture')   && t === 'scripture') ||
+          (tr.includes('point')       && t === 'point') ||
+          (tr.includes('blank')       && t === 'blank' && !isBB) ||
+          (tr.includes('blankBefore') && isBB) ||
+          (tr.includes('image')       && t === 'image') ||
+          (tr.includes('rcBlank')     && t === 'rc' && cue._isRcBlank) ||
+          (tr.includes('rcContent')   && t === 'rc' && cue._isRcContent) ||
+          (tr.includes('rcHold')      && t === 'rc' && cue._isRcHold) ||
+          (cue._slidePos && tr.includes(`pos:${cue._slidePos}`));
+        if (hits) {
+          cue.actions.push(stageLayoutAction({
+            screenName: STAGE_SCREEN.screenName,
+            screenUuid: STAGE_SCREEN.screenUuid,
+            layoutName: d.name,
+            layoutUuid: d.uuid,
+          }));
+        }
+      }
+    }
+  }
+
+  // ── Step 5: Inject queue element into every cue ──
   const getCueLabel = cue => {
     const sa = cue.actions?.find(a => a.type === 'ACTION_TYPE_PRESENTATION_SLIDE');
     return sa?.label?.text || '';
   };
 
+  const queueMode = spec.queueMode || 'ref'; // 'list' | 'ref' | 'refPhrase'
   for (let i = 0; i < rawCues.length; i++) {
     const futureLabels = rawCues
       .slice(i + 1)
       .filter(c => !c._isBlankBefore)
       .map(c => {
         const lbl = getCueLabel(c);
-        return lbl.length > 20 ? lbl.slice(0, 19) + '\u2026' : lbl;
+        if (queueMode === 'list') return lbl;            // full label, as-is
+        const ref = c._queueRef || lbl;
+        if (queueMode === 'refPhrase' && c._queuePhrase) {
+          const s = `${ref} \u2014 ${c._queuePhrase}`;
+          return s.length > 42 ? s.slice(0, 41) + '\u2026' : s;
+        }
+        return ref.length > 20 ? ref.slice(0, 19) + '\u2026' : ref; // 'ref'
       })
       .filter(Boolean);
 
@@ -1585,6 +1801,9 @@ function buildPresentation(spec, propUuidMap = {}) {
     delete cue._type;
     delete cue._isBlankBefore;
     delete cue._isContentBlank;
+    delete cue._isRcBlank;
+    delete cue._isRcContent;
+    delete cue._isRcHold;
     delete cue._slideTransition;
   }
 
@@ -1610,9 +1829,9 @@ function buildPresentation(spec, propUuidMap = {}) {
     transition: makeTransition(style.transitionType || 'fade', style.transitionDuration),
     cues: rawCues,
   };
-  MACRO = MACRO_DEFAULTS;       // restore for next call
-  PROP_UUID_MAP = {};           // restore for next call
-  STAGE_SCREEN  = {};           // restore for next call
+  PROP_UUID_MAP         = {};   // restore for next call
+  STAGE_SCREEN          = {};   // restore for next call
+  SCHEME_STAGE_DISPLAYS = [];   // restore for next call
 }
 
-module.exports = { buildPresentation, MACRO_DEFAULTS };
+module.exports = { buildPresentation };

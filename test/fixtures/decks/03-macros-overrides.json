@@ -1,0 +1,26 @@
+{
+  "name": "03 Macros and Overrides",
+  "stageScreen": { "screenName": "Stage", "screenUuid": "SCREEN-UUID", "messageLayoutName": "Message", "messageLayoutUuid": "MSG-LAYOUT-UUID", "rcLayoutName": "Response Card", "rcLayoutUuid": "RC-LAYOUT-UUID" },
+  "customMacros": [
+    { "id": "m1", "name": "message content", "uuid": "MAC-CONTENT", "color": "#bf5af2", "triggers": ["scripture"] },
+    { "id": "m2", "name": "no logo", "uuid": "MAC-NOLOGO", "color": "#bf5af2", "triggers": ["scripture", "point", "image"] },
+    { "id": "m3", "name": "gradient", "uuid": "MAC-GRADIENT", "color": "#30d0c0", "triggers": ["scripture", "point", "rc"] },
+    { "id": "m4", "name": "logo", "uuid": "MAC-LOGO", "color": "#ff6482", "triggers": ["blank", "blankBefore"] }
+  ],
+  "slides": [
+    { "type": "start", "label": "START", "text": "START" },
+    { "type": "scripture", "label": "Romans 12:2", "reference": "Romans 12:2",
+      "bodies": [[{ "text": "Be transformed by the renewing of your mind.", "bold": false }]],
+      "propName": "Romans 12:2",
+      "stageLayout": { "layoutName": "Message", "layoutUuid": "MSG-LAYOUT-UUID" },
+      "transition": { "type": "dissolve", "duration": 1.2 },
+      "macroOverride": { "uuid": "OVERRIDE-MAC", "name": "special override", "color": "#00ff00" } },
+    { "type": "point", "mode": "single", "label": "Renew Your Mind", "bodyText": "Renew Your Mind", "propName": "Renew Your Mind",
+      "stageLayout": { "layoutName": "Message", "layoutUuid": "MSG-LAYOUT-UUID" },
+      "transition": { "type": "cut", "duration": 0 } },
+    { "type": "image", "label": "Background Image",
+      "macroOverride": { "uuid": "IMG-MAC", "name": "image macro", "color": "#123456" } },
+    { "type": "blank", "label": "Hold", "spans": [{ "text": "transition", "bold": false }] },
+    { "type": "end", "label": "End of Notes", "text": "End of Notes" }
+  ]
+}

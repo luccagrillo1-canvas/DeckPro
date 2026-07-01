@@ -23,10 +23,59 @@ const { buildAllPropCues, encodePropDocument } = require('./buildProp');
 // Before each export we patch Pro7's Configuration/Props in place. Keep a
 // rolling set of timestamped backups so a bad export can always be undone.
 
-const PROPS_CONFIG_PATH = path.join(
-  os.homedir(),
-  'Library/Application Support/RenewedVision/ProPresenter/UserWorkspaces/ProPresenter/Configuration/Props'
-);
+function normalizePro7Root(root) {
+  if (!root) return '';
+  let p = path.resolve(String(root));
+  const base = path.basename(p);
+  if (base === 'Props' && path.basename(path.dirname(p)) === 'Configuration') p = path.dirname(path.dirname(p));
+  else if (base === 'Configuration' || base === 'Libraries') p = path.dirname(p);
+  return p;
+}
+
+function getLibraryInsideRoot(root) {
+  const pro7Root = normalizePro7Root(root);
+  if (!pro7Root) return '';
+  const librariesDir = path.join(pro7Root, 'Libraries');
+  if (!fs.existsSync(librariesDir)) return '';
+
+  // Prefer Pro7's own active-library pointer when it exists.
+  try {
+    const libDataPath = path.join(librariesDir, 'LibraryData');
+    if (fs.existsSync(libDataPath)) {
+      const str = fs.readFileSync(libDataPath).toString('latin1');
+      const match = str.match(/file:\/\/\/([^\x00-\x1f\x7f]+?Libraries\/[^\x00-\x1f\x7f]+?)\//);
+      if (match) {
+        const decoded = decodeURIComponent('/' + match[1]);
+        if (fs.existsSync(decoded)) return decoded;
+      }
+    }
+  } catch (_) {}
+
+  // Fallback: use the most recently touched library subfolder.
+  try {
+    const dirs = fs.readdirSync(librariesDir)
+      .filter(d => fs.statSync(path.join(librariesDir, d)).isDirectory())
+      .sort((a, b) => fs.statSync(path.join(librariesDir, b)).mtimeMs - fs.statSync(path.join(librariesDir, a)).mtimeMs);
+    if (dirs.length) return path.join(librariesDir, dirs[0]);
+  } catch (_) {}
+
+  return librariesDir;
+}
+
+function getPro7WorkspaceBase(overrideRoot) {
+  const root = normalizePro7Root(overrideRoot);
+  if (root) return root;
+  const existing = allPro7WorkspaceBases();
+  const withProps = existing.find(wsBase => fs.existsSync(path.join(wsBase, 'Configuration/Props')));
+  if (withProps) return withProps;
+  const withLibraries = existing.find(wsBase => fs.existsSync(path.join(wsBase, 'Libraries')));
+  if (withLibraries) return withLibraries;
+  const p = path.join(os.homedir(), 'Library/Application Support/RenewedVision/ProPresenter/UserWorkspaces/ProPresenter');
+  fs.mkdirSync(p, { recursive: true });
+  return p;
+}
+
+function getPropsConfigPath(overrideRoot) { return path.join(getPro7WorkspaceBase(overrideRoot), 'Configuration/Props'); }
 
 function propsBackupDir() {
   const base = process.env.DECKPRO_DATA_DIR || path.join(os.homedir(), '.deckpro');
@@ -79,8 +128,8 @@ function restorePropsBackup(backupFile) {
   const src = path.isAbsolute(backupFile) ? backupFile : path.join(dir, path.basename(backupFile));
   if (!src.startsWith(dir) && !path.isAbsolute(backupFile)) throw new Error('Invalid backup path');
   if (!fs.existsSync(src)) throw new Error('Backup not found');
-  if (fs.existsSync(PROPS_CONFIG_PATH)) backupPropsConfig(fs.readFileSync(PROPS_CONFIG_PATH));
-  fs.copyFileSync(src, PROPS_CONFIG_PATH);
+  if (fs.existsSync(getPropsConfigPath())) backupPropsConfig(fs.readFileSync(getPropsConfigPath()));
+  fs.copyFileSync(src, getPropsConfigPath());
   return true;
 }
 
@@ -89,26 +138,34 @@ function restorePropsBackup(backupFile) {
  * Pro7 scans this folder for PropDocument files — _Props.pro must go here.
  * Falls back to ~/Documents/ProPresenter if the library can't be determined.
  */
-function getPro7LibraryPath() {
-  const librariesDir = path.join(
-    os.homedir(),
-    'Library/Application Support/RenewedVision/ProPresenter/UserWorkspaces/ProPresenter/Libraries'
-  );
-  try {
-    // Read LibraryData and extract the URL of the active library
-    const libDataBuf = fs.readFileSync(path.join(librariesDir, 'LibraryData'));
-    const str = libDataBuf.toString('latin1');
-    const match = str.match(/file:\/\/\/([^\x00-\x1f\x7f]+?Libraries\/[^\x00-\x1f\x7f]+?)\//);
-    if (match) {
-      const decoded = decodeURIComponent('/' + match[1]);
-      if (fs.existsSync(decoded)) return decoded;
-    }
-    // Fallback: pick the most recently modified subdirectory
-    const dirs = fs.readdirSync(librariesDir)
-      .filter(d => fs.statSync(path.join(librariesDir, d)).isDirectory())
-      .sort((a, b) => fs.statSync(path.join(librariesDir, b)).mtimeMs - fs.statSync(path.join(librariesDir, a)).mtimeMs);
-    if (dirs.length) return path.join(librariesDir, dirs[0]);
-  } catch (_) {}
+// Return all ProPresenter workspace base paths that exist on this machine,
+// covering both UserWorkspaces and Workspaces (with UUID-suffixed subfolder names).
+function allPro7WorkspaceBases() {
+  const base = path.join(os.homedir(), 'Library/Application Support/RenewedVision/ProPresenter');
+  const results = [];
+  const documentsRoot = path.join(os.homedir(), 'Documents', 'ProPresenter');
+  if (fs.existsSync(documentsRoot)) results.push(documentsRoot);
+  for (const root of ['UserWorkspaces', 'Workspaces']) {
+    const rootDir = path.join(base, root);
+    if (!fs.existsSync(rootDir)) continue;
+    try {
+      const dirs = fs.readdirSync(rootDir)
+        .filter(d => d.startsWith('ProPresenter') && fs.statSync(path.join(rootDir, d)).isDirectory())
+        .sort((a, b) => fs.statSync(path.join(rootDir, b)).mtimeMs - fs.statSync(path.join(rootDir, a)).mtimeMs);
+      for (const d of dirs) results.push(path.join(rootDir, d));
+    } catch (_) {}
+  }
+  return results;
+}
+
+function getPro7LibraryPath(override, overrideRoot) {
+  if (override) return override;
+  const rootLibrary = getLibraryInsideRoot(overrideRoot);
+  if (rootLibrary) return rootLibrary;
+  for (const wsBase of allPro7WorkspaceBases()) {
+    const lib = getLibraryInsideRoot(wsBase);
+    if (lib) return lib;
+  }
   return path.join(os.homedir(), 'Documents/ProPresenter');
 }
 
@@ -420,13 +477,13 @@ const DECKPRO_SLOT_UUID_SET = new Set(DECKPRO_PROP_SLOTS.map(s => s.uuid));
  * - DeckPro UUIDs are removed from all other collections (keeps the folder clean).
  * - All other data — unknown fields, collections, Pro7 internals — is preserved byte-for-byte.
  */
-async function updateConfigProps(newCues) {
-  const confPath = PROPS_CONFIG_PATH;
+async function updateConfigProps(newCues, pro7RootFolder = '') {
+  const confPath = getPropsConfigPath(pro7RootFolder);
   let backupPath = null;
   try {
     if (!fs.existsSync(confPath)) {
       console.log('updateConfigProps: Config/Props not found, skipping');
-      return { backupPath: null };
+      return { backupPath: null, skipped: true, reason: `Configuration/Props not found at ${confPath}` };
     }
 
     const raw = fs.readFileSync(confPath);
@@ -547,7 +604,7 @@ async function updateConfigProps(newCues) {
  * Each content prop gets the next slot (prop_1, prop_2, …).
  * Returns { propSpecs, propUuidMap } where propUuidMap maps propName → permanent UUID.
  */
-function collectPropSpecs(slides) {
+function collectPropSpecs(slides, responses = {}, includeResponseCard = false) {
   const propSpecs  = [];
   const propUuidMap = {};  // propName → permanent UUID (for builder.js PROP actions)
   let slotIdx = 0;
@@ -610,6 +667,19 @@ function collectPropSpecs(slides) {
       }
     }
   }
+
+  if (includeResponseCard) {
+    const slot = nextSlot();
+    propUuidMap['Response Card'] = slot.uuid;
+    propSpecs.push({
+      type: 'response-card',
+      propName: 'Response Card',
+      slotName: slot.slot,
+      slotUuid: slot.uuid,
+      responses: responses || {},
+      propTransition: null,
+    });
+  }
   return { propSpecs, propUuidMap };
 }
 
@@ -624,7 +694,7 @@ async function encode(spec, outputPath, legacyPropsDir) {
   const safeName = (spec.name || 'Untitled').replace(/[^a-zA-Z0-9_\-. ]/g, '_');
 
   // ── 1. Assign permanent prop slots and build prop cues ───────────────────
-  const { propSpecs, propUuidMap } = collectPropSpecs(spec.slides || []);
+  const { propSpecs, propUuidMap } = collectPropSpecs(spec.slides || [], spec.responses || {}, !!spec.includeResponseCard);
 
   // Always fill all 50 slots — unused ones get empty placeholders so the
   // DeckPro collection in Pro7 is always consistent from the first export.
@@ -672,7 +742,7 @@ async function encode(spec, outputPath, legacyPropsDir) {
 
   // Deliver mode — write presentation to library, inject prop cues into Configuration/Props
   if (spec.deliverMode) {
-    const libraryDir = getPro7LibraryPath();
+    const libraryDir = getPro7LibraryPath(spec.pro7LibraryFolder || '', spec.pro7RootFolder || '');
     const presPath   = path.join(libraryDir, `${safeName}.pro`);
     fs.mkdirSync(libraryDir, { recursive: true });
 
@@ -697,13 +767,19 @@ async function encode(spec, outputPath, legacyPropsDir) {
 
     const writtenProps = [];
     let propsBackup = null;
+    let propsInstalled = true;
+    let propsError = null;
     if (propBuf && propDocObj) {
       // Props go directly into Configuration/Props — no _Props.pro needed in the library
       // Update visual content of permanent prop slots in Configuration/Props
-      const r = await updateConfigProps(propDocObj.cues || []);
+      const r = await updateConfigProps(propDocObj.cues || [], spec.pro7RootFolder || '');
       propsBackup = r && r.backupPath ? path.basename(r.backupPath) : null;
+      if (r && r.skipped) {
+        propsInstalled = false;
+        propsError = r.reason || 'Configuration/Props not found';
+      }
     }
-    return { presentationBytes: presentationBuf.length, props: writtenProps, presentationPath: presPath, delivered: true, propsBackup };
+    return { presentationBytes: presentationBuf.length, props: writtenProps, presentationPath: presPath, delivered: true, propsBackup, propsInstalled, propsError };
   }
 
   // Local file mode — write to disk
@@ -728,4 +804,4 @@ async function encode(spec, outputPath, legacyPropsDir) {
   return { presentationBytes: presentationBuf.length, props: writtenProps, presentationPath: outPath };
 }
 
-module.exports = { encode, encodeToBuffer, listPropsBackups, restorePropsBackup, PROPS_CONFIG_PATH };
+module.exports = { encode, encodeToBuffer, listPropsBackups, restorePropsBackup, getPropsConfigPath };

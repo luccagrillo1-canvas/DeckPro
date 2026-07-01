@@ -1,0 +1,19 @@
+{
+  "name": "02 Scripture Heavy",
+  "slides": [
+    { "type": "start", "label": "START", "text": "START" },
+    { "type": "scripture", "label": "Ephesians 5:18", "reference": "Ephesians 5:18",
+      "bodies": [[{ "text": "18", "verseNum": true, "super": true, "bold": false }, { "text": " ", "bold": false }, { "text": "And do not get drunk with wine, but be filled with the Spirit.", "bold": false }]],
+      "propName": "Ephesians 5:18", "blankBefore": true, "blankSpans": [] },
+    { "type": "scripture", "label": "Ephesians 5:19-21", "reference": "Ephesians 5:19-21",
+      "bodies": [
+        [{ "text": "19", "verseNum": true, "super": true, "bold": false }, { "text": " ", "bold": false }, { "text": "speaking to one another with psalms, hymns, and songs from the Spirit.", "bold": false }],
+        [{ "text": "20", "verseNum": true, "super": true, "bold": false }, { "text": " ", "bold": false }, { "text": "always giving thanks to God the Father for everything.", "bold": false }]
+      ],
+      "propName": "Ephesians 5:19-21" },
+    { "type": "scripture", "label": "2 Corinthians 3:18", "reference": "2 Corinthians 3:18",
+      "bodies": [[{ "text": "And we all, who with unveiled faces contemplate the Lord", "bold": false }, { "text": "’s glory, are being ", "bold": false }, { "text": "transformed", "bold": true }, { "text": " into his image.", "bold": false }]],
+      "propName": "2 Corinthians 3:18", "stripNewlines": true },
+    { "type": "end", "label": "End of Notes", "text": "End of Notes" }
+  ]
+}

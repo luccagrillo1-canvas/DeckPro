@@ -54,13 +54,17 @@
     <div class="header-more-wrap" id="header-more-wrap">
       <button class="btn-more" id="btn-more" title="More">···</button>
       <div class="header-more-menu" id="header-more-menu">
+        <button class="more-menu-item" id="mm-settings">
+          <svg width="13" height="13" viewBox="0 0 20 20" fill="none"><path fill-rule="evenodd" clip-rule="evenodd" d="M11.49 2.04a1.75 1.75 0 0 0-2.98 0L7.44 3.63a.25.25 0 0 1-.22.13H5.5A1.75 1.75 0 0 0 3.75 5.5v1.72c0 .09-.05.17-.13.22L2.04 8.51a1.75 1.75 0 0 0 0 2.98l1.58 1.07c.08.05.13.13.13.22v1.72c0 .97.78 1.75 1.75 1.75h1.72c.09 0 .17.05.22.13l1.07 1.58a1.75 1.75 0 0 0 2.98 0l1.07-1.58a.25.25 0 0 1 .22-.13h1.72c.97 0 1.75-.78 1.75-1.75v-1.72c0-.09.05-.17.13-.22l1.58-1.07a1.75 1.75 0 0 0 0-2.98l-1.58-1.07a.25.25 0 0 1-.13-.22V5.5c0-.97-.78-1.75-1.75-1.75h-1.72a.25.25 0 0 1-.22-.13L11.49 2.04ZM10 7.25a2.75 2.75 0 1 0 0 5.5 2.75 2.75 0 0 0 0-5.5Z" fill="currentColor"/></svg>
+          Preferences
+        </button>
+        <button class="more-menu-item" id="mm-setup">
+          <svg width="13" height="13" viewBox="0 0 20 20" fill="none"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3h7A2.5 2.5 0 0 1 16 5.5v9A2.5 2.5 0 0 1 13.5 17h-7A2.5 2.5 0 0 1 4 14.5v-9Z" stroke="currentColor" stroke-width="1.5"/><path d="M7 7h6M7 10h6M7 13h3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          Machine Setup
+        </button>
         <button class="more-menu-item" id="mm-schemes">
           <svg width="13" height="13" viewBox="0 0 20 20" fill="none"><circle cx="6" cy="8" r="2" fill="currentColor"/><circle cx="14" cy="8" r="2" fill="currentColor"/><circle cx="10" cy="14" r="2" fill="currentColor"/></svg>
           Schemes
-        </button>
-        <button class="more-menu-item" id="mm-settings">
-          <svg width="13" height="13" viewBox="0 0 20 20" fill="none"><path fill-rule="evenodd" clip-rule="evenodd" d="M11.49 2.04a1.75 1.75 0 0 0-2.98 0L7.44 3.63a.25.25 0 0 1-.22.13H5.5A1.75 1.75 0 0 0 3.75 5.5v1.72c0 .09-.05.17-.13.22L2.04 8.51a1.75 1.75 0 0 0 0 2.98l1.58 1.07c.08.05.13.13.13.22v1.72c0 .97.78 1.75 1.75 1.75h1.72c.09 0 .17.05.22.13l1.07 1.58a1.75 1.75 0 0 0 2.98 0l1.07-1.58a.25.25 0 0 1 .22-.13h1.72c.97 0 1.75-.78 1.75-1.75v-1.72c0-.09.05-.17.13-.22l1.58-1.07a1.75 1.75 0 0 0 0-2.98l-1.58-1.07a.25.25 0 0 1-.13-.22V5.5c0-.97-.78-1.75-1.75-1.75h-1.72a.25.25 0 0 1-.22-.13L11.49 2.04ZM10 7.25a2.75 2.75 0 1 0 0 5.5 2.75 2.75 0 0 0 0-5.5Z" fill="currentColor"/></svg>
-          Settings
         </button>
         <button class="more-menu-item" id="mm-gen-history">
           <svg width="13" height="13" viewBox="0 0 20 20" fill="none"><path d="M10 3v9m0 0l-3-3m3 3l3-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 14v1.5A1.5 1.5 0 0 0 5.5 17h9a1.5 1.5 0 0 0 1.5-1.5V14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
@@ -71,9 +75,17 @@
           <svg width="13" height="13" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="8" stroke="currentColor" stroke-width="1.5"/><path d="M10 14v-1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M10 11c0-2 3-2 3-4a3 3 0 0 0-6 0" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
           Help
         </button>
+        <button class="more-menu-item" id="mm-diagnostic">
+          <svg width="13" height="13" viewBox="0 0 20 20" fill="none"><path d="M10 2v4M10 3a7 7 0 1 0 0 14 7 7 0 0 0 0-14Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M7 10h6M10 7v6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          Export Diagnostic Bundle
+        </button>
         <button class="more-menu-item" id="mm-changelog">
           <svg width="13" height="13" viewBox="0 0 20 20" fill="none"><path d="M10 2a8 8 0 1 0 0 16A8 8 0 0 0 10 2Z" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M10 6v4l3 2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
           What's New <span class="more-version" id="more-version"></span>
+        </button>
+        <button class="more-menu-item" id="mm-check-updates">
+          <svg width="13" height="13" viewBox="0 0 20 20" fill="none"><path d="M17 10a7 7 0 1 1-1.6-4.4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M17 4v3.5h-3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Check for Updates…
         </button>
         <div class="more-menu-divider"></div>
         <button class="more-menu-item" id="mm-theme">
@@ -88,6 +100,7 @@
   <div class="workspace">
 
     <aside class="sidebar">
+      <div class="sidebar-resize-handle" id="sidebar-resize-handle"></div>
       <div class="sidebar-actions-header">
         <span class="queue-header-label">Add Item</span>
       </div>
@@ -142,15 +155,12 @@
       <div class="notes-resize-handle" id="notes-resize-handle"></div>
       <div class="notes-panel-hdr">
         <div class="notes-tabs">
-          <button class="notes-tab active" id="tab-outline" data-tab="outline">Outline</button>
-          <button class="notes-tab" id="tab-speaker" data-tab="speaker">Speaker Notes</button>
+          <button class="notes-tab active" id="tab-speaker" data-tab="speaker">Speaker Notes</button>
+          <button class="notes-tab" id="tab-outline" data-tab="outline">Outline</button>
         </div>
         <button class="notes-panel-close" id="btn-notes-close" title="Hide panel">×</button>
       </div>
-      <div class="notes-tab-body" id="notes-tab-outline">
-        <div class="notes-panel-body" id="notes-panel-body"></div>
-      </div>
-      <div class="notes-tab-body hidden" id="notes-tab-speaker">
+      <div class="notes-tab-body" id="notes-tab-speaker">
         <div class="pdf-drop-zone" id="pdf-drop-zone">
           <div class="pdf-drop-icon">
             <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -181,6 +191,42 @@
             <iframe class="pdf-frame" id="pdf-frame" src=""></iframe>
           </div>
         </div>
+        <div class="notes-doc-view" id="notes-doc-view" style="display:none">
+          <div class="notes-doc-hdr">
+            <span class="notes-doc-name" id="notes-doc-name">Google Doc</span>
+            <div class="notes-doc-controls">
+              <div class="notes-mode-toggle" id="notes-mode-toggle">
+                <button class="notes-mode-btn active" data-mode="manual" title="You pick what to pull">Manual</button>
+                <button class="notes-mode-btn" data-mode="auto" title="Scan and suggest slides">Intelligent</button>
+              </div>
+              <button class="btn-pdf-zoom" id="btn-notes-stylemap" title="Style Map — map headings & highlight colors to slide types">⚙</button>
+              <button class="btn-pdf-zoom" id="btn-notes-zoom-out" title="Smaller text">−</button>
+              <button class="btn-pdf-zoom" id="btn-notes-zoom-in" title="Larger text">+</button>
+              <button class="btn-pdf-clear" id="btn-notes-doc-clear">× Remove</button>
+            </div>
+          </div>
+          <div class="notes-stylemap" id="notes-stylemap" style="display:none"></div>
+          <div class="notes-doc-scroll" id="notes-doc-scroll">
+            <div class="notes-doc-body" id="notes-doc-body"></div>
+            <div class="notes-sel-menu" id="notes-sel-menu" style="display:none">
+              <span class="nsm-label">Add as</span>
+              <button class="nsm-opt" data-role="scripture">Scripture</button>
+              <button class="nsm-opt" data-role="point">Point</button>
+              <button class="nsm-opt" data-role="confidence">Confidence</button>
+            </div>
+          </div>
+          <div class="notes-tray" id="notes-tray">
+            <button class="notes-tray-hdr" id="notes-tray-hdr" type="button">
+              <span class="notes-tray-caret" id="notes-tray-caret">▾</span>
+              <span class="notes-tray-title">Suggested Slides</span>
+              <span class="notes-tray-count" id="notes-tray-count"></span>
+            </button>
+            <div class="notes-tray-body" id="notes-tray-body"></div>
+          </div>
+        </div>
+      </div>
+      <div class="notes-tab-body hidden" id="notes-tab-outline">
+        <div class="notes-panel-body" id="notes-panel-body"></div>
       </div>
     </aside>
 
@@ -213,7 +259,8 @@
           <input class="new-deck-input" id="nd-series" type="text" placeholder="Series" list="series-datalist" autocomplete="off" spellcheck="true">
           <datalist id="series-datalist"></datalist>
           <input class="new-deck-input" id="nd-title" type="text" placeholder="Title" spellcheck="true">
-          <input class="new-deck-input" id="nd-speaker" type="text" placeholder="Speaker" spellcheck="true">
+          <input class="new-deck-input" id="nd-speaker" type="text" placeholder="Speaker" list="speaker-datalist" autocomplete="off" spellcheck="true">
+          <datalist id="speaker-datalist"></datalist>
           <input class="new-deck-input new-deck-date" id="nd-date" type="date">
         </div>
         <div class="new-deck-scheme-row">

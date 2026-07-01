@@ -188,7 +188,6 @@ async function extractScheme(filePath) {
   if (body) {
     set('bodyY', body.y); set('bodyH', body.h, 'Body position');
     set('bodyFont', body.font, 'Body font');
-    set('boldFont', body.boldFont, 'Bold font');
     set('bodySize', body.size, 'Body size');
     set('bodyFill', body.fill, 'Body fill colour');
   }

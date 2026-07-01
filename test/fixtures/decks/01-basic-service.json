@@ -1,0 +1,11 @@
+{
+  "name": "01 Basic Service",
+  "slides": [
+    { "type": "start", "label": "START", "text": "START" },
+    { "type": "scripture", "label": "John 13:35", "reference": "John 13:35",
+      "bodies": [[{ "text": "By this everyone will know that you are my disciples, if you ", "bold": false }, { "text": "love one another", "bold": true }, { "text": ".", "bold": false }]],
+      "propName": "John 13:35" },
+    { "type": "point", "mode": "single", "label": "Love One Another", "bodyText": "Love One Another", "propName": "Love One Another" },
+    { "type": "end", "label": "End of Notes", "text": "End of Notes" }
+  ]
+}
