@@ -15,7 +15,7 @@
               "bold": true
             },
             {
-              "text": "START",
+              "text": "-",
               "super": false,
               "bold": false
             },
@@ -113,7 +113,7 @@
               "bold": true
             },
             {
-              "text": "End of Notes",
+              "text": "-",
               "super": false,
               "bold": false
             }

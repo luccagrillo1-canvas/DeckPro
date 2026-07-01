@@ -1195,7 +1195,7 @@ function buildStartCue(spec, rs) {
   const text    = spec.text || spec.label || 'START';
   const label   = spec.label || 'START';
   const bodyEl  = makeStartEndElement({ text }, rs);
-  const titleEl = makeStartEndTitleEl({ text: label }, rs);
+  const titleEl = makeStartEndTitleEl({ text: '-' }, rs);
   const slots   = [makeSlot(bodyEl), makeSlot(titleEl, { info: 2 })];
   const bo      = applyBuildOrders(slots, rs.buildOrders?.startEnd);
   const notesRtf = rtf.rtfNotes([{ text }], rs) || emptyNotesRtf();
@@ -1216,7 +1216,7 @@ function buildEndCue(spec, rs) {
   const text    = spec.text || spec.label || 'End of Notes';
   const label   = spec.label || 'End of Notes';
   const bodyEl  = makeStartEndElement({ text }, rs);
-  const titleEl = makeStartEndTitleEl({ text: label }, rs);
+  const titleEl = makeStartEndTitleEl({ text: '-' }, rs);
   const slots   = [makeSlot(bodyEl), makeSlot(titleEl, { info: 2 })];
   const bo      = applyBuildOrders(slots, rs.buildOrders?.startEnd);
   const notesRtf = rtf.rtfNotes([{ text }], rs) || emptyNotesRtf();

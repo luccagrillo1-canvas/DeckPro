@@ -2,9 +2,16 @@
 
 // ─── Version & Changelog ──────────────────────────────────────────────────────
 
-const APP_VERSION = '4.6.9';
+const APP_VERSION = '4.6.10';
 
 const CHANGELOG = [
+  {
+    version: '4.6.10',
+    date: '2026-07-01',
+    changes: [
+      'Start of Notes and End of Notes: title element now exports as "-" instead of the slide label.',
+    ],
+  },
   {
     version: '4.6.9',
     date: '2026-07-01',
