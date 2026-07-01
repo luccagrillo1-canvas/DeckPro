@@ -2,9 +2,16 @@
 
 // ─── Version & Changelog ──────────────────────────────────────────────────────
 
-const APP_VERSION = '4.6.5';
+const APP_VERSION = '4.6.6';
 
 const CHANGELOG = [
+  {
+    version: '4.6.6',
+    date: '2026-07-01',
+    changes: [
+      "Fix: exporting with no margins set in schemes no longer produces a 60pt body bottom margin. Root cause: margins stored as null (not set) fell through to a hardcoded 60pt default in builder.js — changed to 0. FONT_ADV_DEFAULTS now initialises margins to 0 so what you see in the UI is what you get in the export.",
+    ],
+  },
   {
     version: '4.6.5',
     date: '2026-07-01',
@@ -1812,7 +1819,7 @@ const FONT_ADV_DEFAULTS = () => ({
   alignment: '', bold: false, italic: false, underline: false, strikethrough: false,
   capitalization: '', color: '',
   verticalAlignment: '',
-  marginLeft: null, marginTop: null, marginRight: null, marginBottom: null,
+  marginLeft: 0, marginTop: 0, marginRight: 0, marginBottom: 0,
   strokeEnabled: false, strokeWidth: 1, strokeColor: '',
   shadowEnabled: false, shadowOpacity: 75, shadowColor: '', shadowAngle: 315, shadowOffset: 5, shadowBlur: 5,
   scaleBehavior: '',

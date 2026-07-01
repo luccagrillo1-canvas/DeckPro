@@ -387,7 +387,7 @@ function makeBodyElement({ name = 'body', x, y, w, h, rtfData, charCount }, rs =
         left:   rs.bodyMarginLeft   ?? 0,
         top:    rs.bodyMarginTop    ?? 0,
         right:  rs.bodyMarginRight  ?? 0,
-        bottom: rs.bodyMarginBottom ?? 60,
+        bottom: rs.bodyMarginBottom ?? 0,
       }),
       isSuperscriptStandardized: true,
       transformDelimiter: '  •  ',
