@@ -2,9 +2,16 @@
 
 // ─── Version & Changelog ──────────────────────────────────────────────────────
 
-const APP_VERSION = '4.6.10';
+const APP_VERSION = '4.6.11';
 
 const CHANGELOG = [
+  {
+    version: '4.6.11',
+    date: '2026-07-01',
+    changes: [
+      'Response Card Hold: title element text changed from "response CARD HOLD" to "Response Card Hold".',
+    ],
+  },
   {
     version: '4.6.10',
     date: '2026-07-01',

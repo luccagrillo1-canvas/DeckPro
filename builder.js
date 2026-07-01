@@ -980,7 +980,7 @@ function makeResponseConfMonitorElement(decisionText, r1, r2, r3) {
 /** Response Card Hold title — Montserrat-BlackItalic, static */
 function makeResponseHoldTitleElement() {
   const id = uuid();
-  const text = 'response CARD HOLD';
+  const text = 'Response Card Hold';
   return {
     uuid: id,
     name: 'title',

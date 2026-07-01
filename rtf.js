@@ -584,7 +584,7 @@ function rtfResponseConfMonitor(decisionText, r1, r2, r3) {
 function rtfResponseHoldTitle() {
   const fonttbl = '{\\fonttbl\\f0\\fnil\\fcharset0 Montserrat-BlackItalic;}';
   const pard    = '\\pard\\pardeftab1680\\sa400\\pardirnatural\\partightenfactor0';
-  const body    = `\\f0\\i\\b\\fs86 \\cf2 \\kerning1\\expnd4\\expndtw20\n\\CocoaLigature0 \\outl0\\strokewidth-20 \\strokec3 response CARD HOLD`;
+  const body    = `\\f0\\i\\b\\fs86 \\cf2 \\kerning1\\expnd4\\expndtw20\n\\CocoaLigature0 \\outl0\\strokewidth-20 \\strokec3 Response Card Hold`;
   return toBase64(rtfDoc({ fonttbl, colortbl: COLORTBL_WHITE_STROKE, pard, body }));
 }
 
