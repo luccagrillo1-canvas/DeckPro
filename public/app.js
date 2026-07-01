@@ -2,15 +2,21 @@
 
 // ─── Version & Changelog ──────────────────────────────────────────────────────
 
-const APP_VERSION = '4.6.3';
+const APP_VERSION = '4.6.4';
 
 const CHANGELOG = [
+  {
+    version: '4.6.4',
+    date: '2026-07-01',
+    changes: [
+      "Sidebar: macro dots are now completely static — no movement on hover. Hovering directly over a dot shows an instant CSS tooltip with the macro name.",
+    ],
+  },
   {
     version: '4.6.3',
     date: '2026-07-01',
     changes: [
       "Sidebar: duplicate and delete actions moved from hover buttons to right-click context menu — macro dots no longer shift position on hover.",
-      "Sidebar: hovering a slide item now shows assigned macro name(s) as inline text (e.g. 'WORSHIP · BLESSING') at the right edge, replacing the old action buttons.",
     ],
   },
   {
@@ -2987,7 +2993,7 @@ function macroBadgeHTML(badge) {
   const titleAttr = badge.title ? ` title="${esc(badge.title)}"` : '';
   let icon = '';
   if (badge.icon === 'dot')
-    icon = `<span class="badge-icon badge-macro-dot"${titleAttr}${badge.color ? ` style="background:${badge.color}"` : ''}></span>`;
+    icon = `<span class="badge-icon badge-macro-dot"${badge.title ? ` data-name="${esc(badge.title)}"` : ''}${badge.color ? ` style="background:${badge.color}"` : ''}></span>`;
   else if (badge.icon === 'ring')
     icon = `<span class="badge-icon badge-macro-ring"${titleAttr}${badge.color ? ` style="color:${badge.color}"` : ''}></span>`;
   else if (badge.icon === 'circle')       icon = '<span class="badge-icon badge-circle"></span>';
@@ -3054,12 +3060,10 @@ function makeSidebarItem({ id, cls, iconCls, iconText, label, fixed, draggable, 
                + (stageBadges || '')
                + (transBadge     ? `<span class="si-badge si-badge-trans">${esc(transBadge)}</span>`           : '')
                + (propTransBadge ? `<span class="si-badge si-badge-prop-trans">${esc(propTransBadge)}</span>` : '');
-  const macroNames = (macroBadges || []).filter(b => b.title).map(b => esc(b.title)).join(' · ');
   item.innerHTML = `
     <div class="slide-icon ${iconCls}">${iconText}</div>
     <div class="slide-label">${esc(label)}</div>
     ${badges ? `<div class="slide-badges">${badges}</div>` : ''}
-    ${macroNames ? `<div class="slide-macro-names">${macroNames}</div>` : ''}
   `;
   item.addEventListener('click', () => onClick());
   if (onDuplicate || onDelete) {
