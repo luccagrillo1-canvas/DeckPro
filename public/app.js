@@ -2,9 +2,16 @@
 
 // ─── Version & Changelog ──────────────────────────────────────────────────────
 
-const APP_VERSION = '4.6.6';
+const APP_VERSION = '4.6.7';
 
 const CHANGELOG = [
+  {
+    version: '4.6.7',
+    date: '2026-07-01',
+    changes: [
+      "Schemes Text tab: changing a font for one role now only affects that role — other roles keep their palette font. Each field stores an independent override in fontFields; a ↺ button appears on overridden rows to revert back to the palette value. Colors work the same way: setting a color on an individual field's Adv is preserved rather than being overwritten by the palette on every render.",
+    ],
+  },
   {
     version: '4.6.6',
     date: '2026-07-01',
@@ -2158,13 +2165,25 @@ function setAdvColor(style, key, color) {
 function applyTypographyToStyle(scheme, global = ensureGlobalTypography()) {
   const style = deepClone(scheme || DEFAULT_STYLE_SCHEME());
   const t = resolveSchemeTypography(style, global);
-  for (const key of REGULAR_FONT_FIELDS)   style[key] = t.font1;
-  for (const key of HIGHLIGHT_FONT_FIELDS)  style[key] = t.font2;
-  for (const key of BOLD_FONT_FIELDS)       style[key] = t.boldFont;
+  // fontFields stores per-field overrides; palette is the fallback
+  const ff = style.fontFields || {};
+  for (const key of REGULAR_FONT_FIELDS)   style[key] = ff[key] || t.font1;
+  for (const key of HIGHLIGHT_FONT_FIELDS)  style[key] = ff[key] || t.font2;
+  for (const key of BOLD_FONT_FIELDS)       style[key] = ff[key] || t.boldFont;
   for (const key of SIZE_FIELDS)            style[key] = t[key];
-  for (const key of REGULAR_ADV_FIELDS)     setAdvColor(style, key, t.colorNeutral);
-  for (const key of HIGHLIGHT_ADV_FIELDS)   setAdvColor(style, key, t.colorAccent);
-  for (const key of BOLD_ADV_FIELDS)        setAdvColor(style, key, t.colorNeutral);
+  // Per-field color override: if scheme has a color set on the adv, keep it; else use palette
+  for (const key of REGULAR_ADV_FIELDS) {
+    if (scheme[key]?.color) style[key] = { ...FONT_ADV_DEFAULTS(), ...(scheme[key] || {}) };
+    else setAdvColor(style, key, t.colorNeutral);
+  }
+  for (const key of HIGHLIGHT_ADV_FIELDS) {
+    if (scheme[key]?.color) style[key] = { ...FONT_ADV_DEFAULTS(), ...(scheme[key] || {}) };
+    else setAdvColor(style, key, t.colorAccent);
+  }
+  for (const key of BOLD_ADV_FIELDS) {
+    if (scheme[key]?.color) style[key] = { ...FONT_ADV_DEFAULTS(), ...(scheme[key] || {}) };
+    else setAdvColor(style, key, t.colorNeutral);
+  }
   return style;
 }
 
@@ -2179,6 +2198,7 @@ function styleForExport(scheme) {
     name: _sname,
     isLocked: _sl,
     typography: _typo,
+    fontFields: _ff,
     ...style
   } = resolved;
   return style;
@@ -5631,7 +5651,8 @@ function renderSchemeGrid(sv, rs, dis) {
       return v !== def;
     };
     const _globalTypo = ensureGlobalTypography();
-    const fontOv   = fontTypoKey ? (rs.typography?.[fontTypoKey] != null && rs.typography?.[fontTypoKey] !== _globalTypo[fontTypoKey]) : false;
+    const fontOv     = fontTypoKey ? (rs.typography?.[fontTypoKey] != null && rs.typography?.[fontTypoKey] !== _globalTypo[fontTypoKey]) : false;
+    const fontFieldOv = !!(fontF && rs.fontFields?.[fontF]);
     const sizeOv   = sizeF ? (rs.typography?.[sizeF] != null && Number(rs.typography?.[sizeF]) !== Number(_globalTypo[sizeF])) : false;
     const alignOv  = advOv('alignment');
     const vAlignOv = advOv('verticalAlignment');
@@ -5669,10 +5690,10 @@ function renderSchemeGrid(sv, rs, dis) {
 
     return `<tr class="sg-row" data-rowid="${id}">
       <th scope="row" class="sg-row-lbl">${esc(lbl)}</th>
-      <td class="sg-td sg-td-fam${sc(fontOv)}" data-typokey="${fontTypoKey || ''}">${noFont ? '<span class="sg-na">—</span>'
+      <td class="sg-td sg-td-fam${sc(fontOv || fontFieldOv)}" data-typokey="${fontTypoKey || ''}">${noFont ? '<span class="sg-na">—</span>'
         : typoKey ? `<select class="sg-typo-fam sg-fam" id="sg-typo-fam-${id}" data-typokey="${typoKey}" ${dis}>${famOptsFn(curFam)}</select>`
-        : `<select class="sf-fam-select sg-fam" id="sf-fam-${fontF}" ${dis}>${famOptsFn(curFam)}</select>`}</td>
-      <td class="sg-td sg-td-sty${sc(fontOv)}" data-typokey="${fontTypoKey || ''}">${noFont ? '<span class="sg-na">—</span>'
+        : `<select class="sf-fam-select sg-fam" id="sf-fam-${fontF}" ${dis}>${famOptsFn(curFam)}</select>${fontFieldOv && !dis ? `<button class="sg-clear-field-font inherit-icon-btn" data-field="${fontF}" title="Clear field override (revert to palette)" ${dis}>↺</button>` : ''}`}</td>
+      <td class="sg-td sg-td-sty${sc(fontOv || fontFieldOv)}" data-typokey="${fontTypoKey || ''}">${noFont ? '<span class="sg-na">—</span>'
         : typoKey ? `<select class="sg-typo-sty sg-sty" id="sg-typo-sty-${id}" data-typokey="${typoKey}" ${dis}>${styOptsFn(curFam, ps)}</select>`
         : `<select class="sf-sty-select sg-sty" id="sf-sty-${fontF}" ${dis}>${styOptsFn(curFam, ps)}</select>`}</td>
       <td class="sg-td sg-td-color${sc(advOv('color'))}" data-scheme="${advK}" data-field="color"><input type="color" class="fav-color sg-color" data-scheme="${advK}" value="${colorVal(adv.color)}" ${dis}></td>
@@ -6109,30 +6130,20 @@ function renderStylePanel(panel) {
       stySel.innerHTML = styles.map(({ style, postscript }) =>
         `<option value="${esc(postscript)}">${esc(style)}</option>`
       ).join('') || `<option value="${esc(fam)}">${esc('Regular')}</option>`;
-      const typoKey = FONT_FIELD_TO_TYPO_KEY[field];
-      if (typoKey) {
-        ensureSchemeTypography(s);
-        s.typography[typoKey] = stySel.value;
-      } else {
-        s[field] = stySel.value;
-      }
+      if (!s.fontFields) s.fontFields = {};
+      s.fontFields[field] = stySel.value;
       applyPreview();
       saveState();
-      if (typoKey) renderStylePanel(panel);
+      renderStylePanel(panel);
     });
 
     stySel.addEventListener('change', e => {
       const s = getScheme(); if (!s) return;
-      const typoKey = FONT_FIELD_TO_TYPO_KEY[field];
-      if (typoKey) {
-        ensureSchemeTypography(s);
-        s.typography[typoKey] = e.target.value;
-      } else {
-        s[field] = e.target.value;
-      }
+      if (!s.fontFields) s.fontFields = {};
+      s.fontFields[field] = e.target.value;
       applyPreview();
       saveState();
-      if (typoKey) renderStylePanel(panel);
+      renderStylePanel(panel);
     });
   });
 
@@ -6415,6 +6426,15 @@ function renderStylePanel(panel) {
         if (picker) picker.value = full;
         saveState();
       }
+    });
+  });
+
+  // Scheme grid: clear per-field font override (revert to palette)
+  panel.querySelectorAll('.sg-clear-field-font').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const s = getScheme(); if (!s) return;
+      if (s.fontFields) delete s.fontFields[btn.dataset.field];
+      saveState(); renderStylePanel(panel);
     });
   });
 
