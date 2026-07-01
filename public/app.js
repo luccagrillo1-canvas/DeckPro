@@ -2,9 +2,16 @@
 
 // ─── Version & Changelog ──────────────────────────────────────────────────────
 
-const APP_VERSION = '4.6.4';
+const APP_VERSION = '4.6.5';
 
 const CHANGELOG = [
+  {
+    version: '4.6.5',
+    date: '2026-07-01',
+    changes: [
+      "Schemes: font family select now correctly highlights the active font after picking one. Root cause: _fontFamilyMap uses display family names (e.g. 'Noto Sans') but parseFontPS derived PostScript-split names (e.g. 'NotoSans') — added fontFamilyOf() reverse-lookup so the selected option always matches.",
+    ],
+  },
   {
     version: '4.6.4',
     date: '2026-07-01',
@@ -5443,7 +5450,7 @@ function renderPaletteTab(rawScheme, t, dis) {
   const fontSlot = (key, name, desc) => {
     const isScheme = !!(rawScheme?.typography?.[key]);
     const val = t[key] || '';
-    const { family: curFam } = parseFontPS(val);
+    const curFam = fontFamilyOf(val);
     const families = _fontFamilyMap ? Object.keys(_fontFamilyMap).sort((a, b) => a.localeCompare(b)) : [];
     const famOpts = families.length
       ? families.map(f => `<option value="${esc(f)}"${f === curFam ? ' selected' : ''}>${esc(f)}</option>`).join('')
@@ -5599,7 +5606,7 @@ function renderSchemeGrid(sv, rs, dis) {
 
   const dataRow = ({ id, lbl, fontF, typoKey, advK, sizeF }) => {
     const ps      = fontF ? (sv[fontF] || '') : (typoKey ? (sv[typoKey] || '') : '');
-    const curFam  = (fontF || typoKey) ? parseFontPS(ps).family : '';
+    const curFam  = (fontF || typoKey) ? fontFamilyOf(ps) : '';
     const adv     = sv[advK] || FONT_ADV_DEFAULTS();
     const noFont  = !fontF && !typoKey;
 
@@ -10645,6 +10652,20 @@ function parseFontPS(psName) {
   const idx = psName.lastIndexOf('-');
   if (idx === -1) return { family: psName, style: 'Regular' };
   return { family: psName.slice(0, idx), style: psName.slice(idx + 1) };
+}
+
+// Resolve the display family name for a PostScript name.
+// _fontFamilyMap keys are display names (e.g. "Noto Sans"), but parseFontPS
+// returns PostScript-split names (e.g. "NotoSans") — they don't always match.
+// This does a reverse lookup so the family select highlights the correct option.
+function fontFamilyOf(ps) {
+  if (!ps) return '';
+  if (_fontFamilyMap) {
+    for (const [fam, styles] of Object.entries(_fontFamilyMap)) {
+      if (styles.some(s => s.postscript === ps)) return fam;
+    }
+  }
+  return parseFontPS(ps).family;
 }
 
 function renderPro7StatusInPanel() {
