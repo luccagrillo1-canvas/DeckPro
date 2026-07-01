@@ -2,9 +2,17 @@
 
 // ─── Version & Changelog ──────────────────────────────────────────────────────
 
-const APP_VERSION = '4.6.2';
+const APP_VERSION = '4.6.3';
 
 const CHANGELOG = [
+  {
+    version: '4.6.3',
+    date: '2026-07-01',
+    changes: [
+      "Sidebar: duplicate and delete actions moved from hover buttons to right-click context menu — macro dots no longer shift position on hover.",
+      "Sidebar: hovering a slide item now shows assigned macro name(s) as inline text (e.g. 'WORSHIP · BLESSING') at the right edge, replacing the old action buttons.",
+    ],
+  },
   {
     version: '4.6.2',
     date: '2026-07-01',
@@ -2998,6 +3006,45 @@ function stageBadgeHTML(slide) {
     </svg>${esc(layout)}</span>`;
 }
 
+// ─── Sidebar item right-click context menu ───────────────────────────────────
+
+let _slideCtxMenu = null;
+
+function getSlideCtxMenu() {
+  if (_slideCtxMenu) return _slideCtxMenu;
+  _slideCtxMenu = document.createElement('div');
+  _slideCtxMenu.id = 'slide-ctx-menu';
+  _slideCtxMenu.innerHTML = `
+    <button id="ctx-dupe-slide">Duplicate</button>
+    <button id="ctx-delete-slide" class="ctx-delete">Delete</button>
+  `;
+  document.body.appendChild(_slideCtxMenu);
+  document.addEventListener('mousedown', e => {
+    if (!_slideCtxMenu.contains(e.target)) hideSlideCtxMenu();
+  });
+  return _slideCtxMenu;
+}
+
+function showSlideCtxMenu(x, y, { onDuplicate, onDelete }) {
+  const menu = getSlideCtxMenu();
+  const dupeBtn = menu.querySelector('#ctx-dupe-slide');
+  const delBtn  = menu.querySelector('#ctx-delete-slide');
+  dupeBtn.style.display = onDuplicate ? '' : 'none';
+  delBtn.style.display  = onDelete    ? '' : 'none';
+  dupeBtn.onclick = onDuplicate ? () => { onDuplicate(); hideSlideCtxMenu(); } : null;
+  delBtn.onclick  = onDelete    ? () => { onDelete();    hideSlideCtxMenu(); } : null;
+  menu.style.left = x + 'px';
+  menu.style.top  = y + 'px';
+  menu.classList.add('open');
+  const rect = menu.getBoundingClientRect();
+  if (rect.right  > window.innerWidth)  menu.style.left = Math.max(0, x - rect.width)  + 'px';
+  if (rect.bottom > window.innerHeight) menu.style.top  = Math.max(0, y - rect.height) + 'px';
+}
+
+function hideSlideCtxMenu() {
+  _slideCtxMenu?.classList.remove('open');
+}
+
 function makeSidebarItem({ id, cls, iconCls, iconText, label, fixed, draggable, onClick, onDelete, onDuplicate, macroBadges, stageBadges, transBadge, propTransBadge }) {
   const item = document.createElement('div');
   item.className = `slide-item${cls ? ' ' + cls : ''}${fixed ? ' fixed' : ''}`;
@@ -3007,24 +3054,20 @@ function makeSidebarItem({ id, cls, iconCls, iconText, label, fixed, draggable, 
                + (stageBadges || '')
                + (transBadge     ? `<span class="si-badge si-badge-trans">${esc(transBadge)}</span>`           : '')
                + (propTransBadge ? `<span class="si-badge si-badge-prop-trans">${esc(propTransBadge)}</span>` : '');
+  const macroNames = (macroBadges || []).filter(b => b.title).map(b => esc(b.title)).join(' · ');
   item.innerHTML = `
     <div class="slide-icon ${iconCls}">${iconText}</div>
     <div class="slide-label">${esc(label)}</div>
     ${badges ? `<div class="slide-badges">${badges}</div>` : ''}
-    <div class="slide-item-actions">
-      ${onDuplicate ? '<button class="btn-dupe-slide" title="Duplicate">⎘</button>' : ''}
-      ${onDelete    ? '<button class="btn-delete-slide" title="Delete">×</button>'  : ''}
-    </div>
+    ${macroNames ? `<div class="slide-macro-names">${macroNames}</div>` : ''}
   `;
-  item.addEventListener('click', e => {
-    if (!e.target.closest('.slide-item-actions')) onClick();
-  });
-  item.querySelector('.btn-dupe-slide')?.addEventListener('click', e => {
-    e.stopPropagation(); onDuplicate();
-  });
-  item.querySelector('.btn-delete-slide')?.addEventListener('click', e => {
-    e.stopPropagation(); onDelete();
-  });
+  item.addEventListener('click', () => onClick());
+  if (onDuplicate || onDelete) {
+    item.addEventListener('contextmenu', e => {
+      e.preventDefault();
+      showSlideCtxMenu(e.clientX, e.clientY, { onDuplicate, onDelete });
+    });
+  }
   return item;
 }
 
