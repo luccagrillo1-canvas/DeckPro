@@ -2,9 +2,16 @@
 
 // ─── Version & Changelog ──────────────────────────────────────────────────────
 
-const APP_VERSION = '4.6.7';
+const APP_VERSION = '4.6.8';
 
 const CHANGELOG = [
+  {
+    version: '4.6.8',
+    date: '2026-07-01',
+    changes: [
+      "Export naming: if the same deck has already been exported, the file is automatically named _V2, _V3, etc. — first export keeps the plain name, duplicates in history get the next version suffix.",
+    ],
+  },
   {
     version: '4.6.7',
     date: '2026-07-01',
@@ -8981,7 +8988,12 @@ async function runGenerate(btn, deliverMode = false) {
   btn.textContent = 'Exporting…';
 
   try {
-    const spec     = buildSpec();
+    const spec = buildSpec();
+    // Append _V2, _V3, … if the same base name was already exported
+    const base = spec.name;
+    const baseRe = new RegExp(`^${base.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(_V\\d+)?\\.pro$`);
+    const priorCount = loadGenHistory().filter(e => baseRe.test(e.fileName || '')).length;
+    if (priorCount > 0) spec.name = `${base}_V${priorCount + 1}`;
     const fileName = spec.name;
     spec.deliverMode = true;
     spec.autoManagePro7 = state.config.autoManagePro7 === true;
