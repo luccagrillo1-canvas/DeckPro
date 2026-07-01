@@ -617,6 +617,13 @@ function buildAllPropCues(propSpecs, style = {}) {
     applicationInfo: APP_INFO,
     cues,
     transition: rs._propTransition,
+    propCollections: [{
+      uuid: uuid(),
+      name: 'DeckPro',
+      singlePropEnabled: true,
+      items: cues.map(c => ({ propCueUuid: c.uuid })),
+      cues,
+    }],
   };
 }
 

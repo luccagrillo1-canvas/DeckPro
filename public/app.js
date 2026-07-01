@@ -2,9 +2,16 @@
 
 // ─── Version & Changelog ──────────────────────────────────────────────────────
 
-const APP_VERSION = '4.6.8';
+const APP_VERSION = '4.6.9';
 
 const CHANGELOG = [
+  {
+    version: '4.6.9',
+    date: '2026-07-01',
+    changes: [
+      "Props: Single Prop Mode is now enabled by default on every export — ProPresenter will only allow one prop to be active at a time within the DeckPro prop collection.",
+    ],
+  },
   {
     version: '4.6.8',
     date: '2026-07-01',

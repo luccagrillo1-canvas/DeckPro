@@ -7,8 +7,22 @@ import "cue.proto";
 import "effects.proto";
 
 message PropDocument {
+  message PropCollection {
+    message Item {
+      oneof ItemType {
+        rv.data.UUID prop_cue_uuid = 1;
+      }
+    }
+
+    rv.data.UUID uuid = 1;
+    string name = 2;
+    repeated PropDocument.PropCollection.Item items = 3;
+    bool single_prop_enabled = 4;
+    repeated rv.data.Cue cues = 5;
+  }
+
   rv.data.ApplicationInfo application_info = 1;
   repeated rv.data.Cue cues = 2;
   rv.data.Transition transition = 3;
-
+  repeated PropDocument.PropCollection prop_collections = 4;
 }
