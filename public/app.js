@@ -2,9 +2,16 @@
 
 // ─── Version & Changelog ──────────────────────────────────────────────────────
 
-const APP_VERSION = '4.6.1';
+const APP_VERSION = '4.6.2';
 
 const CHANGELOG = [
+  {
+    version: '4.6.2',
+    date: '2026-07-01',
+    changes: [
+      "Sidebar: Response Card unfurl arrow now renders correctly — fixed broken selector (.si-left → .slide-icon) so the chevron button appears and RC Blank / RC Content / RC Hold expand as expected.",
+    ],
+  },
   {
     version: '4.6.1',
     date: '2026-07-01',
@@ -3116,7 +3123,7 @@ function renderSidebar() {
         rcGroupExpanded = !rcGroupExpanded;
         renderSidebar();
       });
-      rcHeader.querySelector('.si-left')?.prepend(arrowBtn);
+      rcHeader.querySelector('.slide-icon')?.before(arrowBtn);
       rcGroup.appendChild(rcHeader);
 
       // Sub-items (only when expanded)
