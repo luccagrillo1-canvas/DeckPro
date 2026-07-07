@@ -2,9 +2,16 @@
 
 // ─── Version & Changelog ──────────────────────────────────────────────────────
 
-const APP_VERSION = '4.6.11';
+const APP_VERSION = '4.6.12';
 
 const CHANGELOG = [
+  {
+    version: '4.6.12',
+    date: '2026-07-01',
+    changes: [
+      'ALT button in the body text toolbar now has proper horizontal padding — no longer cramped.',
+    ],
+  },
   {
     version: '4.6.11',
     date: '2026-07-01',

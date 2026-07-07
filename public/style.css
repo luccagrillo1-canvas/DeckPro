@@ -1262,7 +1262,7 @@ body.dark .slide-macro-chip {
 .rich-toolbar-sep {
   width: 1px; background: var(--border); margin: 3px 2px; flex-shrink: 0;
 }
-.btn-fmt-alt { border-color: #c07a20; color: #c07a20; }
+.btn-fmt-alt { border-color: #c07a20; color: #c07a20; width: auto; padding: 0 6px; }
 .btn-fmt-alt:hover { background: #fff3e0; border-color: #c07a20; }
 .btn-fmt-alt.active { background: #c07a20; color: white; border-color: #c07a20; }
 .btn-fmt-alt-lbl { font-variant: small-caps; font-size: 0.82em; letter-spacing: 0.04em; font-weight: 700; }
