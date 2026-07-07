@@ -1620,6 +1620,7 @@ details[open].settings-disclosure .settings-disclosure-summary::before { transfo
 .style-tab:hover { color: var(--text); }
 .style-tab.active { color: var(--blue); border-bottom-color: var(--blue); }
 .style-tab-sep { width: 1px; background: var(--border); margin: 5px 4px; align-self: stretch; flex-shrink: 0; }
+.style-tab-label { padding: 0 4px 0 6px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); align-self: center; white-space: nowrap; user-select: none; opacity: .55; pointer-events: none; }
 .style-tab-global { color: var(--muted); font-style: italic; }
 .style-tab-global.active { color: var(--blue); font-style: italic; }
 

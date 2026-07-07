@@ -2,9 +2,16 @@
 
 // ─── Version & Changelog ──────────────────────────────────────────────────────
 
-const APP_VERSION = '4.6.13';
+const APP_VERSION = '4.6.14';
 
 const CHANGELOG = [
+  {
+    version: '4.6.14',
+    date: '2026-07-07',
+    changes: [
+      "Renamed: \"Scheme\" → \"Palette\" everywhere in the UI. The three-tier style hierarchy is now Global → Palette → Custom. The Palette tab sets base colors & fonts that cascade to all fields; the Custom section (Text / Layout / Motion / Preview tabs) exposes per-field overrides. The Help guide, import review screen, Test button, lock banner, and menu item are all updated.",
+    ],
+  },
   {
     version: '4.6.13',
     date: '2026-07-07',
@@ -1928,9 +1935,9 @@ const TOOLTIPS = {
   'queue-format':             'Queue format\nHow each upcoming item is shown in the queue strip.',
   // Preferences — Schemes panel
   'feature-visibility':       'Feature Visibility\nHide advanced fields so the slide editor is simpler when handing off to other users. Turning one off just hides it — it doesn\'t change exports.',
-  'scheme-new':               'New Scheme\nCreate a blank scheme from defaults.',
-  'scheme-dupe':              'Duplicate\nCopy this scheme into a new editable one — the usual way to make your own look.',
-  'scheme-import':            'Import from Pro7\nBuild a scheme from a presentation you styled inside ProPresenter — fonts, sizes, colours and positions are read back in.',
+  'scheme-new':               'New Palette\nCreate a blank palette from defaults.',
+  'scheme-dupe':              'Duplicate\nCopy this palette into a new editable one — the usual way to make your own look.',
+  'scheme-import':            'Import from Pro7\nBuild a palette from a presentation you styled inside ProPresenter — fonts, sizes, colours and positions are read back in.',
   // Response Card
   'decision-text':            'Decision Text\nThe main commitment statement shown on the Response Card slide.',
   // Rich-text toolbar
@@ -5577,7 +5584,7 @@ function schemePreviewPanel(scheme) {
         <div class="sp-notes" style="font-family:${fam(scheme.notesFont)}">Speaker note preview — only visible on the ${dn('monitor')}.</div>
       </div>
     </div>
-    <p class="sp-foot">Approximate preview from this scheme's fonts, sizes and colours. Use <strong>Test Scheme</strong> (top right) to generate a real deck in ProPresenter.</p>`;
+    <p class="sp-foot">Approximate preview from this palette's fonts, sizes and colours. Use <strong>Test Palette</strong> (top right) to generate a real deck in ProPresenter.</p>`;
 }
 
 // Visual Layout preview — scaled Main + Prop canvases with clickable region boxes
@@ -5688,10 +5695,10 @@ function renderGlobalPanel(panel, schemeOptionsHTML) {
   const _gTab = (_styleTab && ['text','layout'].includes(_styleTab)) ? _styleTab : 'text';
 
   panel.innerHTML = `<div class="slide-form">
-    <h2>Schemes</h2>
+    <h2>Palettes</h2>
     <p class="scheme-intro">
-      A scheme controls how every slide looks — fonts, sizes, colours, animations and positions.
-      Pick one to use it, or duplicate it to make your own.
+      A palette defines the visual style of your slides — fonts, sizes, colours, animations and positions.
+      Pick one to use for this deck, or duplicate to make your own.
     </p>
     <div class="scheme-toolbar">
       <select id="style-scheme-select" class="scheme-tb-select" title="Switch view">
@@ -5699,7 +5706,7 @@ function renderGlobalPanel(panel, schemeOptionsHTML) {
         ${schemeOptionsHTML}
       </select>
     </div>
-    <div class="global-view-banner">Global defaults — read-only. Push a value from any scheme to update.</div>
+    <div class="global-view-banner">Global defaults — read-only. Push a value from any palette to update.</div>
 
     <div class="style-tabs">
       <button class="style-tab${_gTab === 'text'   ? ' active' : ''}" data-gtab="text">Text</button>
@@ -5968,19 +5975,19 @@ function renderStylePanel(panel) {
   panel.innerHTML = `
     <div class="slide-form">
       <h2>
-        Schemes
+        Palettes
       </h2>
       <p class="scheme-intro">
-        A scheme controls how every slide looks — fonts, sizes, colours, animations and positions.
-        Pick one to use it, or duplicate it to make your own.
+        A palette defines the visual style of your slides — fonts, sizes, colours, animations and positions.
+        Pick one to use for this deck, or duplicate to make your own.
       </p>
 
       <div class="scheme-toolbar">
-        <select id="style-scheme-select" class="scheme-tb-select" title="Active scheme">
+        <select id="style-scheme-select" class="scheme-tb-select" title="Active palette">
           <option value="__global__">◈ Global</option>
           ${schemeOptionsHTML}
         </select>
-        <input type="text" id="style-scheme-name" class="scheme-tb-name" value="${esc(scheme.name)}" placeholder="Scheme name" ${dis}>
+        <input type="text" id="style-scheme-name" class="scheme-tb-name" value="${esc(scheme.name)}" placeholder="Palette name" ${dis}>
         <div class="scheme-tb-icons">
           <button class="btn-scheme-icon" id="btn-scheme-new" data-tip-key="scheme-new">
             <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M6.5 1v11M1 6.5h11" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
@@ -5988,16 +5995,16 @@ function renderStylePanel(panel) {
           <button class="btn-scheme-icon" id="btn-scheme-dupe" data-tip-key="scheme-dupe">
             <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><rect x="4.5" y="1" width="7.5" height="8.5" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M1 4v6.5A1.5 1.5 0 0 0 2.5 12H9" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
           </button>
-          <button class="btn-scheme-icon btn-scheme-icon-danger" id="btn-scheme-delete" title="Delete scheme"
+          <button class="btn-scheme-icon btn-scheme-icon-danger" id="btn-scheme-delete" title="Delete palette"
             ${state.styleSchemes.length <= 1 ? 'disabled' : ''}>
             <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 3.5h9M5 3.5V2h3v1.5M4 3.5l.5 7h4l.5-7" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
           </button>
           <button class="btn-scheme-lock ${locked ? 'locked' : 'unlocked'}" id="btn-scheme-lock"
-            title="${locked ? 'Unlock to edit' : 'Lock scheme'}">${locked ? '🔒' : '🔓'}</button>
+            title="${locked ? 'Unlock to edit' : 'Lock palette'}">${locked ? '🔒' : '🔓'}</button>
         </div>
         <div class="scheme-tb-actions">
           <button class="btn-scheme-test" id="btn-scheme-import" data-tip-key="scheme-import">Import from Pro7</button>
-          <button class="btn-scheme-test btn-scheme-test-primary" id="btn-scheme-test">Test Scheme</button>
+          <button class="btn-scheme-test btn-scheme-test-primary" id="btn-scheme-test">Test Palette</button>
         </div>
       </div>
 
@@ -6005,7 +6012,7 @@ function renderStylePanel(panel) {
       <div class="scheme-lock-banner">
         <span class="slb-icon">🔒</span>
         <div class="slb-text">
-          <strong>This scheme is locked</strong>
+          <strong>This palette is locked</strong>
           <span>Locked so it can't be changed by accident. Duplicate it to make your own editable copy, or unlock to edit this one directly.</span>
         </div>
         <div class="slb-actions">
@@ -6016,6 +6023,8 @@ function renderStylePanel(panel) {
 
       <div class="style-tabs">
         <button class="style-tab style-tab-palette${_styleTab === 'palette' ? ' active' : ''}" data-tab="palette">Palette</button>
+        <span class="style-tab-sep"></span>
+        <span class="style-tab-label">Custom</span>
         ${[['text','Text'],['layout','Layout'],['motion','Motion'],['preview','Preview']].map(([t, lbl]) => `
           <button class="style-tab${_styleTab === t ? ' active' : ''}" data-tab="${t}">${lbl}</button>`).join('')}
         <span class="style-tab-sep"></span>
@@ -8992,7 +9001,7 @@ function renderImportReview(overlay, panel, data, close) {
       Review below, then save.
     </p>
     <div class="field" style="margin-bottom:10px">
-      <label>Scheme name</label>
+      <label>Palette name</label>
       <input type="text" id="si-name" value="${esc(`From ${report.presentation}`.slice(0, 60))}" maxlength="60">
     </div>
     <div class="si-review-groups">
@@ -9003,7 +9012,7 @@ function renderImportReview(overlay, panel, data, close) {
     </div>
     <div class="warn-actions">
       <button class="warn-btn-cancel" id="si-back">Back</button>
-      <button class="warn-btn-ok" id="si-save">Save scheme</button>
+      <button class="warn-btn-ok" id="si-save">Save palette</button>
     </div>`;
 
   overlay.querySelector('#si-back').addEventListener('click', () => { close(); showSchemeImport(panel); });
@@ -9023,7 +9032,7 @@ function renderImportReview(overlay, panel, data, close) {
     saveState();
     close();
     renderStylePanel(panel);
-    toast('success', 'Scheme imported', `Saved "${merged.name}" with ${report.captured.length} detected settings.`);
+    toast('success', 'Palette imported', `Saved "${merged.name}" with ${report.captured.length} detected settings.`);
   });
 }
 
@@ -11740,16 +11749,16 @@ function helpSections() { return [
   },
   {
     id: 'schemes',
-    label: 'Schemes',
+    label: 'Palettes',
     html: `
-      <h3>Schemes</h3>
-      <p>Schemes control every visual aspect of the generated slides — fonts, sizes, colors, layout bounds, build orders, and transitions. Create multiple schemes for different looks or screen configurations.</p>
+      <h3>Palettes</h3>
+      <p>A palette defines every visual aspect of the generated slides. Three levels cascade from broad to specific: <strong>Global</strong> (house style baseline) → <strong>Palette</strong> (base colors &amp; fonts) → <strong>Custom</strong> (per-field overrides). Create multiple palettes for different looks or screen configurations.</p>
       <h4>Tabs</h4>
       <ul>
-        <li><strong>Text</strong> — fonts, sizes, and advanced styling (color, stroke, shadow, alignment, spacing) per element</li>
-        <li><strong>Transitions</strong> — default slide and prop transitions</li>
-        <li><strong>Build Order</strong> — which elements animate in/out and in what order, per slide type</li>
-        <li><strong>Layout</strong> — X/Y/W/H bounds for every element on both the main canvas (1920×1080) and prop canvas</li>
+        <li><strong>Palette</strong> — base font slots and palette colors that cascade down to all fields</li>
+        <li><strong>Custom: Text</strong> — per-field font, size, and advanced styling (color, stroke, shadow, alignment, spacing)</li>
+        <li><strong>Custom: Layout</strong> — X/Y/W/H bounds for every element on both the main canvas (1920×1080) and prop canvas</li>
+        <li><strong>Custom: Motion</strong> — build orders and default transitions per slide type</li>
       </ul>
       <h4>Layout Alignment Buttons</h4>
       <p>Each layout row has 6 alignment buttons — 3 horizontal (left/center/right) and 3 vertical (top/middle/bottom). Click one to snap X or Y to the canvas-relative position. The active alignment lights up orange. When an element fills the full canvas width, center is shown as active.</p>
