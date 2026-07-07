@@ -2,9 +2,16 @@
 
 // ─── Version & Changelog ──────────────────────────────────────────────────────
 
-const APP_VERSION = '4.6.17';
+const APP_VERSION = '4.6.18';
 
 const CHANGELOG = [
+  {
+    version: '4.6.18',
+    date: '2026-07-07',
+    changes: [
+      'Text tab alignment buttons now always show the global default position with a blue highlight. Blue = inheriting from global; orange = custom override that differs from global; dim blue ghost = where global sits while you have an override active.',
+    ],
+  },
   {
     version: '4.6.17',
     date: '2026-07-07',
@@ -5848,12 +5855,12 @@ function renderSchemeGrid(sv, rs, dis) {
     const haBtn = (v, title) => {
       const isOn = adv.alignment === v;
       const isGlb = glbAlign === v;
-      return `<td class="sg-td sg-td-align${alignOv ? ' sg-td-scheme' : ''}" data-scheme="${advK}" data-field="alignment"><button type="button" class="sg-halign-btn sg-align-cell ${isOn ? 'on' : ''}${isGlb && !isOn ? ' sg-align-global' : ''}" data-scheme="${advK}" data-val="${v}" title="${title}" ${dis}>${HA_ICONS[v] || ''}</button></td>`;
+      return `<td class="sg-td sg-td-align${alignOv ? ' sg-td-scheme' : ''}" data-scheme="${advK}" data-field="alignment"><button type="button" class="sg-halign-btn sg-align-cell${isOn ? ' on' : ''}${isGlb ? ' sg-align-global' : ''}" data-scheme="${advK}" data-val="${v}" title="${title}" ${dis}>${HA_ICONS[v] || ''}</button></td>`;
     };
     const vaBtn = (v, title) => {
       const isOn = adv.verticalAlignment === v;
       const isGlb = glbVAlign === v;
-      return `<td class="sg-td sg-td-align${vAlignOv ? ' sg-td-scheme' : ''}" data-scheme="${advK}" data-field="verticalAlignment"><button type="button" class="sg-valign-btn sg-align-cell ${isOn ? 'on' : ''}${isGlb && !isOn ? ' sg-align-global' : ''}" data-scheme="${advK}" data-val="${v}" title="${title}" ${dis}>${VA_ICONS[v] || ''}</button></td>`;
+      return `<td class="sg-td sg-td-align${vAlignOv ? ' sg-td-scheme' : ''}" data-scheme="${advK}" data-field="verticalAlignment"><button type="button" class="sg-valign-btn sg-align-cell${isOn ? ' on' : ''}${isGlb ? ' sg-align-global' : ''}" data-scheme="${advK}" data-val="${v}" title="${title}" ${dis}>${VA_ICONS[v] || ''}</button></td>`;
     };
     const numCell  = (field, dflt, step) =>
       `<td class="sg-td${sc(advOv(field))}" data-scheme="${advK}" data-field="${field}"><input type="number" class="fav-num sg-num" data-scheme="${advK}" data-field="${field}" value="${adv[field] ?? dflt}" step="${step}" ${dis}></td>`;

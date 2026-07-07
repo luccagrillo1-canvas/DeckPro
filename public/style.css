@@ -4360,14 +4360,21 @@ body.dark .g-tip-title { color: #ff8a4c; }
   display: inline-block;
 }
 .sg-align-cell::before { content: '○'; font-size: 9px; color: var(--muted); }
-.sg-align-cell.on { background: rgba(234,88,12,.15); border-color: rgba(234,88,12,.5); }
-.sg-align-cell.on::before { content: '●'; color: #fdba74; }
+/* custom override — orange */
+.sg-align-cell.on:not(.sg-align-global) { background: rgba(234,88,12,.15); border-color: rgba(234,88,12,.5); }
+.sg-align-cell.on:not(.sg-align-global)::before { content: '●'; color: #fdba74; }
+.sg-align-cell.on:not(.sg-align-global):has(svg) { color: #fdba74; }
+/* inheriting global — bright blue */
+.sg-align-cell.sg-align-global.on { background: rgba(14,165,233,.13); border-color: rgba(14,165,233,.45); }
+.sg-align-cell.sg-align-global.on::before { content: '●'; color: #7dd3fc; }
+.sg-align-cell.sg-align-global.on:has(svg) { color: #7dd3fc; }
+/* global ghost — shows where global sits when you've overridden it */
+.sg-align-cell.sg-align-global:not(.on) { border-color: rgba(14,165,233,.2); }
+.sg-align-cell.sg-align-global:not(.on)::before { content: '●'; color: rgba(14,165,233,.3); }
+.sg-align-cell.sg-align-global:not(.on):has(svg) { color: rgba(14,165,233,.3); }
 .sg-align-cell:hover { border-color: var(--accent); }
 .sg-align-cell svg { pointer-events: none; display: block; }
-.sg-align-cell:has(svg)::before,
-.sg-align-cell.on:has(svg)::before { content: none; }
-.sg-align-cell.on:has(svg) { color: #fdba74; }
-.sg-align-global { background: rgba(128,128,128,0.12) !important; }
+.sg-align-cell:has(svg)::before { content: none; }
 
 /* N/A cells */
 .sg-na { color: var(--muted); opacity: .4; font-size: 10px; }
