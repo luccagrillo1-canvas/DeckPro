@@ -2,9 +2,16 @@
 
 // ─── Version & Changelog ──────────────────────────────────────────────────────
 
-const APP_VERSION = '4.6.16';
+const APP_VERSION = '4.6.17';
 
 const CHANGELOG = [
+  {
+    version: '4.6.17',
+    date: '2026-07-07',
+    changes: [
+      'Palettes panel: removed "Custom" section label from the tab row. Removed inline ↺ / ↑ reset+push buttons from the Palette tab and the Custom section grid — these actions are now right-click only.',
+    ],
+  },
   {
     version: '4.6.16',
     date: '2026-07-07',
@@ -5643,11 +5650,7 @@ function layoutPreview(scheme, sel) {
 
 // ── Palette tab + Global view helpers ─────────────────────────────────────────
 function renderPaletteTab(rawScheme, t, dis) {
-  const inheritIcons = (key) => `
-    <button type="button" class="inherit-action inherit-icon-btn" data-action="use-global" data-key="${key}" title="Use global" ${dis}>↺</button>
-    <button type="button" class="inherit-action inherit-icon-btn" data-action="push-global" data-key="${key}" title="Push to Global" ${dis}>↑</button>`;
   const fontSlot = (key, name, desc) => {
-    const isScheme = !!(rawScheme?.typography?.[key]);
     const val = t[key] || '';
     const curFam = fontFamilyOf(val);
     const families = _fontFamilyMap ? Object.keys(_fontFamilyMap).sort((a, b) => a.localeCompare(b)) : [];
@@ -5658,28 +5661,25 @@ function renderPaletteTab(rawScheme, t, dis) {
     const styOpts = styArr.map(({ style, postscript }) =>
       `<option value="${esc(postscript)}"${postscript === val ? ' selected' : ''}>${esc(style)}</option>`
     ).join('') || `<option value="${esc(val)}">${esc(parseFontPS(val).style || 'Regular')}</option>`;
-    return `<div class="palette-slot${isScheme ? ' inherit-scheme' : ''}">
+    return `<div class="palette-slot">
       <div class="palette-slot-info"><span class="palette-slot-name">${esc(name)}</span><span class="palette-slot-desc">${esc(desc)}</span></div>
       <div class="palette-slot-ctrl">
         <div class="inherit-ctrl-wrap">
           <select class="sf-fam-select" id="palette-fam-${key}" ${dis}>${famOpts}</select>
-          ${isScheme ? inheritIcons(key) : ''}
         </div>
         <select class="sf-sty-select" id="palette-sty-${key}" ${dis}>${styOpts}</select>
       </div>
     </div>`;
   };
   const colorSlot = (key, name, desc) => {
-    const isScheme = !!(rawScheme?.typography?.[key]);
     const val = normalizeHexColor(t[key] || '#ffffff');
     const pickerVal = val.startsWith('#') ? val : '#' + val;
-    return `<div class="palette-slot${isScheme ? ' inherit-scheme' : ''}">
+    return `<div class="palette-slot">
       <div class="palette-slot-info"><span class="palette-slot-name">${esc(name)}</span><span class="palette-slot-desc">${esc(desc)}</span></div>
       <span class="color-input-wrap">
         <input type="color" class="fav-color" id="palette-color-${key}" value="${pickerVal}" ${dis}>
         <input type="text" class="color-hex fav-color-hex" id="palette-hex-${key}" value="${(val||'').replace(/^#/,'')}" maxlength="6" placeholder="ffffff" ${dis}>
         <button type="button" class="fav-color-clear palette-color-clear" data-key="${key}" title="Use global color" ${dis}>×</button>
-        ${isScheme ? inheritIcons(key) : ''}
       </span>
     </div>`;
   };
@@ -5864,7 +5864,7 @@ function renderSchemeGrid(sv, rs, dis) {
       <th scope="row" class="sg-row-lbl">${esc(lbl)}</th>
       <td class="sg-td sg-td-fam${sc(fontOv || fontFieldOv)}" data-typokey="${fontTypoKey || ''}">${noFont ? '<span class="sg-na">—</span>'
         : typoKey ? `<select class="sg-typo-fam sg-fam" id="sg-typo-fam-${id}" data-typokey="${typoKey}" ${dis}>${famOptsFn(curFam)}</select>`
-        : `<select class="sf-fam-select sg-fam" id="sf-fam-${fontF}" ${dis}>${famOptsFn(curFam)}</select>${fontFieldOv && !dis ? `<button class="sg-clear-field-font inherit-icon-btn" data-field="${fontF}" title="Clear field override (revert to palette)" ${dis}>↺</button>` : ''}`}</td>
+        : `<select class="sf-fam-select sg-fam" id="sf-fam-${fontF}" ${dis}>${famOptsFn(curFam)}</select>`}</td>
       <td class="sg-td sg-td-sty${sc(fontOv || fontFieldOv)}" data-typokey="${fontTypoKey || ''}">${noFont ? '<span class="sg-na">—</span>'
         : typoKey ? `<select class="sg-typo-sty sg-sty" id="sg-typo-sty-${id}" data-typokey="${typoKey}" ${dis}>${styOptsFn(curFam, ps)}</select>`
         : `<select class="sf-sty-select sg-sty" id="sf-sty-${fontF}" ${dis}>${styOptsFn(curFam, ps)}</select>`}</td>
@@ -6038,7 +6038,6 @@ function renderStylePanel(panel) {
       <div class="style-tabs">
         <button class="style-tab style-tab-palette${_styleTab === 'palette' ? ' active' : ''}" data-tab="palette">Palette</button>
         <span class="style-tab-sep"></span>
-        <span class="style-tab-label">Custom</span>
         ${[['text','Text'],['layout','Layout'],['motion','Motion'],['preview','Preview']].map(([t, lbl]) => `
           <button class="style-tab${_styleTab === t ? ' active' : ''}" data-tab="${t}">${lbl}</button>`).join('')}
         <span class="style-tab-sep"></span>
