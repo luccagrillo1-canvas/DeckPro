@@ -9502,9 +9502,9 @@ function attachPdfHandlers() {
 let _notesDoc  = null;   // { id, title, blocks:[{tag,text,bg,idx}], colors:[], suggestions:[] }
 let _notesZoom = 100;
 
-// Bible books (incl. apocrypha — the team uses Sirach/Tobit) for deterministic
-// scripture detection. Order longest-first so "Song of Solomon" wins over "Song".
-const BIBLE_BOOKS = [
+// Flat book name list for Smart Notes scripture detection (apocrypha included).
+// Order longest-first so "Song of Solomon" wins over "Song".
+const SCRIPTURE_BOOK_NAMES = [
   'Song of Solomon','Song of Songs','Ecclesiasticus',
   'Genesis','Exodus','Leviticus','Numbers','Deuteronomy','Joshua','Judges','Ruth',
   'Samuel','Kings','Chronicles','Ezra','Nehemiah','Esther','Job','Psalms','Psalm',
@@ -9518,7 +9518,7 @@ const BIBLE_BOOKS = [
 
 function scriptureRegex() {
   const numPrefix = '(?:[1-3]|First|Second|Third|I{1,3})\\s+';
-  const books = BIBLE_BOOKS.map(b => b.replace(/ /g, '\\s+')).join('|');
+  const books = SCRIPTURE_BOOK_NAMES.map(b => b.replace(/ /g, '\\s+')).join('|');
   // optional numbered prefix · book · chapter · optional :verse(-verse)(,verse…)
   return new RegExp(
     `\\b(?:${numPrefix})?(?:${books})\\.?\\s+\\d+(?::\\d+(?:[\\u2013\\u2014-]\\d+)?(?:\\s*,\\s*\\d+(?:[\\u2013\\u2014-]\\d+)?)*)?\\b`,
