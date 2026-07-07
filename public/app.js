@@ -2,9 +2,16 @@
 
 // ─── Version & Changelog ──────────────────────────────────────────────────────
 
-const APP_VERSION = '4.6.14';
+const APP_VERSION = '4.6.15';
 
 const CHANGELOG = [
+  {
+    version: '4.6.15',
+    date: '2026-07-07',
+    changes: [
+      'Palettes panel: "Custom" section label in the tab row now renders in orange to distinguish it from the green Palette tab.',
+    ],
+  },
   {
     version: '4.6.14',
     date: '2026-07-07',
