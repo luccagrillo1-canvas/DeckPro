@@ -2,9 +2,16 @@
 
 // ─── Version & Changelog ──────────────────────────────────────────────────────
 
-const APP_VERSION = '4.6.15';
+const APP_VERSION = '4.6.16';
 
 const CHANGELOG = [
+  {
+    version: '4.6.16',
+    date: '2026-07-07',
+    changes: [
+      'Custom section (Text / Layout / Motion) active-state circles and toggles now render orange to match the Custom label, keeping green reserved for the Palette tier.',
+    ],
+  },
   {
     version: '4.6.15',
     date: '2026-07-07',
