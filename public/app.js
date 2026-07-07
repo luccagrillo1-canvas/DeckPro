@@ -2,9 +2,16 @@
 
 // ─── Version & Changelog ──────────────────────────────────────────────────────
 
-const APP_VERSION = '4.6.12';
+const APP_VERSION = '4.6.13';
 
 const CHANGELOG = [
+  {
+    version: '4.6.13',
+    date: '2026-07-07',
+    changes: [
+      'Bible / Scripture Tools: reference input now smart-autocompletes book names as you type — "gen" or "ge" fills in "Genesis", "1co" fills in "1 Corinthians", etc. Works for all 66 canonical books with common abbreviations and alternate spellings. Autocomplete only fires on forward typing (not on delete). Chapter/verse portion is preserved.',
+    ],
+  },
   {
     version: '4.6.12',
     date: '2026-07-01',
@@ -1802,6 +1809,115 @@ const CHANGELOG = [
     ],
   },
 ];
+
+// ─── Bible book autocomplete ──────────────────────────────────────────────────
+// Each entry: [canonical name, [abbreviations...]] — sorted longest-first for greedy matching.
+// Abbreviations are lowercase; numbered-book variants include both spaced and compact forms.
+const BIBLE_BOOKS = [
+  // ── Old Testament ──
+  ['Genesis',        ['genesis','gen','ge','gn']],
+  ['Exodus',         ['exodus','exod','exo','ex']],
+  ['Leviticus',      ['leviticus','lev','le','lv']],
+  ['Numbers',        ['numbers','num','nu','nm','nb']],
+  ['Deuteronomy',    ['deuteronomy','deut','deu','dt']],
+  ['Joshua',         ['joshua','josh','jos','jsh']],
+  ['Judges',         ['judges','judg','jdg','jd']],
+  ['Ruth',           ['ruth','rut','ru']],
+  ['1 Samuel',       ['1 samuel','1samuel','1sam','1sa','1 sa']],
+  ['2 Samuel',       ['2 samuel','2samuel','2sam','2sa','2 sa']],
+  ['1 Kings',        ['1 kings','1kings','1kgs','1ki','1 kgs','1 ki','1kng']],
+  ['2 Kings',        ['2 kings','2kings','2kgs','2ki','2 kgs','2 ki','2kng']],
+  ['1 Chronicles',   ['1 chronicles','1chronicles','1 chron','1chron','1 chr','1chr','1 ch','1ch']],
+  ['2 Chronicles',   ['2 chronicles','2chronicles','2 chron','2chron','2 chr','2chr','2 ch','2ch']],
+  ['Ezra',           ['ezra','ezr','ez']],
+  ['Nehemiah',       ['nehemiah','neh','ne']],
+  ['Esther',         ['esther','esth','est','es']],
+  ['Job',            ['job','jb']],
+  ['Psalms',         ['psalms','psalm','psa','pss','ps']],
+  ['Proverbs',       ['proverbs','prov','pro','prv','pr']],
+  ['Ecclesiastes',   ['ecclesiastes','eccles','eccl','ecc','qoh']],
+  ['Song of Solomon',['song of solomon','song of songs','canticles','song','sos','sng','son']],
+  ['Isaiah',         ['isaiah','isa','is']],
+  ['Jeremiah',       ['jeremiah','jer','je','jr']],
+  ['Lamentations',   ['lamentations','lam','la']],
+  ['Ezekiel',        ['ezekiel','ezek','eze','ezk']],
+  ['Daniel',         ['daniel','dan','da','dn']],
+  ['Hosea',          ['hosea','hos','ho']],
+  ['Joel',           ['joel','joe','jl']],
+  ['Amos',           ['amos','amo','am']],
+  ['Obadiah',        ['obadiah','obad','oba','ob']],
+  ['Jonah',          ['jonah','jon','jnh']],
+  ['Micah',          ['micah','mic','mi']],
+  ['Nahum',          ['nahum','nah','na']],
+  ['Habakkuk',       ['habakkuk','hab','hb']],
+  ['Zephaniah',      ['zephaniah','zeph','zep','zp']],
+  ['Haggai',         ['haggai','hag','hg']],
+  ['Zechariah',      ['zechariah','zech','zec','zc']],
+  ['Malachi',        ['malachi','mal','ml']],
+  // ── New Testament ──
+  ['Matthew',        ['matthew','matt','mat','mt']],
+  ['Mark',           ['mark','mrk','mk','mr']],
+  ['Luke',           ['luke','luk','lk','lu']],
+  ['John',           ['john','joh','jn','jo']],
+  ['Acts',           ['acts','act','ac']],
+  ['Romans',         ['romans','rom','ro','rm']],
+  ['1 Corinthians',  ['1 corinthians','1corinthians','1 cor','1cor','1 co','1co']],
+  ['2 Corinthians',  ['2 corinthians','2corinthians','2 cor','2cor','2 co','2co']],
+  ['Galatians',      ['galatians','gal','ga']],
+  ['Ephesians',      ['ephesians','eph','ep']],
+  ['Philippians',    ['philippians','phil','php','pp']],
+  ['Colossians',     ['colossians','col']],
+  ['1 Thessalonians',['1 thessalonians','1thessalonians','1 thess','1thess','1 thes','1thes','1 th','1th']],
+  ['2 Thessalonians',['2 thessalonians','2thessalonians','2 thess','2thess','2 thes','2thes','2 th','2th']],
+  ['1 Timothy',      ['1 timothy','1timothy','1 tim','1tim','1 ti','1ti','1 tm','1tm']],
+  ['2 Timothy',      ['2 timothy','2timothy','2 tim','2tim','2 ti','2ti','2 tm','2tm']],
+  ['Titus',          ['titus','tit']],
+  ['Philemon',       ['philemon','philem','phm','pm']],
+  ['Hebrews',        ['hebrews','heb','he']],
+  ['James',          ['james','jas','jm']],
+  ['1 Peter',        ['1 peter','1peter','1 pet','1pet','1 pe','1pe','1 pt','1pt']],
+  ['2 Peter',        ['2 peter','2peter','2 pet','2pet','2 pe','2pe','2 pt','2pt']],
+  ['1 John',         ['1 john','1john','1 joh','1joh','1 jn','1jn','1 jo','1jo']],
+  ['2 John',         ['2 john','2john','2 joh','2joh','2 jn','2jn','2 jo','2jo']],
+  ['3 John',         ['3 john','3john','3 joh','3joh','3 jn','3jn','3 jo','3jo']],
+  ['Jude',           ['jude','jud']],
+  ['Revelation',     ['revelation','revelations','rev','re','rv']],
+];
+
+// Returns a canonically-cased suggestion string (e.g. "Genesis 1:1") if the typed
+// text is an unambiguous book abbreviation prefix, or null if no unique match.
+// Only completes the book portion — chapter/verse suffix is preserved as-is.
+function bibleBookAutocomplete(raw) {
+  if (!raw) return null;
+  const lower = raw.toLowerCase();
+
+  let matchBook = null;
+  let matchLen  = 0;
+  let ambiguous = false;
+
+  for (const [canonical, abbrs] of BIBLE_BOOKS) {
+    for (const abbr of abbrs) {
+      if (!lower.startsWith(abbr)) continue;
+      const after = lower.slice(abbr.length);
+      // Valid if nothing follows, or only whitespace, or whitespace then chapter digits
+      if (after !== '' && !/^\s+\d/.test(after) && !/^\s*$/.test(after)) continue;
+      if (abbr.length > matchLen) {
+        matchLen  = abbr.length;
+        matchBook = canonical;
+        ambiguous = false;
+      } else if (abbr.length === matchLen && canonical !== matchBook) {
+        ambiguous = true;
+      }
+    }
+  }
+
+  if (!matchBook || ambiguous) return null;
+
+  const suffix = raw.slice(matchLen); // preserve original chapter/verse
+  const suggested = matchBook + suffix;
+  if (suggested === raw) return null; // already canonical, nothing to do
+  return suggested;
+}
 
 // ─── Tooltip content ─────────────────────────────────────────────────────────
 // Single source of truth for all tooltip text. HTML uses data-tip-key="key".
@@ -7619,7 +7735,22 @@ function attachFormHandlers(slide) {
   // ── Reference (scripture) — auto-syncs label & propName ──
   const refEl = get('f-reference');
   if (refEl) {
-    refEl.addEventListener('input', () => {
+    refEl.addEventListener('input', (e) => {
+      // Smart book-name autocomplete (skip on deletion to avoid fighting the user)
+      const isDeleting = e.inputType && (e.inputType.startsWith('delete') || e.inputType.startsWith('history'));
+      if (!isDeleting) {
+        const suggested = bibleBookAutocomplete(refEl.value);
+        if (suggested) {
+          const typedLen = refEl.value.length;
+          refEl.value = suggested;
+          // Select the auto-completed suffix of the book name so the user can keep typing
+          const bookName = suggested.match(/^([^\d]+)/)?.[1]?.trimEnd() || suggested;
+          if (typedLen < bookName.length) {
+            refEl.setSelectionRange(typedLen, bookName.length);
+          }
+        }
+      }
+
       slide.reference = refEl.value;
       if (!slide._labelManual) {
         slide.label = slide.reference;
