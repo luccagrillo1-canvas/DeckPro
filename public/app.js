@@ -2,9 +2,16 @@
 
 // ─── Version & Changelog ──────────────────────────────────────────────────────
 
-const APP_VERSION = '4.7.2';
+const APP_VERSION = '4.7.3';
 
 const CHANGELOG = [
+  {
+    version: '4.7.3',
+    date: '2026-07-08',
+    changes: [
+      'Fix: the two "Bold" font rows in the Custom grid (Display 1 and Display 2) were tied together — changing one changed the other because both wrote the single palette bold font. Each Bold row is now an independent per-field override (Display 1 → main-screen bold, Display 2 → LED/prop bold), matching every other row. Right-click a Bold cell to reset it back to the palette font.',
+    ],
+  },
   {
     version: '4.7.2',
     date: '2026-07-08',
@@ -5849,13 +5856,13 @@ function renderSchemeGrid(sv, rs, dis) {
   const sections = [
     { label: 'Display 1', rows: [
       { id: 'body1',  lbl: 'Body',        fontF: 'bodyFont',      advK: 'bodyFontAdv',      sizeF: 'bodySize' },
-      { id: 'bold1',  lbl: 'Bold',        fontF: null, typoKey: 'boldFont', advK: 'boldFontAdv',      sizeF: null },
+      { id: 'bold1',  lbl: 'Bold',        fontF: 'boldFont',      advK: 'boldFontAdv',      sizeF: null },
       { id: 'title1', lbl: 'Title',       fontF: 'titleFont',     advK: 'titleFontAdv',     sizeF: 'titleSize' },
       { id: 'point1', lbl: 'Point',       fontF: 'pointFont',     advK: 'pointFontAdv',     sizeF: 'pointSize' },
     ]},
     { label: 'Display 2', rows: [
       { id: 'body2',  lbl: 'Body',        fontF: 'propBodyFont',  advK: 'propBodyFontAdv',  sizeF: 'propBodySize' },
-      { id: 'bold2',  lbl: 'Bold',        fontF: null, typoKey: 'boldFont', advK: 'propBoldFontAdv',  sizeF: null },
+      { id: 'bold2',  lbl: 'Bold',        fontF: 'propBoldFont',  advK: 'propBoldFontAdv',  sizeF: null },
       { id: 'title2', lbl: 'Title',       fontF: 'propTitleFont', advK: 'propTitleFontAdv', sizeF: 'propTitleSize' },
       { id: 'point2', lbl: 'Point',       fontF: 'propPointFont', advK: 'propPointFontAdv', sizeF: 'propPointSize' },
     ]},
@@ -6368,7 +6375,7 @@ function renderStylePanel(panel) {
   });
 
   // Font selects (family + style)
-  ['bodyFont', 'propBodyFont', 'pointFont', 'propPointFont', 'titleFont', 'propTitleFont', 'startEndFont', 'notesFont', 'liveFont', 'queueFont'].forEach(field => {
+  ['bodyFont', 'propBodyFont', 'boldFont', 'propBoldFont', 'pointFont', 'propPointFont', 'titleFont', 'propTitleFont', 'startEndFont', 'notesFont', 'liveFont', 'queueFont'].forEach(field => {
     const famSel = document.getElementById(`sf-fam-${field}`);
     const stySel = document.getElementById(`sf-sty-${field}`);
     if (!famSel || !stySel) return;
