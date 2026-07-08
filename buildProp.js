@@ -69,12 +69,14 @@ const DEFAULT_STYLE = {
   bodyFont:     'Montserrat-Medium',
   propBodyFont: 'Montserrat-SemiBold',
   pointFont:    'Montserrat-ExtraBold',
+  propPointFont:'Montserrat-ExtraBold',
   titleFont:    'Montserrat-ExtraBold',
   startEndFont: 'Montserrat-ExtraBold',
   bodySize:      44,
   titleSize:     60,
   startEndSize:  45,
   propBodySize:  80,
+  propPointSize: 80,
   propTitleSize: 110,
   transitionType:         'fade',
   transitionDuration:     0.6,
@@ -93,6 +95,7 @@ const DEFAULT_STYLE = {
   propCanvasW: 3200, propCanvasH: 1280,
   // Prop element bounds
   propBodyX: 0, propBodyY: 853, propBodyW: 3200, propBodyH: 427,
+  propPointX: 0, propPointY: 853, propPointW: 3200, propPointH: 427,
   propTitleX: -0.30, propTitleY: 1040, propTitleW: 3200.30, propTitleH: 60,
 };
 
@@ -429,12 +432,13 @@ function buildPointSinglePropCue(spec, rs = {}) {
   const { propName, bodyText } = spec;
   const prs     = makePropStyle(rs);
   const bodyRtf = rtf.rtfPointBody(bodyText, prs);
+  const adv     = prs.pointFontAdv || prs.boldFontAdv || {};
 
-  const bx = prs.propBodyX ?? 0;
-  const by = prs.propBodyY ?? 729.98;
-  const bw = prs.propBodyW ?? prs.propCanvasW ?? 1920;
-  const bh = prs.propBodyH ?? 350.02;
-  const boldYOff = (prs.pointFontAdv || prs.boldFontAdv)?.yOffset ?? 0;
+  const bx = prs.propPointX ?? prs.propBodyX ?? 0;
+  const by = prs.propPointY ?? prs.propBodyY ?? 729.98;
+  const bw = prs.propPointW ?? prs.propBodyW ?? prs.propCanvasW ?? 1920;
+  const bh = prs.propPointH ?? prs.propBodyH ?? 350.02;
+  const boldYOff = adv.yOffset ?? 0;
 
   const bodyEl = makeTextElement({
     name: 'body',
@@ -444,10 +448,10 @@ function buildPointSinglePropCue(spec, rs = {}) {
     fontSize: prs.pointSize || prs.bodySize || 80,
     center: true,
     charCount: bodyText.length,
-    vertAlign: 'VERTICAL_ALIGNMENT_BOTTOM',
+    vertAlign: resolveVertAlign(adv, 'VERTICAL_ALIGNMENT_BOTTOM'),
     scaleBehavior: 'SCALE_BEHAVIOR_SCALE_FONT_DOWN',
-    margins: { bottom: 60 },
-    adv: prs.pointFontAdv || prs.boldFontAdv,
+    margins: resolveMargins(adv, {}),
+    adv,
   }, rs);
 
   return makePropCue(propName, [makeSlot(bodyEl)], rs._propTransition ?? rs._transition, rs, spec.slotUuid ?? null);
@@ -464,12 +468,13 @@ function buildRevealingPointPropCue(spec, rs = {}) {
   const visibleBullets = bullets.slice(0, activeIdx + 1);
   const rtfData        = rtf.rtfRevealingPoints(visibleBullets, title || null, prs);
   const plainText      = visibleBullets.map((p, i) => `${i + 1} \u2014 ${rtf.bulletToText(p)}`).join('\n');
+  const adv            = prs.pointFontAdv || prs.boldFontAdv || {};
 
-  const bx = prs.propBodyX ?? 0;
-  const by = prs.propBodyY ?? 729.98;
-  const bw = prs.propBodyW ?? prs.propCanvasW ?? 1920;
-  const bh = prs.propBodyH ?? 350.02;
-  const boldYOff = prs.boldFontAdv?.yOffset ?? 0;
+  const bx = prs.propPointX ?? prs.propBodyX ?? 0;
+  const by = prs.propPointY ?? prs.propBodyY ?? 729.98;
+  const bw = prs.propPointW ?? prs.propBodyW ?? prs.propCanvasW ?? 1920;
+  const bh = prs.propPointH ?? prs.propBodyH ?? 350.02;
+  const boldYOff = adv.yOffset ?? 0;
 
   const bodyEl = makeTextElement({
     name: 'body',
@@ -479,10 +484,10 @@ function buildRevealingPointPropCue(spec, rs = {}) {
     fontSize: prs.pointSize || prs.bodySize || 80,
     center: true,
     charCount: plainText.length,
-    vertAlign: 'VERTICAL_ALIGNMENT_BOTTOM',
+    vertAlign: resolveVertAlign(adv, 'VERTICAL_ALIGNMENT_BOTTOM'),
     scaleBehavior: 'SCALE_BEHAVIOR_SCALE_FONT_DOWN',
-    margins: { bottom: 60 },
-    adv: prs.pointFontAdv || prs.boldFontAdv,
+    margins: resolveMargins(adv, {}),
+    adv,
   }, prs);
 
   return makePropCue(propName, [makeSlot(bodyEl)], rs._propTransition ?? rs._transition, rs, spec.slotUuid ?? null);

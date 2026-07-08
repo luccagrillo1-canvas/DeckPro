@@ -83,7 +83,7 @@ function escapeRtf(text) {
 
 // Categorise spans and build the body RTF content string + metadata.
 // Spans: [{ text, bold?, italic?, underline? }]
-function buildSpanContent(spans) {
+function buildSpanContent(spans, opts = {}) {
   const hasAlt    = spans.some(s => s.alt);
   const hasNonAlt = spans.some(s => !s.alt);
   const mixedAlt  = hasAlt && hasNonAlt;
@@ -126,9 +126,9 @@ function buildSpanContent(spans) {
       if (wantAlt !== curAlt) {
         if (wantAlt) {
           if (curBold) { cmd += '\\b0 '; curBold = false; }
-          cmd += '\n\\f1 ';
+          cmd += '\n\\f1 ' + (opts.altStart || '');
         } else {
-          cmd += '\n\\f0 ';
+          cmd += '\n\\f0 ' + (opts.altEnd || '');
         }
         curAlt = wantAlt;
       }
@@ -163,7 +163,7 @@ function buildSpanContent(spans) {
   if (curItalic)    content += '\\i0 ';
   if (curUnderline) content += '\\ulnone ';
   if (curSuper)     content += '\\nosupersub ';
-  if (mixedAlt && curAlt) content += '\n\\f0 ';
+  if (mixedAlt && curAlt) content += '\n\\f0 ' + (opts.altEnd || '');
 
   return { content, allAlt, mixedAlt };
 }
@@ -219,14 +219,27 @@ function charFmt(adv) {
   return s;
 }
 
+function resetCharFmt(adv) {
+  if (!adv) return '';
+  let s = '';
+  if (adv.bold)          s += '\\b0 ';
+  if (adv.italic)        s += '\\i0 ';
+  if (adv.underline)     s += '\\ulnone ';
+  if (adv.strikethrough) s += '\\strike0 ';
+  if (adv.capitalization === 'allCaps')   s += '\\caps0 ';
+  else if (adv.capitalization === 'smallCaps') s += '\\scaps0 ';
+  if (adv.charSpacing) s += '\\expndtw0 ';
+  return s;
+}
+
 // Text outline (stroke): ProPresenter draws it from the body run's \strokewidth
 // + \strokec3 (3rd colortbl colour). Returns the colortbl (text colour at idx 2,
 // stroke colour at idx 3) and the \strokewidth magnitude (UI width N → N*20).
-function textStroke(adv, textHex) {
+function textStroke(adv, textHex, extraHexColors = []) {
   const on = !!(adv && adv.strokeEnabled);
   const strokeHex = on ? (adv.strokeColor || '#000000') : '#000000';
   const sw = on ? Math.round((adv.strokeWidth ?? 1) * 20) : 20;
-  return { colortbl: makeColortbl(['#ffffff', textHex || '#ffffff', strokeHex]), sw };
+  return { colortbl: makeColortbl(['#ffffff', textHex || '#ffffff', strokeHex, ...extraHexColors]), sw };
 }
 
 // Default color tables (used when no style is passed)
@@ -262,13 +275,20 @@ function rtfDoc({ fonttbl, colortbl, pard, body }) {
  */
 function rtfBody(spans, style = {}) {
   if (!spans || !spans.length) spans = [{ text: '' }];
-  const { content, allAlt, mixedAlt } = buildSpanContent(spans);
   const bodyFont = style.bodyFont || 'Montserrat-Medium';
   const boldFont = style.boldFont || bodyFont;
   const fs       = (style.bodySize || 44) * 2;
   const adv      = style.bodyFontAdv || {};
+  const boldAdv  = style.boldFontAdv || adv;
   const cf       = charFmt(adv);
-  const { colortbl, sw } = textStroke(adv, adv.color);
+  const boldCf   = charFmt(boldAdv);
+  const bodyColor = adv.color || '#ffffff';
+  const boldColor = boldAdv.color || bodyColor;
+  const altStart = `${boldCf}${boldColor !== bodyColor ? '\\cf4 ' : ''}`;
+  const altEnd   = `${resetCharFmt(boldAdv)}${cf}${boldColor !== bodyColor ? '\\cf2 ' : ''}`;
+  const { content, allAlt, mixedAlt } = buildSpanContent(spans, { altStart, altEnd });
+  const strokeSource = allAlt ? boldAdv : adv;
+  const { colortbl, sw } = textStroke(strokeSource, allAlt ? boldColor : bodyColor, mixedAlt && boldColor !== bodyColor ? [boldColor] : []);
 
   let fonttbl, pard, body;
 
@@ -276,7 +296,7 @@ function rtfBody(spans, style = {}) {
     const forceCenter = !adv.alignment;
     fonttbl = `{\\fonttbl\\f0\\fnil\\fcharset0 ${boldFont};}`;
     pard    = makePard(adv, forceCenter);
-    body    = `\\f0\\b\\fs${fs} \\cf2 ${cf}\\CocoaLigature0 \\outl0\\strokewidth-${sw} \\strokec3 ${content}`;
+    body    = `\\f0\\b\\fs${fs} \\cf2 ${boldCf}\\CocoaLigature0 \\outl0\\strokewidth-${sw} \\strokec3 ${content}`;
   } else if (mixedAlt) {
     fonttbl = `{\\fonttbl\\f0\\fnil\\fcharset0 ${bodyFont};\\f1\\fnil\\fcharset0 ${boldFont};}`;
     pard    = makePard(adv, false);
@@ -603,7 +623,7 @@ function rtfNotes(spans, style = {}) {
   const adv       = style.notesFontAdv || {};
   const cf        = charFmt(adv);
   const pard      = makePard(adv, false);
-  const colortbl  = '{\\colortbl;\\red255\\green255\\blue255;\\red255\\green255\\blue255;}\n{\\*\\expandedcolortbl;;\\csgray\\c100000;}';
+  const colortbl  = adv.color ? makeColortbl(['#ffffff', adv.color]) : COLORTBL_LIVE;
 
   let fonttbl, body;
   if (mixedAlt) {

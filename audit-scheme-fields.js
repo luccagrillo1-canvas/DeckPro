@@ -47,10 +47,8 @@ function sinkDeck() {
     responses: { decision: 'D', r1: 'A', r2: 'B', r3: 'C' },
     slides: [
       { type: 'start', label: 'START', text: 'START' },
-      // plain body only — NO bold/alt span, so adv.bold / adv.strikethrough tests
-      // can't be falsely satisfied by markup-driven \b in the span content.
       { type: 'scripture', label: 'John 3:16', reference: 'John 3:16',
-        bodies: [[{ text: 'plain verse text' }]] },
+        bodies: [[{ text: 'plain verse ' }, { text: 'emphasis', alt: true }]] },
       { type: 'point', mode: 'single', label: 'Pt', bodyText: 'A point' },
       { type: 'point', mode: 'revealing', label: 'Rev', points: ['One', 'Two'] },
       { type: 'image', label: 'Img' },
@@ -63,7 +61,7 @@ function sinkDeck() {
 function sinkProps() {
   return [
     { type: 'scripture', propName: 'John 3:16', reference: 'John 3:16',
-      bodies: [[{ text: 'plain verse text' }]] },
+      bodies: [[{ text: 'plain verse ' }, { text: 'emphasis', alt: true }]] },
     { type: 'point-single', propName: 'Pt', bodyText: 'A point' },
     { type: 'point-revealing', propName: 'Rev', bullets: ['One', 'Two'], activeIdx: 1 },
     { type: 'response-card', propName: 'RC', decision: 'D', r1: 'A', r2: 'B', r3: 'C' },
@@ -136,15 +134,17 @@ const FIELDS = [
 
   // ── Main font names ──
   { name: 'bodyFont',   set: s => { s.bodyFont = S.font; },   checks: [m(`"name":"${S.font}"`), r(S.font)] },
-  { name: 'boldFont',   set: s => { s.boldFont = S.font; },   checks: [r(S.font)], expectDead: 'body emphasis uses bold-span \\b on bodyFont (UI never emits alt spans); pointFont shadows boldFont fallback' },
+  { name: 'boldFont',   set: s => { s.boldFont = S.font; },   checks: [r(S.font)] },
   { name: 'pointFont',  set: s => { s.pointFont = S.font; },  checks: [m(`"name":"${S.font}"`), r(S.font)] },
   { name: 'titleFont',  set: s => { s.titleFont = S.font; },  checks: [m(`"name":"${S.font}"`), r(S.font)] },
+  { name: 'rcBodyFont', set: s => { s.rcBodyFont = S.font; }, checks: [m(`"name":"${S.font}"`), r(S.font)] },
+  { name: 'rcTitleFont',set: s => { s.rcTitleFont = S.font;}, checks: [m(`"name":"${S.font}"`), r(S.font)] },
   { name: 'startEndFont',set: s => { s.startEndFont = S.font;},checks: [m(`"name":"${S.font}"`), r(S.font)] },
   { name: 'notesFont',  set: s => { s.notesFont = S.font; },  checks: [r(S.font)] },
 
   // ── Prop font names ──
   { name: 'propBodyFont', set: s => { s.propBodyFont = S.font; }, prop: true, checks: [r(S.font)] },
-  { name: 'propBoldFont', set: s => { s.propBoldFont = S.font; }, prop: true, checks: [r(S.font)], expectDead: 'prop emphasis uses pointFont; propBoldFont only a never-triggered fallback' },
+  { name: 'propBoldFont', set: s => { s.propBoldFont = S.font; }, prop: true, checks: [r(S.font)] },
   { name: 'propPointFont',set: s => { s.propPointFont = S.font; },prop: true, checks: [r(S.font)] },
   { name: 'propTitleFont',set: s => { s.propTitleFont = S.font; },prop: true, checks: [r(S.font)] },
 
@@ -152,6 +152,8 @@ const FIELDS = [
   { name: 'bodySize',    set: s => { s.bodySize = S.size; },    checks: [m(`"size":${S.size}`), r(`\\fs${S.size*2}`)] },
   { name: 'pointSize',   set: s => { s.pointSize = S.size; },   checks: [m(`"size":${S.size}`), r(`\\fs${S.size*2}`)] },
   { name: 'titleSize',   set: s => { s.titleSize = S.size; },   checks: [m(`"size":${S.size}`), r(`\\fs${S.size*2}`)] },
+  { name: 'rcBodySize',  set: s => { s.rcBodySize = S.size; },  checks: [m(`"size":${S.size}`), r(`\\fs${S.size*2}`)] },
+  { name: 'rcTitleSize', set: s => { s.rcTitleSize = S.size; }, checks: [m(`"size":${S.size}`), r(`\\fs${S.size*2}`)] },
   { name: 'startEndSize',set: s => { s.startEndSize = S.size; },checks: [m(`"size":${S.size}`), r(`\\fs${S.size*2}`)] },
   { name: 'notesSize',   set: s => { s.notesSize = S.size; },   checks: [r(`\\fs${S.size*2}`)] },
 
@@ -175,6 +177,8 @@ const FIELDS = [
   { name: 'pointX/Y/W/H', set: s => { s.pointX = 1111.1; s.pointY = 1111.1; s.pointW = 1111.1; s.pointH = 1111.1; }, checks: [m(`1111.1`)] },
   { name: 'titleX/Y/W/H', set: s => { s.autoTitleY = false; s.titleX = 222.2; s.titleY = 222.2; s.titleW = 222.2; s.titleH = 222.2; }, checks: [m(`222.2`)] },
   { name: 'autoTitleY+titleAutoGap', set: s => { s.autoTitleY = true; s.titleAutoGap = 47; }, checks: [], soft: true, note: 'computed offset; verify visually' },
+  { name: 'rcBodyX/Y/W/H', set: s => { s.rcBodyX = 226.2; s.rcBodyY = 226.2; s.rcBodyW = 226.2; s.rcBodyH = 226.2; }, checks: [m(`226.2`)] },
+  { name: 'rcTitleX/Y/W/H', set: s => { s.rcAutoTitleY = false; s.rcTitleX = 227.2; s.rcTitleY = 227.2; s.rcTitleW = 227.2; s.rcTitleH = 227.2; }, checks: [m(`227.2`)] },
   { name: 'startEndX/Y/W/H', set: s => { s.startEndX = 333.3; s.startEndY = 333.3; s.startEndW = 333.3; s.startEndH = 333.3; }, checks: [m(`333.3`)] },
   { name: 'liveX/Y/W/H',  set: s => { s.liveX = 444.4; s.liveY = 444.4; s.liveW = 444.4; s.liveH = 444.4; }, checks: [m(`444.4`)] },
   { name: 'queueX/Y/W/H', set: s => { s.queueX = 555.5; s.queueY = 555.5; s.queueW = 555.5; s.queueH = 555.5; }, checks: [m(`555.5`)] },
@@ -187,20 +191,25 @@ const FIELDS = [
 
   // ── Prop bounds ──
   { name: 'propBodyX/Y/W/H',  set: s => { s.propBodyX = 666.6; s.propBodyY = 666.6; s.propBodyW = 666.6; s.propBodyH = 666.6; }, prop: true, checks: [m(`666.6`)] },
+  { name: 'propPointX/Y/W/H', set: s => { s.propPointX = 667.6; s.propPointY = 667.6; s.propPointW = 667.6; s.propPointH = 667.6; }, prop: true, checks: [m(`667.6`)] },
   { name: 'propTitleX/Y/W/H', set: s => { s.propAutoTitleY = false; s.propTitleX = 777.7; s.propTitleY = 777.7; s.propTitleW = 777.7; s.propTitleH = 777.7; }, prop: true, checks: [m(`777.7`)] },
 
   // ── FontAdv: full sweep on body, title, point, startEnd + prop body + prop title ──
   ...advFull('bodyFontAdv'),
   ...advFull('titleFontAdv'),
   ...advFull('pointFontAdv'),
+  ...advFull('rcBodyFontAdv'),
+  ...advFull('rcTitleFontAdv'),
   ...advFull('startEndFontAdv'),
   ...advFull('propBodyFontAdv', { prop: true }),
+  ...advFull('propPointFontAdv', { prop: true }),
   ...advFull('propTitleFontAdv', { prop: true }),
   // FontAdv: color smoke test for the remaining objects
-  { name: 'notesFontAdv.color',    set: s => deep(s, 'notesFontAdv', 'color', S.hex),    checks: [r(colorRtf)], expectDead: 'rtfNotes hardcodes a white colortbl; notesFontAdv.color has no effect on notes text color' },
-  { name: 'boldFontAdv.color',     set: s => deep(s, 'boldFontAdv', 'color', S.hex),     checks: [r(colorRtf)], soft: true },
-  { name: 'propPointFontAdv.color',set: s => deep(s, 'propPointFontAdv', 'color', S.hex),prop: true, checks: [r(colorRtf), m(colorMeta)] },
-  { name: 'propBoldFontAdv.color', set: s => deep(s, 'propBoldFontAdv', 'color', S.hex), prop: true, checks: [r(colorRtf)], soft: true },
+  { name: 'notesFontAdv.color',    set: s => deep(s, 'notesFontAdv', 'color', S.hex),    checks: [r(colorRtf)] },
+  { name: 'boldFontAdv.capitalization(allCaps)',     set: s => deep(s, 'boldFontAdv', 'capitalization', 'allCaps'),     checks: [r(`\\caps `)] },
+  { name: 'boldFontAdv.color',                       set: s => deep(s, 'boldFontAdv', 'color', S.hex),                  checks: [r(colorRtf)] },
+  { name: 'propBoldFontAdv.capitalization(allCaps)', set: s => deep(s, 'propBoldFontAdv', 'capitalization', 'allCaps'), prop: true, checks: [r(`\\caps `)] },
+  { name: 'propBoldFontAdv.color',                   set: s => deep(s, 'propBoldFontAdv', 'color', S.hex),              prop: true, checks: [r(colorRtf)] },
 
   // ── liveFontAdv: color (RTF + meta) + margins ──
   { name: 'liveFontAdv.color',     set: s => deep(s, 'liveFontAdv', 'color', S.hex),     checks: [r(colorRtf), m(colorMeta)] },

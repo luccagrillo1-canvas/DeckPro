@@ -56,6 +56,9 @@ const DEFAULT_STYLE = {
   bodyFont:     'Montserrat-Medium',
   propBodyFont: 'Montserrat-SemiBold',
   pointFont:    'Montserrat-ExtraBold',   // point text (main screen)
+  propPointFont:'Montserrat-ExtraBold',   // point text (LED wall)
+  rcBodyFont:   'Montserrat-Medium',
+  rcTitleFont:  'Montserrat-ExtraBold',
   titleFont:    'Montserrat-ExtraBold',
   startEndFont: 'Montserrat-ExtraBold',
   notesFont:     'Montserrat-Medium',  // confidence-monitor slide notes
@@ -68,7 +71,10 @@ const DEFAULT_STYLE = {
   titleSize:     60,
   startEndSize:  45,
   propBodySize:  80,
+  propPointSize: 80,
   propTitleSize: 110,
+  rcBodySize:    44,
+  rcTitleSize:   60,
   notesSize:     50,
   liveSize:      42,
   queueSize:     32,
@@ -94,8 +100,13 @@ const DEFAULT_STYLE = {
   bodyFontAdv:     null,  // null = use FONT_ADV_DEFAULTS()
   propBodyFontAdv: null,
   boldFontAdv:     null,
+  propBoldFontAdv: null,
   pointFontAdv:    null,
+  propPointFontAdv:null,
   titleFontAdv:    null,
+  propTitleFontAdv:null,
+  rcBodyFontAdv:   null,
+  rcTitleFontAdv:  null,
   startEndFontAdv: null,
   notesFontAdv:    null,
   liveFontAdv:     null,
@@ -109,6 +120,10 @@ const DEFAULT_STYLE = {
   pointX: 0, pointY: 729.98, pointW: 1920, pointH: 350.02,
   titleX: -0.18, titleY: 880, titleW: 1920.18, titleH: 50.51,
   startEndX: 0, startEndY: 900.14, startEndW: 1920, startEndH: 179.86,
+  rcBodyX: 0, rcBodyY: 729.98, rcBodyW: 1920, rcBodyH: 350.02,
+  rcTitleX: -0.18, rcTitleY: 880, rcTitleW: 1920.18, rcTitleH: 50.51,
+  rcAutoTitleY: true, rcTitleAutoGap: 16,
+  propPointX: 0, propPointY: 853, propPointW: 3200, propPointH: 427,
 };
 
 function hexToColor(hex) {
@@ -126,7 +141,12 @@ function resolveStyle(style = {}) {
   const s  = { ...DEFAULT_STYLE, ...style };
   const fa = s.fillEnabled ? 1 : 0;
   // Normalize fontAdv fields — merge with defaults so callers always get a full object
-  const ADKEY = ['bodyFontAdv', 'propBodyFontAdv', 'boldFontAdv', 'pointFontAdv', 'titleFontAdv', 'startEndFontAdv', 'notesFontAdv', 'liveFontAdv', 'queueFontAdv'];
+  const ADKEY = [
+    'bodyFontAdv', 'propBodyFontAdv', 'boldFontAdv', 'propBoldFontAdv',
+    'pointFontAdv', 'propPointFontAdv', 'titleFontAdv', 'propTitleFontAdv',
+    'rcBodyFontAdv', 'rcTitleFontAdv',
+    'startEndFontAdv', 'notesFontAdv', 'liveFontAdv', 'queueFontAdv',
+  ];
   const out = {
     ...s,
     cFill:        { ...hexToColor(s.bodyFill),  alpha: fa },
@@ -319,6 +339,27 @@ function resolveScaleBehavior(adv, defaultVal) {
   return v;
 }
 
+function resolveCapitalization(adv) {
+  const map = {
+    allCaps: 'CAPITALIZATION_ALL_CAPS',
+    smallCaps: 'CAPITALIZATION_SMALL_CAPS',
+    titleCase: 'CAPITALIZATION_TITLE_CASE',
+    startCase: 'CAPITALIZATION_START_CASE',
+  };
+  return map[adv?.capitalization] || null;
+}
+
+function capitalizationAttr(adv) {
+  const cap = resolveCapitalization(adv);
+  return cap ? { capitalization: cap } : {};
+}
+
+function capitalizationCustomAttributes(adv, charCount) {
+  if (!charCount) return [];
+  const cap = resolveCapitalization(adv);
+  return cap ? [{ range: { end: charCount }, capitalization: cap }] : [{ range: { end: charCount } }];
+}
+
 function resolveStroke(adv, defaultStroke) {
   if (!adv?.strokeEnabled) return defaultStroke;
   return { width: adv.strokeWidth ?? 1, color: hexToColor(adv.strokeColor || '#ffffff') };
@@ -415,7 +456,7 @@ function makePointBodyElement({ x, y, w, h, rtfData, text }, rs = {}) {
     text: {
       attributes: {
         font: { name: rs.pointFont || 'Montserrat-Black', size: rs.pointSize || rs.bodySize || 44, bold: true, family: rs.pointFont || 'Montserrat-Black' },
-        capitalization: 'CAPITALIZATION_ALL_CAPS',
+        ...capitalizationAttr(adv),
         textSolidFill: textColorFromAdv(rs.pointFontAdv || rs.boldFontAdv),
         underlineStyle: {},
         // Alignment follows Advanced → Alignment (default centered for points).
@@ -423,9 +464,7 @@ function makePointBodyElement({ x, y, w, h, rtfData, text }, rs = {}) {
         paragraphStyle: { ...(adv.alignment === 'left' ? {} : { alignment: adv.alignment === 'right' ? 'ALIGNMENT_RIGHT' : 'ALIGNMENT_CENTER' }), lineHeightMultiple: 1, defaultTabInterval: 84, textList: {} },
         strikethroughStyle: {},
         ...resolveTextStroke(rs.pointFontAdv || rs.boldFontAdv),
-        customAttributes: [
-          { range: { end: charCount }, capitalization: 'CAPITALIZATION_ALL_CAPS' },
-        ],
+        customAttributes: capitalizationCustomAttributes(adv, charCount),
       },
       shadow: resolveTextShadow(rs.pointFontAdv || rs.boldFontAdv, TXT_SHADOW_LO),
       rtfData,
@@ -465,15 +504,13 @@ function makeStartEndElement({ text }, rs = {}) {
     text: {
       attributes: {
         font: { name: rs.startEndFont || 'Montserrat-ExtraBold', size: rs.startEndSize || 45, bold: true, family: rs.startEndFont || 'Montserrat-ExtraBold' },
-        capitalization: 'CAPITALIZATION_ALL_CAPS',
+        ...capitalizationAttr(rs.startEndFontAdv),
         textSolidFill: textColorFromAdv(rs.startEndFontAdv),
         underlineStyle: {},
         paragraphStyle: { lineHeightMultiple: 1, defaultTabInterval: 84, textList: {} },
         strikethroughStyle: {},
         ...resolveTextStroke(rs.startEndFontAdv),
-        customAttributes: [
-          { range: { end: charCount }, capitalization: 'CAPITALIZATION_ALL_CAPS' },
-        ],
+        customAttributes: capitalizationCustomAttributes(rs.startEndFontAdv, charCount),
       },
       shadow: resolveTextShadow(rs.startEndFontAdv, TXT_SHADOW_STD),
       rtfData: rtf.rtfStartEnd(text, rs),
@@ -518,8 +555,8 @@ function makeStartEndTitleEl({ text }, rs = {}) {
       },
       shadow: TXT_SHADOW_STD,
       rtfData: rtf.rtfLiveLabel(label, rs),
-      verticalAlignment: 'VERTICAL_ALIGNMENT_MIDDLE',
-      margins: {},
+      verticalAlignment: resolveVertAlign(rs.liveFontAdv, 'VERTICAL_ALIGNMENT_MIDDLE'),
+      margins: resolveMargins(rs.liveFontAdv, {}),
       isSuperscriptStandardized: true,
       transformDelimiter: '  •  ',
       chordPro: { color: C_CHORD },
@@ -633,15 +670,13 @@ function makeTitleElement({ reference, titleY }, rs = {}) {
     text: {
       attributes: {
         font: { name: rs.titleFont || 'Arial', size: rs.titleSize || 40, bold: true, family: rs.titleFont || 'Arial' },
-        capitalization: 'CAPITALIZATION_ALL_CAPS',
+        ...capitalizationAttr(adv),
         textSolidFill: (rs.titleFontAdv && rs.titleFontAdv.color) ? hexToColor(rs.titleFontAdv.color) : C_WHITE,
         underlineStyle: {},
         paragraphStyle: { alignment: 'ALIGNMENT_CENTER', lineHeightMultiple: 1, paragraphSpacing: 20, defaultTabInterval: 84, textList: {} },
         strikethroughStyle: {},
         ...resolveTextStroke(rs.titleFontAdv),
-        customAttributes: [
-          { range: { end: charCount }, capitalization: 'CAPITALIZATION_ALL_CAPS' },
-        ],
+        customAttributes: capitalizationCustomAttributes(adv, charCount),
       },
       shadow: resolveTextShadow(rs.titleFontAdv, TXT_SHADOW_LO),
       rtfData: rtf.rtfTitle(reference, rs),
@@ -820,16 +855,14 @@ function makeResponseCardTitleElement(rs = {}) {
     text: {
       attributes: {
         font: { name: rs.titleFont || 'Montserrat-ExtraBold', size: rs.titleSize || 60, bold: true, family: rs.titleFont || 'Montserrat' },
-        capitalization: 'CAPITALIZATION_ALL_CAPS',
+        ...capitalizationAttr(adv),
         textSolidFill: textColorFromAdv(adv),
         underlineStyle: {},
         paragraphStyle: { alignment: 'ALIGNMENT_CENTER', lineHeightMultiple: 1, defaultTabInterval: 84, textList: {} },
         strikethroughStyle: {},
         strokeWidth: -1,
         strokeColor: C_BLACK_A,
-        customAttributes: [
-          { range: { end: text.length }, capitalization: 'CAPITALIZATION_ALL_CAPS' },
-        ],
+        customAttributes: capitalizationCustomAttributes(adv, text.length),
       },
       shadow: TXT_SHADOW_LO,
       rtfData: rtf.rtfTitle(text, rs),
@@ -924,25 +957,54 @@ function makeResponseCardMarkElement(n, rs = {}) {
 
 /** Display 1 RC slide: scheme body + title, just like a scripture slide. */
 function makeRCSlide1(label, bodyText, rs = {}) {
-  const bx = rs.bodyX ?? 0;
-  const by = rs.bodyY ?? 729.98;
-  const bw = rs.bodyW ?? rs.canvasW ?? 1920;
-  const bh = rs.bodyH ?? 350.02;
-  const bodyYOff = rs.bodyFontAdv?.yOffset ?? 0;
+  const bodyAdv = rs.rcBodyFontAdv || rs.bodyFontAdv || {};
+  const titleAdv = rs.rcTitleFontAdv || rs.titleFontAdv || {};
+  const bodyStyle = {
+    ...rs,
+    bodyFont: rs.rcBodyFont || rs.bodyFont,
+    bodySize: rs.rcBodySize || rs.bodySize,
+    bodyFontAdv: bodyAdv,
+  };
+  const titleStyle = {
+    ...rs,
+    titleFont: rs.rcTitleFont || rs.titleFont,
+    titleSize: rs.rcTitleSize || rs.titleSize,
+    titleFontAdv: titleAdv,
+    titleX: rs.rcTitleX ?? rs.titleX,
+    titleW: rs.rcTitleW ?? rs.titleW,
+    titleH: rs.rcTitleH ?? rs.titleH,
+  };
+
+  const bx = rs.rcBodyX ?? rs.bodyX ?? 0;
+  const by = rs.rcBodyY ?? rs.bodyY ?? 729.98;
+  const bw = rs.rcBodyW ?? rs.bodyW ?? rs.canvasW ?? 1920;
+  const bh = rs.rcBodyH ?? rs.bodyH ?? 350.02;
+  const bodyYOff = bodyAdv.yOffset ?? 0;
   const spans = bodyText ? [{ text: bodyText }] : [];
-  const bodyRtf = rtf.rtfBody(spans, rs);
-  const titleY = rs.autoTitleY ? estimateTitleY(spans, bw, rs) : (rs.titleY ?? 880);
+  const bodyRtf = rtf.rtfBody(spans, bodyStyle);
+  const titleY = (rs.rcAutoTitleY ?? rs.autoTitleY)
+    ? estimateTitleY(spans, bw, {
+        ...rs,
+        bodyY: by,
+        bodyH: bh,
+        bodySize: bodyStyle.bodySize,
+        bodyFontAdv: bodyAdv,
+        titleH: titleStyle.titleH,
+        titleAutoGap: rs.rcTitleAutoGap ?? rs.titleAutoGap,
+      })
+    : (rs.rcTitleY ?? rs.titleY ?? 880);
   return [
     makeSlot(makeLiveElement(rs), { info: 2 }),
-    makeSlot(makeTitleElement({ reference: label, titleY }, rs)),
-    makeSlot(makeBodyElement({ x: bx, y: by + bodyYOff, w: bw, h: bh, rtfData: bodyRtf, charCount: (bodyText || '').length }, rs)),
+    makeSlot(makeTitleElement({ reference: label, titleY }, titleStyle)),
+    makeSlot(makeBodyElement({ x: bx, y: by + bodyYOff, w: bw, h: bh, rtfData: bodyRtf, charCount: (bodyText || '').length }, bodyStyle)),
   ];
 }
 
 /** Confidence monitor element for response slides — off-screen y=1135, full list */
-function makeResponseConfMonitorElement(decisionText, r1, r2, r3) {
+function makeResponseConfMonitorElement(decisionText, r1, r2, r3, rs = {}) {
   const id = uuid();
   const plain = [decisionText || '', `1 — ${r1 || ''}`, `2 — ${r2 || ''}`, `3 — ${r3 || ''}`].join('\n');
+  const adv = rs.notesFontAdv || {};
   return {
     uuid: id,
     name: 'this slide',
@@ -950,25 +1012,24 @@ function makeResponseConfMonitorElement(decisionText, r1, r2, r3) {
     opacity: 1,
     path: RECT_PATH,
     fill: { color: hexToColor('#2196f2') },
-    stroke: { width: 3, color: C_WHITE },
-    shadow: EL_SHADOW_STD,
+    stroke: resolveStroke(adv, { width: 3, color: C_WHITE }),
+    shadow: resolveShadow(adv, EL_SHADOW_STD),
     feather: { radius: 0.05 },
     text: {
       attributes: {
-        font: { name: 'Montserrat-Medium', size: 40, family: 'Montserrat' },
-        textSolidFill: C_WHITE,
+        font: { name: rs.notesFont || 'Montserrat-Medium', size: rs.notesSize || 40, family: rs.notesFont || 'Montserrat' },
+        textSolidFill: textColorFromAdv(adv),
         underlineStyle: {},
         paragraphStyle: { lineHeightMultiple: 1, defaultTabInterval: 84, textList: {} },
         strikethroughStyle: {},
-        strokeWidth: -1,
-        strokeColor: C_BLACK_A,
+        ...resolveTextStroke(adv),
         customAttributes: plain.length ? [{ range: { end: plain.length } }] : [],
       },
-      shadow: TXT_SHADOW_LO,
+      shadow: resolveTextShadow(adv, TXT_SHADOW_LO),
       rtfData: rtf.rtfResponseConfMonitor(decisionText, r1, r2, r3),
-      scaleBehavior: 'SCALE_BEHAVIOR_SCALE_FONT_DOWN',
-      verticalAlignment: 'VERTICAL_ALIGNMENT_TOP',
-      margins: { top: 10 },
+      scaleBehavior: resolveScaleBehavior(adv, 'SCALE_BEHAVIOR_SCALE_FONT_DOWN'),
+      verticalAlignment: resolveVertAlign(adv, 'VERTICAL_ALIGNMENT_TOP'),
+      margins: resolveMargins(adv, { top: 10 }),
       isSuperscriptStandardized: true,
       transformDelimiter: '  •  ',
       chordPro: { color: C_CHORD },

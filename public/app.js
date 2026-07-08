@@ -2,9 +2,18 @@
 
 // ─── Version & Changelog ──────────────────────────────────────────────────────
 
-const APP_VERSION = '4.7.5';
+const APP_VERSION = '4.7.6';
 
 const CHANGELOG = [
+  {
+    version: '4.7.6',
+    date: '2026-07-08',
+    changes: [
+      'Export fixes: generated filenames now use title-cased tokens like FruitOfTheSpirit, and smart quotes are normalized before writing Pro7 files.',
+      'Scheme fixes: Display 2 Point now has its own layout controls, Display 1 Response Card has separate Body and Title controls, and bold/display-2 styling now carries through export.',
+      'Setup fix: Machine Setup now saves Pro7 port and password changes when you finish setup, even if you do not press Check Pro7 first.',
+    ],
+  },
   {
     version: '4.7.5',
     date: '2026-07-08',
@@ -2127,11 +2136,14 @@ const LAYOUT_FIELDS = [
   'bodyX','bodyY','bodyW','bodyH',
   'pointX','pointY','pointW','pointH',
   'titleX','titleY','titleW','titleH','autoTitleY','titleAutoGap',
+  'rcBodyX','rcBodyY','rcBodyW','rcBodyH',
+  'rcTitleX','rcTitleY','rcTitleW','rcTitleH','rcAutoTitleY','rcTitleAutoGap',
   'startEndX','startEndY','startEndW','startEndH',
   'liveX','liveY','liveW','liveH',
   'queueX','queueY','queueW','queueH',
   'propCanvasW','propCanvasH',
   'propBodyX','propBodyY','propBodyW','propBodyH',
+  'propPointX','propPointY','propPointW','propPointH',
   'propTitleX','propTitleY','propTitleW','propTitleH','propAutoTitleY','propTitleAutoGap',
 ];
 const DEFAULT_GLOBAL_LAYOUT = () => {
@@ -2148,6 +2160,8 @@ const DEFAULT_GLOBAL_SIZES = {
   bodySize: 44,
   pointSize: 44,
   titleSize: 60,
+  rcBodySize: 44,
+  rcTitleSize: 60,
   startEndSize: 45,
   propBodySize: 80,
   propPointSize: 80,
@@ -2161,11 +2175,11 @@ const SIZE_FIELD_SET = new Set(SIZE_FIELDS);
 const SIZE_FIELD_TO_TYPO_KEY = Object.fromEntries(SIZE_FIELDS.map(k => [k, k]));
 const TYPOGRAPHY_KEYS = ['font1', 'font2', 'boldFont', 'colorNeutral', 'colorAccent', ...SIZE_FIELDS];
 const COLOR_TYPO_KEYS = new Set(['colorNeutral', 'colorAccent']);
-const REGULAR_FONT_FIELDS   = ['bodyFont', 'propBodyFont', 'pointFont', 'propPointFont', 'startEndFont', 'notesFont', 'liveFont', 'queueFont'];
-const HIGHLIGHT_FONT_FIELDS = ['titleFont', 'propTitleFont'];
+const REGULAR_FONT_FIELDS   = ['bodyFont', 'propBodyFont', 'pointFont', 'propPointFont', 'rcBodyFont', 'startEndFont', 'notesFont', 'liveFont', 'queueFont'];
+const HIGHLIGHT_FONT_FIELDS = ['titleFont', 'propTitleFont', 'rcTitleFont'];
 const BOLD_FONT_FIELDS      = ['boldFont', 'propBoldFont'];
-const REGULAR_ADV_FIELDS    = ['bodyFontAdv', 'propBodyFontAdv', 'pointFontAdv', 'propPointFontAdv', 'startEndFontAdv', 'notesFontAdv', 'liveFontAdv', 'queueFontAdv'];
-const HIGHLIGHT_ADV_FIELDS  = ['titleFontAdv', 'propTitleFontAdv'];
+const REGULAR_ADV_FIELDS    = ['bodyFontAdv', 'propBodyFontAdv', 'pointFontAdv', 'propPointFontAdv', 'rcBodyFontAdv', 'startEndFontAdv', 'notesFontAdv', 'liveFontAdv', 'queueFontAdv'];
+const HIGHLIGHT_ADV_FIELDS  = ['titleFontAdv', 'propTitleFontAdv', 'rcTitleFontAdv'];
 const BOLD_ADV_FIELDS       = ['boldFontAdv', 'propBoldFontAdv'];
 const ADV_SCHEME_KEYS = [...REGULAR_ADV_FIELDS, ...HIGHLIGHT_ADV_FIELDS, ...BOLD_ADV_FIELDS];
 const DEFAULT_GLOBAL_FONT_ADV = () => Object.fromEntries(ADV_SCHEME_KEYS.map(k => [k, FONT_ADV_DEFAULTS()]));
@@ -2205,6 +2219,8 @@ const DEFAULT_STYLE_SCHEME = () => ({
   propBodyFont: 'Montserrat-SemiBold',
   pointFont:    'Montserrat-ExtraBold',   // point text (main screen)
   propPointFont:'Montserrat-ExtraBold',   // point text (LED wall)
+  rcBodyFont:   'Montserrat-Medium',
+  rcTitleFont:  'Montserrat-ExtraBold',
   titleFont:    'Montserrat-ExtraBold',
   propTitleFont:'Montserrat-ExtraBold',
   startEndFont: 'Montserrat-ExtraBold',
@@ -2215,6 +2231,8 @@ const DEFAULT_STYLE_SCHEME = () => ({
   bodySize:      44,
   pointSize:     44,
   titleSize:     60,
+  rcBodySize:    44,
+  rcTitleSize:   60,
   startEndSize:  45,
   propBodySize:  80,
   propPointSize: 80,
@@ -2237,11 +2255,15 @@ const DEFAULT_STYLE_SCHEME = () => ({
   pointX: 0, pointY: 729.98, pointW: 1920, pointH: 350.02,
   titleX: -0.18, titleY: 880, titleW: 1920.18, titleH: 50.51,
   autoTitleY: true, titleAutoGap: 16,
+  rcBodyX: 0, rcBodyY: 729.98, rcBodyW: 1920, rcBodyH: 350.02,
+  rcTitleX: -0.18, rcTitleY: 880, rcTitleW: 1920.18, rcTitleH: 50.51,
+  rcAutoTitleY: true, rcTitleAutoGap: 16,
   startEndX: 0, startEndY: 900.14, startEndW: 1920, startEndH: 179.86,
   liveX: 1736.73, liveY: 1096.71, liveW: 183.27, liveH: 71.56,
   queueX: 0, queueY: 0, queueW: 400, queueH: 1080,
   // Prop element bounds (scaled to 3200×1280)
   propBodyX: 0, propBodyY: 853, propBodyW: 3200, propBodyH: 427,
+  propPointX: 0, propPointY: 853, propPointW: 3200, propPointH: 427,
   propTitleX: -0.30, propTitleY: 1040, propTitleW: 3200.30, propTitleH: 60,
   propAutoTitleY: true, propTitleAutoGap: 16,
   // Font advanced styling
@@ -2251,6 +2273,8 @@ const DEFAULT_STYLE_SCHEME = () => ({
   propBoldFontAdv: FONT_ADV_DEFAULTS(),
   pointFontAdv:    FONT_ADV_DEFAULTS(),
   propPointFontAdv:FONT_ADV_DEFAULTS(),
+  rcBodyFontAdv:   FONT_ADV_DEFAULTS(),
+  rcTitleFontAdv:  FONT_ADV_DEFAULTS(),
   titleFontAdv:    FONT_ADV_DEFAULTS(),
   propTitleFontAdv:FONT_ADV_DEFAULTS(),
   startEndFontAdv: FONT_ADV_DEFAULTS(),
@@ -2617,7 +2641,7 @@ function applySavedState(saved) {
     // Restore style schemes — support old 'stylePresets' key for migration
     const savedSchemes = saved.styleSchemes || saved.stylePresets;
     if (Array.isArray(savedSchemes) && savedSchemes.length) {
-      const LEGACY_PT_SIZE_FIELDS = ['bodySize', 'pointSize', 'titleSize', 'startEndSize', 'propBodySize', 'propPointSize', 'propTitleSize'];
+      const LEGACY_PT_SIZE_FIELDS = ['bodySize', 'pointSize', 'titleSize', 'rcBodySize', 'rcTitleSize', 'startEndSize', 'propBodySize', 'propPointSize', 'propTitleSize'];
       state.styleSchemes = savedSchemes.map(p => {
         const DEF = DEFAULT_STYLE_SCHEME();
         // Migrate old half-point values to pt
@@ -2632,7 +2656,7 @@ function applySavedState(saved) {
         delete merged['undefined'];
         merged._needsTypographyMigration = !out.typography;
         // Merge nested fontAdv objects too
-        for (const k of ['bodyFontAdv','propBodyFontAdv','boldFontAdv','titleFontAdv','propTitleFontAdv','startEndFontAdv','notesFontAdv','liveFontAdv','queueFontAdv']) {
+        for (const k of ['bodyFontAdv','propBodyFontAdv','boldFontAdv','titleFontAdv','propTitleFontAdv','startEndFontAdv','notesFontAdv','liveFontAdv','queueFontAdv','pointFontAdv','propPointFontAdv','rcBodyFontAdv','rcTitleFontAdv']) {
           merged[k] = { ...FONT_ADV_DEFAULTS(), ...(out[k] || {}) };
         }
         // Seed slide-notes font fields for schemes saved before notes were customizable
@@ -2646,6 +2670,24 @@ function applySavedState(saved) {
         if (out.pointY === undefined) merged.pointY = merged.bodyY;
         if (out.pointW === undefined) merged.pointW = merged.bodyW;
         if (out.pointH === undefined) merged.pointH = merged.bodyH;
+        if (out.propPointX === undefined) merged.propPointX = merged.propBodyX;
+        if (out.propPointY === undefined) merged.propPointY = merged.propBodyY;
+        if (out.propPointW === undefined) merged.propPointW = merged.propBodyW;
+        if (out.propPointH === undefined) merged.propPointH = merged.propBodyH;
+        if (!out.rcBodySize)  merged.rcBodySize  = merged.bodySize;
+        if (!out.rcTitleSize) merged.rcTitleSize = merged.titleSize;
+        if (!out.rcBodyFont)  merged.rcBodyFont  = merged.bodyFont;
+        if (!out.rcTitleFont) merged.rcTitleFont = merged.titleFont;
+        if (out.rcBodyX === undefined) merged.rcBodyX = merged.bodyX;
+        if (out.rcBodyY === undefined) merged.rcBodyY = merged.bodyY;
+        if (out.rcBodyW === undefined) merged.rcBodyW = merged.bodyW;
+        if (out.rcBodyH === undefined) merged.rcBodyH = merged.bodyH;
+        if (out.rcTitleX === undefined) merged.rcTitleX = merged.titleX;
+        if (out.rcTitleY === undefined) merged.rcTitleY = merged.titleY;
+        if (out.rcTitleW === undefined) merged.rcTitleW = merged.titleW;
+        if (out.rcTitleH === undefined) merged.rcTitleH = merged.titleH;
+        if (out.rcAutoTitleY === undefined) merged.rcAutoTitleY = merged.autoTitleY;
+        if (out.rcTitleAutoGap === undefined) merged.rcTitleAutoGap = merged.titleAutoGap;
         // Seed prop title font split added in v3.40.0
         if (!out.propTitleFont)    merged.propTitleFont    = merged.titleFont;
         if (!out.propTitleFontAdv) merged.propTitleFontAdv = JSON.parse(JSON.stringify(merged.titleFontAdv));
@@ -2663,6 +2705,10 @@ function applySavedState(saved) {
         if (!out.propPointFont)     merged.propPointFont     = out.propBoldFont || out.boldFont || merged.propPointFont;
         if (!out.propPointFontAdv)  merged.propPointFontAdv  = JSON.parse(JSON.stringify(merged.propBoldFontAdv));
         else                        merged.propPointFontAdv  = { ...FONT_ADV_DEFAULTS(), ...out.propPointFontAdv };
+        if (!out.rcBodyFontAdv)     merged.rcBodyFontAdv     = JSON.parse(JSON.stringify(merged.bodyFontAdv));
+        else                        merged.rcBodyFontAdv     = { ...FONT_ADV_DEFAULTS(), ...out.rcBodyFontAdv };
+        if (!out.rcTitleFontAdv)    merged.rcTitleFontAdv    = JSON.parse(JSON.stringify(merged.titleFontAdv));
+        else                        merged.rcTitleFontAdv    = { ...FONT_ADV_DEFAULTS(), ...out.rcTitleFontAdv };
         // Drop the removed orphan fields if an old scheme carried them.
         delete merged.titleText; delete merged.titleShadow;
         delete merged.boldFont;  delete merged.propBoldFont;
@@ -5095,7 +5141,14 @@ async function showMachineSetup(force = false) {
   document.body.appendChild(overlay);
 
   const close = () => overlay.remove();
+  const commitSetupConnection = () => {
+    const portInput = overlay.querySelector('#setup-pro7-port');
+    const passInput = overlay.querySelector('#setup-pro7-password');
+    cfg.pro7Port = parseInt(portInput?.value || '1025', 10) || 1025;
+    cfg.pro7Password = passInput?.value || '';
+  };
   const finish = () => {
+    commitSetupConnection();
     cfg.setupComplete = true;
     saveState();
     close();
@@ -5107,6 +5160,8 @@ async function showMachineSetup(force = false) {
   overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
   overlay.querySelector('#setup-skip').addEventListener('click', finish);
   overlay.querySelector('#setup-done').addEventListener('click', finish);
+  overlay.querySelector('#setup-pro7-port').addEventListener('change', () => { commitSetupConnection(); saveState(); });
+  overlay.querySelector('#setup-pro7-password').addEventListener('input', () => { commitSetupConnection(); saveState(); });
   loadPro7LibrarySelect(overlay.querySelector('#setup-pro7-library'), cfg, cfg.pro7RootFolder);
 
   // After the scan resolves, update the Pro7 Folder pill with the real validation result.
@@ -5128,8 +5183,7 @@ async function showMachineSetup(force = false) {
   });
 
   overlay.querySelector('#setup-check-pro7').addEventListener('click', async () => {
-    cfg.pro7Port = parseInt(overlay.querySelector('#setup-pro7-port').value, 10) || 1025;
-    cfg.pro7Password = overlay.querySelector('#setup-pro7-password').value;
+    commitSetupConnection();
     saveState();
     await checkPro7(false);
     reopen();
@@ -5426,12 +5480,15 @@ function lyRows() {
     { label: 'Body',         cols: ['bodyX','bodyY','bodyW','bodyH'], region: 'body' },
     { label: 'Point',        cols: ['pointX','pointY','pointW','pointH'], region: 'point' },
     { label: 'Title',        cols: ['titleX','titleY','titleW','titleH'], autoY: { field: 'autoTitleY', gapField: 'titleAutoGap' }, region: 'header' },
+    { label: 'RC Body',      cols: ['rcBodyX','rcBodyY','rcBodyW','rcBodyH'], region: 'rcBody' },
+    { label: 'RC Title',     cols: ['rcTitleX','rcTitleY','rcTitleW','rcTitleH'], autoY: { field: 'rcAutoTitleY', gapField: 'rcTitleAutoGap' }, region: 'rcTitle' },
     { label: 'Utility',      cols: ['startEndX','startEndY','startEndW','startEndH'], region: 'startEnd' },
     { label: 'Live',         cols: ['liveX','liveY','liveW','liveH'], region: 'live' },
     { label: 'Queue',        cols: ['queueX','queueY','queueW','queueH'], region: 'queue' },
     { label: dn('ledWall'),  type: 'head', head: 'prop' },
     { label: 'Canvas',       cols: [null,null,'propCanvasW','propCanvasH'] },
     { label: 'Prop body',    cols: ['propBodyX','propBodyY','propBodyW','propBodyH'], region: 'propBody' },
+    { label: 'Prop point',   cols: ['propPointX','propPointY','propPointW','propPointH'], region: 'propPoint' },
     { label: 'Prop title',   cols: ['propTitleX','propTitleY','propTitleW','propTitleH'], autoY: { field: 'propAutoTitleY', gapField: 'propTitleAutoGap' }, region: 'propHeader' },
   ];
 }
@@ -5604,9 +5661,12 @@ function refreshSchemePreviews(panel, scheme) {
     body:      [sv.bodyX??0, sv.bodyY??0, sv.bodyW??0, sv.bodyH??0, mainW, mainH],
     point:     [sv.pointX??sv.bodyX??0, sv.pointY??sv.bodyY??0, sv.pointW??sv.bodyW??0, sv.pointH??sv.bodyH??0, mainW, mainH],
     header:    [sv.titleX??0, sv.titleY??0, sv.titleW??0, sv.titleH??0, mainW, mainH],
+    rcBody:    [sv.rcBodyX??sv.bodyX??0, sv.rcBodyY??sv.bodyY??0, sv.rcBodyW??sv.bodyW??0, sv.rcBodyH??sv.bodyH??0, mainW, mainH],
+    rcTitle:   [sv.rcTitleX??sv.titleX??0, sv.rcTitleY??sv.titleY??0, sv.rcTitleW??sv.titleW??0, sv.rcTitleH??sv.titleH??0, mainW, mainH],
     startEnd:  [sv.startEndX??0, sv.startEndY??0, sv.startEndW??0, sv.startEndH??0, mainW, mainH],
     live:      [sv.liveX??0, sv.liveY??0, sv.liveW??0, sv.liveH??0, mainW, mainH],
     propBody:  [sv.propBodyX??0, sv.propBodyY??0, sv.propBodyW??0, sv.propBodyH??0, propW, propH],
+    propPoint: [sv.propPointX??sv.propBodyX??0, sv.propPointY??sv.propBodyY??0, sv.propPointW??sv.propBodyW??0, sv.propPointH??sv.propBodyH??0, propW, propH],
     propHeader:[sv.propTitleX??0, sv.propTitleY??0, sv.propTitleW??0, sv.propTitleH??0, propW, propH],
   };
   panel.querySelectorAll('.lp-region[data-region]').forEach(el => {
@@ -5730,11 +5790,14 @@ function layoutPreview(scheme, sel) {
     ['body',      'Body',         sv.bodyX ?? 0,     sv.bodyY ?? 0,     sv.bodyW ?? 0,      sv.bodyH ?? 0],
     ['point',     'Point',        sv.pointX ?? sv.bodyX ?? 0, sv.pointY ?? sv.bodyY ?? 0, sv.pointW ?? sv.bodyW ?? 0, sv.pointH ?? sv.bodyH ?? 0],
     ['header',    'Title',        sv.titleX ?? 0,    sv.titleY ?? 0,    sv.titleW ?? 0,     sv.titleH ?? 0],
+    ['rcBody',    'RC Body',      sv.rcBodyX ?? sv.bodyX ?? 0, sv.rcBodyY ?? sv.bodyY ?? 0, sv.rcBodyW ?? sv.bodyW ?? 0, sv.rcBodyH ?? sv.bodyH ?? 0],
+    ['rcTitle',   'RC Title',     sv.rcTitleX ?? sv.titleX ?? 0, sv.rcTitleY ?? sv.titleY ?? 0, sv.rcTitleW ?? sv.titleW ?? 0, sv.rcTitleH ?? sv.titleH ?? 0],
     ['startEnd',  'Utility',      sv.startEndX ?? 0, sv.startEndY ?? 0, sv.startEndW ?? 0,  sv.startEndH ?? 0],
     ['live',      'Live',         sv.liveX ?? 0,     sv.liveY ?? 0,     sv.liveW ?? 0,      sv.liveH ?? 0],
   ];
   const propRegions = [
     ['propBody',   'Prop body',   sv.propBodyX ?? 0, sv.propBodyY ?? 0, sv.propBodyW ?? 0,  sv.propBodyH ?? 0],
+    ['propPoint',  'Prop point',  sv.propPointX ?? sv.propBodyX ?? 0, sv.propPointY ?? sv.propBodyY ?? 0, sv.propPointW ?? sv.propBodyW ?? 0, sv.propPointH ?? sv.propBodyH ?? 0],
     ['propHeader', 'Prop title',  sv.propTitleX ?? 0, sv.propTitleY ?? 0, sv.propTitleW ?? 0, sv.propTitleH ?? 0],
   ];
   const box = (cw, ch) => ([slug, lbl, x, y, w, h]) => {
@@ -5873,6 +5936,8 @@ function renderSchemeGrid(sv, rs, dis) {
       { id: 'bold1',  lbl: 'Bold',        fontF: 'boldFont',      advK: 'boldFontAdv',      sizeF: null },
       { id: 'title1', lbl: 'Title',       fontF: 'titleFont',     advK: 'titleFontAdv',     sizeF: 'titleSize' },
       { id: 'point1', lbl: 'Point',       fontF: 'pointFont',     advK: 'pointFontAdv',     sizeF: 'pointSize' },
+      { id: 'rcBody1',  lbl: 'RC Body',   fontF: 'rcBodyFont',    advK: 'rcBodyFontAdv',    sizeF: 'rcBodySize' },
+      { id: 'rcTitle1', lbl: 'RC Title',  fontF: 'rcTitleFont',   advK: 'rcTitleFontAdv',   sizeF: 'rcTitleSize' },
     ]},
     { label: 'Display 2', rows: [
       { id: 'body2',  lbl: 'Body',        fontF: 'propBodyFont',  advK: 'propBodyFontAdv',  sizeF: 'propBodySize' },
@@ -6391,7 +6456,7 @@ function renderStylePanel(panel) {
   });
 
   // Font selects (family + style)
-  ['bodyFont', 'propBodyFont', 'boldFont', 'propBoldFont', 'pointFont', 'propPointFont', 'titleFont', 'propTitleFont', 'startEndFont', 'notesFont', 'liveFont', 'queueFont'].forEach(field => {
+  ['bodyFont', 'propBodyFont', 'boldFont', 'propBoldFont', 'pointFont', 'propPointFont', 'rcBodyFont', 'rcTitleFont', 'titleFont', 'propTitleFont', 'startEndFont', 'notesFont', 'liveFont', 'queueFont'].forEach(field => {
     const famSel = document.getElementById(`sf-fam-${field}`);
     const stySel = document.getElementById(`sf-sty-${field}`);
     if (!famSel || !stySel) return;
@@ -6480,7 +6545,7 @@ function renderStylePanel(panel) {
   });
 
   // Size inputs
-  ['bodySize', 'pointSize', 'titleSize', 'startEndSize', 'propBodySize', 'propPointSize', 'propTitleSize', 'notesSize', 'liveSize', 'queueSize'].forEach(field => {
+  ['bodySize', 'pointSize', 'titleSize', 'rcBodySize', 'rcTitleSize', 'startEndSize', 'propBodySize', 'propPointSize', 'propTitleSize', 'notesSize', 'liveSize', 'queueSize'].forEach(field => {
     const inp = document.getElementById(`ss-${field}`);
     if (!inp) return;
     inp.addEventListener('input', e => {
@@ -6790,6 +6855,7 @@ function renderStylePanel(panel) {
       _textSel = slug;
       const TEXT_REGION_TO_ROW = {
         body: 'body1', propBody: 'body2', point: 'point1', propPoint: 'point2',
+        rcBody: 'rcBody1', rcTitle: 'rcTitle1',
         header: 'title1', propHeader: 'title2', startEnd: 'se',
         live: 'live', queue: 'queue',
       };
@@ -6808,7 +6874,8 @@ function renderStylePanel(panel) {
   // Text tab: clicking a row highlights the matching preview region
   const TEXT_ROW_TO_REGION = {
     body1: 'body', bold1: 'body', title1: 'header', point1: 'point',
-    body2: 'propBody', bold2: 'propBody', title2: 'propHeader', point2: 'propBody',
+    rcBody1: 'rcBody', rcTitle1: 'rcTitle',
+    body2: 'propBody', bold2: 'propBody', title2: 'propHeader', point2: 'propPoint',
     se: 'startEnd', live: 'live', queue: 'queue',
   };
   panel.querySelectorAll('#style-tab-text .sg-row[data-rowid]').forEach(row => {
@@ -6827,6 +6894,7 @@ function renderStylePanel(panel) {
   if (_textSel) {
     const TEXT_REGION_TO_ROW = {
       body: 'body1', propBody: 'body2', point: 'point1', propPoint: 'point2',
+      rcBody: 'rcBody1', rcTitle: 'rcTitle1',
       header: 'title1', propHeader: 'title2', startEnd: 'se',
       live: 'live', queue: 'queue',
     };
@@ -8461,12 +8529,37 @@ function buildFileName() {
   const d = weekDate || new Date().toISOString().slice(0, 10);
   const [yyyy, mm, dd] = d.split('-');
   const yy = (yyyy || '').slice(-2);  // 2-digit year: 2026 → 26
-  const series = (seriesName || 'Untitled').replace(/\s+/g, '_');
-  const title  = (messageTitle || '').replace(/\s+/g, '_');
+  const series = fileNameToken(seriesName || 'Untitled');
+  const title  = fileNameToken(messageTitle || '');
   const qrSuffix = qrCode ? '_SAT' : '';
   return title
     ? `Message_${yy}.${mm}.${dd}_${series}_${title}${qrSuffix}`
     : `Message_${yy}.${mm}.${dd}_${series}${qrSuffix}`;
+}
+
+function fileNameToken(value) {
+  const cleaned = normalizeDeckQuotes(value || '')
+    .replace(/['"]/g, '')
+    .trim();
+  const words = cleaned.match(/[A-Za-z0-9]+/g) || [];
+  if (!words.length) return '';
+  return words.map(w => w.charAt(0).toUpperCase() + w.slice(1)).join('');
+}
+
+function normalizeDeckQuotes(value) {
+  return String(value ?? '')
+    .replace(/[“”„‟]/g, '"')
+    .replace(/[‘’‚‛]/g, "'");
+}
+
+function normalizeExportSpans(spans) {
+  return (spans || []).map(span => ({ ...span, text: normalizeDeckQuotes(span.text || '') }));
+}
+
+function normalizeExportBullets(bullets) {
+  return (bullets || []).map(bullet =>
+    Array.isArray(bullet) ? normalizeExportSpans(bullet) : normalizeDeckQuotes(bullet || '')
+  );
 }
 
 // ─── Book name normalization ──────────────────────────────────────────────────
@@ -8518,11 +8611,11 @@ function buildSpec() {
   const style = styleForExport(activeScheme);
 
   const slides = state.slides.map(slide => {
-    if (slide.type === 'start') return { type: 'start', label: slide.label || 'Start of Notes', text: slide.text ?? slide.label ?? 'Start of Notes' };
-    if (slide.type === 'end')   return { type: 'end',   label: slide.label || 'End of Notes', text: slide.text ?? slide.label ?? 'End of Notes' };
+    if (slide.type === 'start') return { type: 'start', label: normalizeDeckQuotes(slide.label || 'Start of Notes'), text: normalizeDeckQuotes(slide.text ?? slide.label ?? 'Start of Notes') };
+    if (slide.type === 'end')   return { type: 'end',   label: normalizeDeckQuotes(slide.label || 'End of Notes'), text: normalizeDeckQuotes(slide.text ?? slide.label ?? 'End of Notes') };
 
     if (slide.type === 'scripture') {
-      const bodies = slide.bodies || [slide.body || []];
+      const bodies = (slide.bodies || [slide.body || []]).map(normalizeExportSpans);
       // Auto-fill blankSpans from all bodies when split and not manually set
       const blankSpans = (slide.blankSpans && slide.blankSpans.length)
         ? slide.blankSpans
@@ -8535,12 +8628,12 @@ function buildSpec() {
       const displayRef = applyBookNames(slide.reference || '', state.config.bookNames || {});
       return {
         type:          'scripture',
-        label:         slide.label || slide.reference || 'Scripture',
-        reference:     displayRef,
+        label:         normalizeDeckQuotes(slide.label || slide.reference || 'Scripture'),
+        reference:     normalizeDeckQuotes(displayRef),
         bodies,
-        propName:      slide.propName || slide.reference || 'scripture',
+        propName:      normalizeDeckQuotes(slide.propName || slide.reference || 'scripture'),
         blankBefore:   !!slide.blankBefore,
-        blankSpans,
+        blankSpans:    normalizeExportSpans(blankSpans),
         stageLayout:   slide.stageLayout || null,
         transition:    slide.transition || null,
         propTransition: slide.propTransition || null,
@@ -8557,13 +8650,13 @@ function buildSpec() {
         return {
           type:                 'point',
           mode:                 'revealing',
-          label:                slide.label || 'Point',
-          title:                slide.title || '',
-          bullets:              (slide.bullets || [[]]).filter(b => bulletToText(b)?.trim()),
-          propBaseName:         slide.propBaseName || slide.label || 'point',
+          label:                normalizeDeckQuotes(slide.label || 'Point'),
+          title:                normalizeDeckQuotes(slide.title || ''),
+          bullets:              normalizeExportBullets((slide.bullets || [[]]).filter(b => bulletToText(b)?.trim())),
+          propBaseName:         normalizeDeckQuotes(slide.propBaseName || slide.label || 'point'),
           followReveal:         slide.followReveal || 'single',
           blankBefore:          !!slide.blankBefore,
-          blankSpans:           slide.blankSpans || [],
+          blankSpans:           normalizeExportSpans(slide.blankSpans || []),
           stageLayout:          slide.stageLayout || null,
           transition:           slide.transition || null,
           macroOverride:        slide.macroOverride || null,
@@ -8576,12 +8669,12 @@ function buildSpec() {
       return {
         type:          'point',
         mode:          'single',
-        label:         slide.label || slide.bodyText || 'Point',
-        bodyText:      slide.bodyText || '',
-        propName:      slide.propName || slide.bodyText || 'point',
+        label:         normalizeDeckQuotes(slide.label || slide.bodyText || 'Point'),
+        bodyText:      normalizeDeckQuotes(slide.bodyText || ''),
+        propName:      normalizeDeckQuotes(slide.propName || slide.bodyText || 'point'),
         customProp:    !!slide.customProp,
         blankBefore:   !!slide.blankBefore,
-        blankSpans:    slide.blankSpans || [],
+        blankSpans:    normalizeExportSpans(slide.blankSpans || []),
         stageLayout:   slide.stageLayout || null,
         transition:    slide.transition || null,
         macroOverride: slide.macroOverride || null,
@@ -8594,8 +8687,8 @@ function buildSpec() {
     if (slide.type === 'blank') {
       return {
         type:        'blank',
-        label:       slide.label || 'Blank',
-        spans:       slide.spans || [],
+        label:       normalizeDeckQuotes(slide.label || 'Blank'),
+        spans:       normalizeExportSpans(slide.spans || []),
         stageLayout: slide.stageLayout || null,
         transition:  slide.transition || null,
         macroOverride: slide.macroOverride || null,
@@ -8605,13 +8698,13 @@ function buildSpec() {
     if (slide.type === 'image') {
       return {
         type:           'image',
-        label:          slide.label || 'Image',
+        label:          normalizeDeckQuotes(slide.label || 'Image'),
         stageLayout:    slide.stageLayout || null,
         transition:     slide.transition || null,
         propTransition: slide.propTransition || null,
         macroOverride:  slide.macroOverride || null,
         blankBefore:    !!slide.blankBefore,
-        blankSpans:     slide.blankSpans || [],
+        blankSpans:     normalizeExportSpans(slide.blankSpans || []),
       };
     }
 
@@ -8619,8 +8712,8 @@ function buildSpec() {
       // Unfinished type — exported as a blank slide so the slot is preserved.
       return {
         type:          'custom',
-        label:         slide.label || 'Custom',
-        spans:         slide.spans || [],
+        label:         normalizeDeckQuotes(slide.label || 'Custom'),
+        spans:         normalizeExportSpans(slide.spans || []),
         stageLayout:   slide.stageLayout || null,
         transition:    slide.transition || null,
         macroOverride: slide.macroOverride || null,
@@ -8635,7 +8728,7 @@ function buildSpec() {
     qrEnabled:           qrCode,
     includeResponseCard: includeResponseCard,
     outputFolder:        outputFolder || '',
-    responses:           responses || { decisionText: '', r1: '', r2: '', r3: '' },
+    responses:           Object.fromEntries(Object.entries(responses || { decisionText: '', r1: '', r2: '', r3: '' }).map(([k, v]) => [k, normalizeDeckQuotes(v)])),
     style,
     stageScreen:         schemeStageScreen(),
     stageDisplays:       (activeStyleScheme().stageDisplays || []).filter(d => d.name && d.uuid && (d.triggers || []).length),
@@ -8821,17 +8914,10 @@ function preflightWarnings() {
       }
     }
     for (const { text, field } of texts) {
-      const openDouble  = (text.match(/“/g) || []).length;
-      const closeDouble = (text.match(/”/g) || []).length;
-      if (openDouble !== closeDouble)
-        warn(`”${label}” has mismatched curly double quotes (“”) — ${openDouble} open, ${closeDouble} close`, slide.id, field);
-      const openSingle  = (text.match(/‘/g) || []).length;
-      const closeSingle = (text.match(/’/g) || []).length;
-      if (openSingle > 0 && openSingle !== closeSingle)
-        warn(`”${label}” has mismatched curly single quotes (‘’) — ${openSingle} open, ${closeSingle} close`, slide.id, field);
-      const straightDouble = (text.match(/”/g) || []).length;
+      const normalized = normalizeDeckQuotes(text);
+      const straightDouble = (normalized.match(/"/g) || []).length;
       if (straightDouble % 2 !== 0)
-        warn(`”${label}” has an odd number of straight double quotes (“) — may be unpaired`, slide.id, field);
+        warn(`“${label}” has an odd number of double quotes — may be unpaired`, slide.id, field);
     }
   }
 
