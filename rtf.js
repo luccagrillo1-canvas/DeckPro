@@ -616,26 +616,38 @@ function rtfResponseHoldTitle() {
 function rtfNotes(spans, style = {}) {
   if (!spans || !spans.length || spans.every(s => !s.text)) return null;
 
-  const { content, allAlt, mixedAlt } = buildSpanContent(spans);
-  const notesFont = style.notesFont     || 'Montserrat-Medium';
-  const boldFont  = style.notesBoldFont || notesFont;
-  const fs        = (style.notesSize || 50) * 2;
-  const adv       = style.notesFontAdv || {};
-  const cf        = charFmt(adv);
-  const pard      = makePard(adv, false);
-  const colortbl  = adv.color ? makeColortbl(['#ffffff', adv.color]) : COLORTBL_LIVE;
+  const notesFont  = style.notesFont     || 'Montserrat-Medium';
+  const boldFont   = style.notesBoldFont || notesFont;
+  const fs         = (style.notesSize || 50) * 2;
+  const adv        = style.notesFontAdv || {};
+  const boldAdv    = style.notesBoldFontAdv || adv;
+  const cf         = charFmt(adv);
+  const boldCf     = charFmt(boldAdv);
+  const pard       = makePard(adv, false);
+  const notesColor = adv.color || '#ffffff';
+  const boldColor  = boldAdv.color || notesColor;
+  const altDiffers = boldColor !== notesColor;
+  // alt = the confidence-monitor's emphasis look (matches scripture's bold/alt words on
+  // the main screen) — font switch to \f1, plus the alt row's own bold/caps/color if set.
+  const altStart = `${boldCf}${altDiffers ? '\\cf3 ' : ''}`;
+  const altEnd   = `${resetCharFmt(boldAdv)}${cf}${altDiffers ? '\\cf2 ' : ''}`;
+  const { content, allAlt, mixedAlt } = buildSpanContent(spans, { altStart, altEnd });
 
-  let fonttbl, body;
+  const baseColor = allAlt ? boldColor : notesColor;
+  const colortbl  = makeColortbl(['#ffffff', baseColor, ...(mixedAlt && altDiffers ? [boldColor] : [])]);
+
+  let fonttbl, baseCf;
   if (mixedAlt) {
     fonttbl = `{\\fonttbl\\f0\\fnil\\fcharset0 ${notesFont};\\f1\\fnil\\fcharset0 ${boldFont};}`;
-    body    = `\\f0\\fs${fs} \\cf2 ${cf}\\CocoaLigature0 ${content}`;
+    baseCf  = cf;
   } else if (allAlt) {
     fonttbl = `{\\fonttbl\\f0\\fnil\\fcharset0 ${boldFont};}`;
-    body    = `\\f0\\fs${fs} \\cf2 ${cf}\\CocoaLigature0 ${content}`;
+    baseCf  = boldCf;
   } else {
     fonttbl = `{\\fonttbl\\f0\\fnil\\fcharset0 ${notesFont};}`;
-    body    = `\\f0\\fs${fs} \\cf2 ${cf}\\CocoaLigature0 ${content}`;
+    baseCf  = cf;
   }
+  const body = `\\f0\\fs${fs} \\cf2 ${baseCf}\\CocoaLigature0 ${content}`;
 
   return toBase64(rtfDoc({ fonttbl, colortbl, pard, body }));
 }
