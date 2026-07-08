@@ -2,9 +2,38 @@
 
 // ─── Version & Changelog ──────────────────────────────────────────────────────
 
-const APP_VERSION = '4.6.18';
+const APP_VERSION = '4.6.22';
 
 const CHANGELOG = [
+  {
+    version: '4.6.22',
+    date: '2026-07-07',
+    changes: [
+      'Version rollback: DeckPro now backs up the previous app version before installing an update. A "Rollback" banner appears on next launch so you can revert if needed.',
+    ],
+  },
+  {
+    version: '4.6.21',
+    date: '2026-07-07',
+    changes: [
+      'Update popup now shows the release changelog — what\'s new in the update is visible in both the update banner and the install overlay so you can read while it downloads.',
+    ],
+  },
+  {
+    version: '4.6.20',
+    date: '2026-07-07',
+    changes: [
+      'Scripture slides now support Stacking mode for the confidence monitor. When a scripture slide is split into multiple bodies, Sequential shows only the current verse; Stacking accumulates all previous verses above the active one (matching Point\'s revealing behavior).',
+    ],
+  },
+  {
+    version: '4.6.19',
+    date: '2026-07-07',
+    changes: [
+      'Removed Preview tab from the Palettes panel tab row (was next to Motion) — the preview is accessible via the palette card directly.',
+      'Machine Setup: clicking "Skip for now" now marks setup as complete so the dialog only appears on true first launch, not every time you dismiss it.',
+    ],
+  },
   {
     version: '4.6.18',
     date: '2026-07-07',
@@ -4999,10 +5028,7 @@ async function showMachineSetup(force = false) {
 
   overlay.querySelector('#setup-close').addEventListener('click', close);
   overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
-  // Skip closes the modal for this session only — does NOT mark setup complete.
-  // The machine will remain in the "needs setup" state and the modal will reappear
-  // on next launch until the user clicks Done with the checks passing.
-  overlay.querySelector('#setup-skip').addEventListener('click', close);
+  overlay.querySelector('#setup-skip').addEventListener('click', finish);
   overlay.querySelector('#setup-done').addEventListener('click', finish);
   loadPro7LibrarySelect(overlay.querySelector('#setup-pro7-library'), cfg, cfg.pro7RootFolder);
 
@@ -5968,7 +5994,7 @@ function renderStylePanel(panel) {
     return;
   }
   const scheme = state.styleSchemes.find(p => p.id === state.activeSchemeId) || state.styleSchemes[0];
-  if (!['palette', 'text', 'layout', 'motion', 'preview', 'macros', 'stage', 'responseCard'].includes(_styleTab)) _styleTab = 'text';
+  if (!['palette', 'text', 'layout', 'motion', 'macros', 'stage', 'responseCard'].includes(_styleTab)) _styleTab = 'text';
   const locked = !!scheme.isLocked;
   const dis    = locked ? 'disabled' : '';
   ensureGlobalTypography();
@@ -6045,7 +6071,7 @@ function renderStylePanel(panel) {
       <div class="style-tabs">
         <button class="style-tab style-tab-palette${_styleTab === 'palette' ? ' active' : ''}" data-tab="palette">Palette</button>
         <span class="style-tab-sep"></span>
-        ${[['text','Text'],['layout','Layout'],['motion','Motion'],['preview','Preview']].map(([t, lbl]) => `
+        ${[['text','Text'],['layout','Layout'],['motion','Motion']].map(([t, lbl]) => `
           <button class="style-tab${_styleTab === t ? ' active' : ''}" data-tab="${t}">${lbl}</button>`).join('')}
         <span class="style-tab-sep"></span>
         <button class="style-tab style-tab-global${_styleTab === 'macros' ? ' active' : ''}" data-tab="macros">Macros</button>
@@ -6114,11 +6140,6 @@ function renderStylePanel(panel) {
             ${renderBuildTable(_boActiveTab, scheme, locked)}
           </div>
         </div>
-      </div>
-
-      <!-- PREVIEW tab -->
-      <div class="style-tab-body" id="style-tab-preview" ${_styleTab !== 'preview' ? 'style="display:none"' : ''}>
-        ${schemePreviewPanel(schemeView)}
       </div>
 
       <!-- LAYOUT tab -->
@@ -7272,6 +7293,7 @@ function customForm(slide) {
 function scriptureForm(slide) {
   const bodies = slide.bodies || [slide.body || []];
   const on = !!slide.blankBefore;
+  const followReveal = slide.followReveal || 'single';
   const F = state.config.features || DEFAULT_FEATURES();
 
   const bodyEditors = bodies.map((body, idx) => `
@@ -7342,6 +7364,15 @@ function scriptureForm(slide) {
       </div>
 
       <div class="slide-secondary">
+        ${bodies.length > 1 ? `
+          <div class="field" id="field-follow-reveal">
+            <label>${dn('monitor')}</label>
+            <div class="segmented-control">
+              <button id="fr-single"   class="${followReveal === 'single'   ? 'active' : ''}">Sequential</button>
+              <button id="fr-stacking" class="${followReveal === 'stacking' ? 'active' : ''}">Stacking</button>
+            </div>
+          </div>
+        ` : ''}
         ${blankSection}
         ${overridesSection(slide, F)}
         ${propSection(slide, F)}
@@ -8134,7 +8165,7 @@ function selectSlide(id) {
 function addSlide(type) {
   const endIdx = state.slides.findIndex(s => s.type === 'end');
   const defaults = {
-    scripture: { label: 'New Scripture', reference: '', bodies: [[]], propName: '', blankBefore: true, blankSpans: [], blankShowProp: false, transition: null, propTransition: null, stripNewlines: false, fitWidth: true, bodyW: null, bodyX: null },
+    scripture: { label: 'New Scripture', reference: '', bodies: [[]], propName: '', blankBefore: true, blankSpans: [], blankShowProp: false, transition: null, propTransition: null, stripNewlines: false, fitWidth: true, bodyW: null, bodyX: null, followReveal: 'single' },
     point:     { label: 'New Point', mode: 'single', bodyText: '', propName: '', propBaseName: '', title: '', bullets: [[]], blankBefore: true, blankSpans: [], blankShowProp: false, transition: null, propTransition: null, propInitialTransition: null, propRevealTransition: null, fitWidth: true, bodyW: null, bodyX: null },
     blank:     { label: 'Blank', spans: [], transition: null },
     image:     { label: 'Image', blankBefore: true, blankSpans: [], transition: null, propTransition: null },
@@ -8415,6 +8446,7 @@ function buildSpec() {
         propTransition: slide.propTransition || null,
         macroOverride: slide.macroOverride || null,
         stripNewlines: !!slide.stripNewlines,
+        followReveal:  slide.followReveal || 'single',
         bodyW:         slide.fitWidth ? (slide.bodyW || null) : null,
         bodyX:         slide.fitWidth ? (slide.bodyX || null) : null,
       };
@@ -8765,6 +8797,17 @@ function showDeliveryOverlay(steps, opts = {}) {
       </div>
       <span>${s}</span>
     </div>`).join('');
+  // Show release notes if provided (update installs)
+  overlay.querySelector('.delivery-notes')?.remove();
+  if (opts.notes) {
+    const notesHtml = formatUpdateNotes(opts.notes, 10);
+    if (notesHtml) {
+      const notesDiv = document.createElement('div');
+      notesDiv.className = 'delivery-notes';
+      notesDiv.innerHTML = `<div class="delivery-notes-title">What's new</div>${notesHtml}`;
+      stepsEl.parentNode.appendChild(notesDiv);
+    }
+  }
   overlay.classList.add('visible');
 }
 
@@ -11592,8 +11635,59 @@ async function checkForUpdates(manual = false) {
   if (manual) toast('info', 'Update available', `DeckPro v${data.latest} is ready to install`);
 }
 
+async function checkRollbackAvailable() {
+  try {
+    const r = await fetch('/api/update/rollback-info').then(x => x.json());
+    if (r.ok && r.available) showRollbackBanner(r.prevVersion);
+  } catch (_) {}
+}
+
+function showRollbackBanner(prevVersion) {
+  document.getElementById('rollback-banner')?.remove();
+  const banner = document.createElement('div');
+  banner.id = 'rollback-banner';
+  banner.className = 'rollback-banner';
+  banner.innerHTML = `
+    <span class="rollback-banner-text">
+      <strong>Updated!</strong><span class="rollback-banner-sub">was v${esc(prevVersion || '?')}</span>
+    </span>
+    <button class="rollback-banner-btn" id="rollback-banner-btn">Rollback</button>
+    <button class="rollback-banner-dismiss" id="rollback-banner-dismiss" title="Dismiss">×</button>
+  `;
+  document.body.appendChild(banner);
+  document.getElementById('rollback-banner-btn').addEventListener('click', async () => {
+    banner.remove();
+    showDeliveryOverlay(['Rolling back', 'Relaunching'], {
+      title: 'Rolling Back',
+      subtitle: `Restoring DeckPro v${prevVersion || 'previous version'}`,
+    });
+    updateDeliveryStep(0, false);
+    try {
+      const r = await fetch('/api/update/rollback', { method: 'POST' }).then(x => x.json());
+      if (r.ok) {
+        updateDeliveryStep(0, true);
+      } else {
+        hideDeliveryOverlay();
+        toast('error', 'Rollback failed', r.error || 'Unknown error');
+      }
+    } catch (_) {}
+  });
+  document.getElementById('rollback-banner-dismiss').addEventListener('click', () => banner.remove());
+}
+
+function formatUpdateNotes(md, maxItems = 5) {
+  if (!md) return '';
+  const items = md.split('\n')
+    .map(l => l.trim())
+    .filter(l => /^[-*] /.test(l))
+    .slice(0, maxItems)
+    .map(l => `<li>${esc(l.replace(/^[-*] /, ''))}</li>`);
+  return items.length ? `<ul class="update-notes-list">${items.join('')}</ul>` : '';
+}
+
 function showUpdateBanner(info) {
   hideUpdateBanner();
+  const notesHtml = formatUpdateNotes(info.notes, 4);
   const banner = document.createElement('div');
   banner.id = 'update-banner';
   banner.className = 'update-banner';
@@ -11602,6 +11696,7 @@ function showUpdateBanner(info) {
       <strong>DeckPro v${esc(info.latest)}</strong> is available
       <span class="update-banner-sub">you have v${esc(info.current)}</span>
     </span>
+    ${notesHtml ? `<div class="update-banner-notes">${notesHtml}</div>` : ''}
     <button class="update-banner-install" id="update-banner-install">Update &amp; Relaunch</button>
     <button class="update-banner-dismiss" id="update-banner-dismiss" title="Not now">×</button>
   `;
@@ -11623,6 +11718,7 @@ async function installUpdate() {
   ], {
     title: 'Updating DeckPro',
     subtitle: "Don't close the app until this completes",
+    notes: _updateInfo?.notes,
   });
   updateDeliveryStep(0, false);
   try {
@@ -11955,6 +12051,7 @@ async function bootstrap() {
   loadFonts();
   checkForUpdates();
   setInterval(() => checkForUpdates(), 6 * 60 * 60 * 1000); // re-check every 6h
+  checkRollbackAvailable();
 
   // Poll Pro7 every 10s — reconnects automatically when Pro7 opens
   setInterval(() => checkPro7(true), 10000);

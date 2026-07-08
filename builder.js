@@ -1278,6 +1278,7 @@ function buildScriptureCues(spec, rs) {
     if (i > 0) acc.push({ text: '\n' });
     return acc.concat(bd || []);
   }, []);
+  const followReveal = spec.followReveal || 'single';
 
   return allBodies.map((body, idx) => {
     // Strip newlines for main slide if requested (prop always keeps them).
@@ -1305,9 +1306,19 @@ function buildScriptureCues(spec, rs) {
     ];
     const bo = applyBuildOrders(slots, rs.buildOrders?.content);
 
-    const label     = idx === 0 ? spec.label : `${spec.label} (${idx + 1})`;
-    // Notes always contain the FULL verse (all bodies) so confidence monitor shows complete text
-    const notesRtf  = allBodySpansForNotes ? (rtf.rtfNotes(allBodySpansForNotes, rs) || emptyNotesRtf()) : emptyNotesRtf();
+    const label = idx === 0 ? spec.label : `${spec.label} (${idx + 1})`;
+    let notesRtf;
+    if (followReveal === 'stacking' && idx > 0) {
+      // Stacking: notes show all bodies up to and including current, current highlighted
+      const notesSpans = allBodies.slice(0, idx).flatMap(bd => [
+        ...(bd || []),
+        { text: '\n' },
+      ]).concat((body || []).map(s => ({ ...s, alt: true })));
+      notesRtf = rtf.rtfNotes(notesSpans, rs) || emptyNotesRtf();
+    } else {
+      // Sequential (default): notes always show the full verse for context
+      notesRtf = allBodySpansForNotes ? (rtf.rtfNotes(allBodySpansForNotes, rs) || emptyNotesRtf()) : emptyNotesRtf();
+    }
     return {
       uuid: uuid(),
       _type: 'scripture',
