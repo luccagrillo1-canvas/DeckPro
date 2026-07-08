@@ -12,7 +12,7 @@
             {
               "text": "START",
               "super": false,
-              "bold": true
+              "bold": false
             },
             {
               "text": "-",
@@ -48,7 +48,7 @@
             {
               "text": "John 13:35",
               "super": false,
-              "bold": true
+              "bold": false
             },
             {
               "text": "By this everyone will know that you are my disciples, if you love one another.",
@@ -79,7 +79,7 @@
             {
               "text": "Love One Another",
               "super": false,
-              "bold": true
+              "bold": false
             },
             {
               "text": "live",
@@ -110,7 +110,7 @@
             {
               "text": "End of Notes",
               "super": false,
-              "bold": true
+              "bold": false
             },
             {
               "text": "-",

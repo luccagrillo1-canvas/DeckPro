@@ -12,7 +12,7 @@
             {
               "text": "START",
               "super": false,
-              "bold": true
+              "bold": false
             },
             {
               "text": "-",
@@ -65,7 +65,7 @@
             {
               "text": "Ephesians 5:18",
               "super": false,
-              "bold": true
+              "bold": false
             },
             {
               "text": "18 And do not get drunk with wine, but be filled with the Spirit.",
@@ -101,7 +101,7 @@
             {
               "text": "Ephesians 5:19-21",
               "super": false,
-              "bold": true
+              "bold": false
             },
             {
               "text": "19 speaking to one another with psalms, hymns, and songs from the Spirit.",
@@ -137,7 +137,7 @@
             {
               "text": "Ephesians 5:19-21",
               "super": false,
-              "bold": true
+              "bold": false
             },
             {
               "text": "20 always giving thanks to God the Father for everything.",
@@ -173,7 +173,7 @@
             {
               "text": "2 Corinthians 3:18",
               "super": false,
-              "bold": true
+              "bold": false
             },
             {
               "text": "And we all, who with unveiled faces contemplate the Lord’s glory, are being transformed into his image.",
@@ -204,7 +204,7 @@
             {
               "text": "End of Notes",
               "super": false,
-              "bold": true
+              "bold": false
             },
             {
               "text": "-",

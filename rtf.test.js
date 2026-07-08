@@ -31,7 +31,7 @@ test('START banner', rtfStartEnd('START'),
 \\deftab1680
 \\pard\\pardeftab1680\\pardirnatural\\partightenfactor0
 
-\\f0\\b\\fs90 \\cf2 \\CocoaLigature0 \\outl0\\strokewidth-20 \\strokec3 START}`);
+\\f0\\fs90 \\cf2 \\CocoaLigature0 \\outl0\\strokewidth-20 \\strokec3 START}`);
 
 test('END banner', rtfStartEnd('End of Notes'),
 `{\\rtf1\\ansi\\ansicpg1252\\cocoartf2865
@@ -41,7 +41,7 @@ test('END banner', rtfStartEnd('End of Notes'),
 \\deftab1680
 \\pard\\pardeftab1680\\pardirnatural\\partightenfactor0
 
-\\f0\\b\\fs90 \\cf2 \\CocoaLigature0 \\outl0\\strokewidth-20 \\strokec3 End of Notes}`);
+\\f0\\fs90 \\cf2 \\CocoaLigature0 \\outl0\\strokewidth-20 \\strokec3 End of Notes}`);
 
 test('live element', rtfLive(),
 `{\\rtf1\\ansi\\ansicpg1252\\cocoartf2865
@@ -61,7 +61,7 @@ test('title: John 13:35', rtfTitle('John 13:35'),
 \\deftab1680
 \\pard\\pardeftab1680\\sa400\\pardirnatural\\qc\\partightenfactor0
 
-\\f0\\b\\fs80 \\cf2 \\CocoaLigature0 \\outl0\\strokewidth-20 \\strokec3 John 13:35}`);
+\\f0\\fs80 \\cf2 \\CocoaLigature0 \\outl0\\strokewidth-20 \\strokec3 John 13:35}`);
 
 test('title: 2 Corinthians 3:18', rtfTitle('2 Corinthians 3:18'),
 `{\\rtf1\\ansi\\ansicpg1252\\cocoartf2865
@@ -71,7 +71,7 @@ test('title: 2 Corinthians 3:18', rtfTitle('2 Corinthians 3:18'),
 \\deftab1680
 \\pard\\pardeftab1680\\sa400\\pardirnatural\\qc\\partightenfactor0
 
-\\f0\\b\\fs80 \\cf2 \\CocoaLigature0 \\outl0\\strokewidth-20 \\strokec3 2 Corinthians 3:18}`);
+\\f0\\fs80 \\cf2 \\CocoaLigature0 \\outl0\\strokewidth-20 \\strokec3 2 Corinthians 3:18}`);
 
 test('point body: Apply the Message', rtfPointBody('Apply the Message'),
 `{\\rtf1\\ansi\\ansicpg1252\\cocoartf2865
@@ -81,7 +81,7 @@ test('point body: Apply the Message', rtfPointBody('Apply the Message'),
 \\deftab1680
 \\pard\\pardeftab1680\\pardirnatural\\qc\\partightenfactor0
 
-\\f0\\b\\fs88 \\cf2 \\CocoaLigature0 \\outl0\\strokewidth-20 \\strokec3 Apply the Message}`);
+\\f0\\fs88 \\cf2 \\CocoaLigature0 \\outl0\\strokewidth-20 \\strokec3 Apply the Message}`);
 
 test('point list (3 items)', rtfPointList(['Create Opportunities', 'Serve One and Attend One', 'Apply the Message']),
 `{\\rtf1\\ansi\\ansicpg1252\\cocoartf2865

@@ -455,7 +455,7 @@ function makePointBodyElement({ x, y, w, h, rtfData, text }, rs = {}) {
     feather: { radius: 0.05 },
     text: {
       attributes: {
-        font: { name: rs.pointFont || 'Montserrat-Black', size: rs.pointSize || rs.bodySize || 44, bold: true, family: rs.pointFont || 'Montserrat-Black' },
+        font: { name: rs.pointFont || 'Montserrat-Black', size: rs.pointSize || rs.bodySize || 44, bold: !!adv.bold, family: rs.pointFont || 'Montserrat-Black' },
         ...capitalizationAttr(adv),
         textSolidFill: textColorFromAdv(rs.pointFontAdv || rs.boldFontAdv),
         underlineStyle: {},
@@ -503,7 +503,7 @@ function makeStartEndElement({ text }, rs = {}) {
     feather: { radius: 0.05 },
     text: {
       attributes: {
-        font: { name: rs.startEndFont || 'Montserrat-ExtraBold', size: rs.startEndSize || 45, bold: true, family: rs.startEndFont || 'Montserrat-ExtraBold' },
+        font: { name: rs.startEndFont || 'Montserrat-ExtraBold', size: rs.startEndSize || 45, bold: !!(rs.startEndFontAdv && rs.startEndFontAdv.bold), family: rs.startEndFont || 'Montserrat-ExtraBold' },
         ...capitalizationAttr(rs.startEndFontAdv),
         textSolidFill: textColorFromAdv(rs.startEndFontAdv),
         underlineStyle: {},
@@ -669,7 +669,7 @@ function makeTitleElement({ reference, titleY }, rs = {}) {
     feather: { radius: 0.05 },
     text: {
       attributes: {
-        font: { name: rs.titleFont || 'Arial', size: rs.titleSize || 40, bold: true, family: rs.titleFont || 'Arial' },
+        font: { name: rs.titleFont || 'Arial', size: rs.titleSize || 40, bold: !!adv.bold, family: rs.titleFont || 'Arial' },
         ...capitalizationAttr(adv),
         textSolidFill: (rs.titleFontAdv && rs.titleFontAdv.color) ? hexToColor(rs.titleFontAdv.color) : C_WHITE,
         underlineStyle: {},
@@ -854,7 +854,7 @@ function makeResponseCardTitleElement(rs = {}) {
     feather: { radius: 0.05 },
     text: {
       attributes: {
-        font: { name: rs.titleFont || 'Montserrat-ExtraBold', size: rs.titleSize || 60, bold: true, family: rs.titleFont || 'Montserrat' },
+        font: { name: rs.titleFont || 'Montserrat-ExtraBold', size: rs.titleSize || 60, bold: !!adv.bold, family: rs.titleFont || 'Montserrat' },
         ...capitalizationAttr(adv),
         textSolidFill: textColorFromAdv(adv),
         underlineStyle: {},

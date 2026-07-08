@@ -12,7 +12,7 @@
             {
               "text": "START",
               "super": false,
-              "bold": true
+              "bold": false
             },
             {
               "text": "-",
@@ -48,7 +48,7 @@
             {
               "text": "Romans 12:2",
               "super": false,
-              "bold": true
+              "bold": false
             },
             {
               "text": "Be transformed by the renewing of your mind.",
@@ -100,7 +100,7 @@
             {
               "text": "Renew Your Mind",
               "super": false,
-              "bold": true
+              "bold": false
             },
             {
               "text": "live",
@@ -199,7 +199,7 @@
             {
               "text": "End of Notes",
               "super": false,
-              "bold": true
+              "bold": false
             },
             {
               "text": "-",

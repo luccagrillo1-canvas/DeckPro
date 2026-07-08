@@ -2,9 +2,16 @@
 
 // ─── Version & Changelog ──────────────────────────────────────────────────────
 
-const APP_VERSION = '4.7.6';
+const APP_VERSION = '4.7.7';
 
 const CHANGELOG = [
+  {
+    version: '4.7.7',
+    date: '2026-07-08',
+    changes: [
+      'Fix: text elements now export the custom font weight you pick instead of always forcing bold. This affected Utility (Start/End), Point, and both Title rows (scripture reference bar + Response Card) — the chosen weight (Medium, Light, ExtraBold, etc.) is now respected, and the Bold toggle still applies on top when you turn it on. Bold-heavy defaults look unchanged because the default fonts are already heavy weights.',
+    ],
+  },
   {
     version: '4.7.6',
     date: '2026-07-08',

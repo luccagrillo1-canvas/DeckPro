@@ -331,7 +331,7 @@ function rtfTitle(text, style = {}) {
   const sb       = adv.paragraphSpacingBefore ? `\\sb${Math.round(adv.paragraphSpacingBefore * 20)}` : '';
   const sa       = adv.paragraphSpacingAfter ? `\\sa${Math.round(adv.paragraphSpacingAfter * 20)}` : '\\sa400';
   const pard     = `\\pard\\pardeftab1680${sl}${sb}${sa}\\pardirnatural${adv.alignment === 'left' ? '' : adv.alignment === 'right' ? '\\qr' : '\\qc'}\\partightenfactor0`;
-  const body     = `\\f0\\b\\fs${fs} \\cf2 ${cf}\\CocoaLigature0 \\outl0\\strokewidth-${sw} \\strokec3 ${escapeRtf(text)}`;
+  const body     = `\\f0\\fs${fs} \\cf2 ${cf}\\CocoaLigature0 \\outl0\\strokewidth-${sw} \\strokec3 ${escapeRtf(text)}`;
   return toBase64(rtfDoc({ fonttbl, colortbl, pard, body }));
 }
 
@@ -375,7 +375,7 @@ function rtfStartEnd(text, style = {}) {
   const { colortbl, sw } = textStroke(adv, adv.color);
   const fonttbl = `{\\fonttbl\\f0\\fnil\\fcharset0 ${font};}`;
   const pard    = makePard(adv, false);
-  const body    = `\\f0\\b\\fs${fs} \\cf2 ${cf}\\CocoaLigature0 \\outl0\\strokewidth-${sw} \\strokec3 ${escapeRtf(text)}`;
+  const body    = `\\f0\\fs${fs} \\cf2 ${cf}\\CocoaLigature0 \\outl0\\strokewidth-${sw} \\strokec3 ${escapeRtf(text)}`;
   return toBase64(rtfDoc({ fonttbl, colortbl, pard, body }));
 }
 
@@ -429,7 +429,7 @@ function rtfPointBody(bullet, style = {}) {
   if (single) {
     // Single-font path — whole point in the point font, bold
     const fonttbl = `{\\fonttbl\\f0\\fnil\\fcharset0 ${boldFont};}`;
-    const body    = `\\f0\\b\\fs${fs} \\cf2 ${cf}\\CocoaLigature0 \\outl0\\strokewidth-${sw} \\strokec3 ${escapeRtf(bulletToText(bullet))}`;
+    const body    = `\\f0\\fs${fs} \\cf2 ${cf}\\CocoaLigature0 \\outl0\\strokewidth-${sw} \\strokec3 ${escapeRtf(bulletToText(bullet))}`;
     return toBase64(rtfDoc({ fonttbl, colortbl, pard, body }));
   }
   // Mixed — two fonts

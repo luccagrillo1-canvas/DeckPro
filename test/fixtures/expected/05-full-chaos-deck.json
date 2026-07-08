@@ -12,7 +12,7 @@
             {
               "text": "START",
               "super": false,
-              "bold": true
+              "bold": false
             },
             {
               "text": "-",
@@ -65,7 +65,7 @@
             {
               "text": "Psalm 23:1-2",
               "super": false,
-              "bold": true
+              "bold": false
             },
             {
               "text": "1 The LORD is my shepherd; I shall not want.",
@@ -114,7 +114,7 @@
             {
               "text": "Psalm 23:1-2",
               "super": false,
-              "bold": true
+              "bold": false
             },
             {
               "text": "2 He makes me lie down in green pastures — beside still waters.",
@@ -158,7 +158,7 @@
             {
               "text": "Trust the Shepherd",
               "super": false,
-              "bold": true
+              "bold": false
             },
             {
               "text": "live",
@@ -202,7 +202,7 @@
             {
               "text": "Follow His lead — daily",
               "super": false,
-              "bold": true
+              "bold": false
             },
             {
               "text": "live",
@@ -246,7 +246,7 @@
             {
               "text": "Rest in green pastures ?",
               "super": false,
-              "bold": true
+              "bold": false
             },
             {
               "text": "live",
@@ -290,7 +290,7 @@
             {
               "text": "This is an unusually long single point with punctuation: quotes \"like this,\" a slash/here, an em–dash, and trailing ellipsis…",
               "super": false,
-              "bold": true
+              "bold": false
             },
             {
               "text": "live",
@@ -420,7 +420,7 @@
             {
               "text": "Test 1:1",
               "super": false,
-              "bold": true
+              "bold": false
             },
             {
               "text": "Response Card Blank\nResponse Card\nResponse 1\nResponse 2\nResponse 3\nResponse Card Hold\nEnd of Notes",
@@ -486,7 +486,7 @@
             {
               "text": "Response Card",
               "super": false,
-              "bold": true
+              "bold": false
             },
             {
               "text": "I said yes to Jesus — emoji ? & \"quotes\"",
@@ -531,7 +531,7 @@
             {
               "text": "Response 1",
               "super": false,
-              "bold": true
+              "bold": false
             },
             {
               "text": "Option / one",
@@ -576,7 +576,7 @@
             {
               "text": "Response 2",
               "super": false,
-              "bold": true
+              "bold": false
             },
             {
               "text": "Option — two",
@@ -621,7 +621,7 @@
             {
               "text": "Response 3",
               "super": false,
-              "bold": true
+              "bold": false
             },
             {
               "text": "Option… three",
@@ -661,7 +661,7 @@
             {
               "text": "Response Card Hold",
               "super": false,
-              "bold": true
+              "bold": false
             },
             {
               "text": "End of Notes",
@@ -692,7 +692,7 @@
             {
               "text": "End of Notes",
               "super": false,
-              "bold": true
+              "bold": false
             },
             {
               "text": "-",

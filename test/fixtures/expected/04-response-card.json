@@ -12,7 +12,7 @@
             {
               "text": "START",
               "super": false,
-              "bold": true
+              "bold": false
             },
             {
               "text": "-",
@@ -48,7 +48,7 @@
             {
               "text": "Romans 10:9",
               "super": false,
-              "bold": true
+              "bold": false
             },
             {
               "text": "If you declare with your mouth that Jesus is Lord, you will be saved.",
@@ -79,7 +79,7 @@
             {
               "text": "Respond Today",
               "super": false,
-              "bold": true
+              "bold": false
             },
             {
               "text": "live",
@@ -132,7 +132,7 @@
             {
               "text": "Response Card",
               "super": false,
-              "bold": true
+              "bold": false
             },
             {
               "text": "I have decided to follow Jesus today!",
@@ -168,7 +168,7 @@
             {
               "text": "Response 1",
               "super": false,
-              "bold": true
+              "bold": false
             },
             {
               "text": "I am committing my life to Christ.",
@@ -204,7 +204,7 @@
             {
               "text": "Response 2",
               "super": false,
-              "bold": true
+              "bold": false
             },
             {
               "text": "I am recommitting my life to Christ.",
@@ -240,7 +240,7 @@
             {
               "text": "Response 3",
               "super": false,
-              "bold": true
+              "bold": false
             },
             {
               "text": "I want to learn more about following Jesus.",
@@ -271,7 +271,7 @@
             {
               "text": "Response Card Hold",
               "super": false,
-              "bold": true
+              "bold": false
             },
             {
               "text": "End of Notes",
@@ -297,7 +297,7 @@
             {
               "text": "End of Notes",
               "super": false,
-              "bold": true
+              "bold": false
             },
             {
               "text": "-",
