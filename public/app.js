@@ -8241,6 +8241,25 @@ function attachHeaderHandlers() {
     moreMenu?.classList.remove('open');
     checkForUpdates(true);
   });
+  document.getElementById('mm-rollback')?.addEventListener('click', () => {
+    moreMenu?.classList.remove('open');
+    const label = document.getElementById('mm-rollback-label')?.textContent || '';
+    const prevVersion = label.replace('Rollback to v', '').replace('…', '').trim();
+    document.getElementById('rollback-banner')?.remove();
+    showDeliveryOverlay(['Rolling back', 'Relaunching'], {
+      title: 'Rolling Back',
+      subtitle: `Restoring DeckPro v${prevVersion || 'previous version'}`,
+    });
+    updateDeliveryStep(0, false);
+    fetch('/api/update/rollback', { method: 'POST' }).then(x => x.json()).then(r => {
+      if (r.ok) {
+        updateDeliveryStep(0, true);
+      } else {
+        hideDeliveryOverlay();
+        toast('error', 'Rollback failed', r.error || 'Unknown error');
+      }
+    }).catch(() => {});
+  });
   document.getElementById('mm-theme')?.addEventListener('click', () => {
     toggleTheme();
     moreMenu?.classList.remove('open');
@@ -11638,7 +11657,13 @@ async function checkForUpdates(manual = false) {
 async function checkRollbackAvailable() {
   try {
     const r = await fetch('/api/update/rollback-info').then(x => x.json());
-    if (r.ok && r.available) showRollbackBanner(r.prevVersion);
+    if (r.ok && r.available) {
+      showRollbackBanner(r.prevVersion);
+      const btn   = document.getElementById('mm-rollback');
+      const label = document.getElementById('mm-rollback-label');
+      if (btn)   btn.style.display = '';
+      if (label) label.textContent = `Rollback to v${r.prevVersion || '?'}…`;
+    }
   } catch (_) {}
 }
 
