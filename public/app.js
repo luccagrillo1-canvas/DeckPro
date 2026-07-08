@@ -2,9 +2,16 @@
 
 // ─── Version & Changelog ──────────────────────────────────────────────────────
 
-const APP_VERSION = '4.7.3';
+const APP_VERSION = '4.7.4';
 
 const CHANGELOG = [
+  {
+    version: '4.7.4',
+    date: '2026-07-08',
+    changes: [
+      'Custom grid toggles (Stroke, Shadow, Bold/Italic/Underline/Strike) now show the global default, matching the alignment buttons: blue = on and inheriting from global, orange = a custom override, and a dim-blue dot = global has it on while your custom setting forces it off — so a toggle can no longer look plain "off" when global actually has it enabled.',
+    ],
+  },
   {
     version: '4.7.3',
     date: '2026-07-08',
@@ -5926,8 +5933,10 @@ function renderSchemeGrid(sv, rs, dis) {
     const vAlignOv = advOv('verticalAlignment');
     const sc = (ov) => ov ? ' sg-td-scheme' : '';
 
-    const togCell  = (field) =>
-      `<td class="sg-td sg-td-tog${sc(advOv(field))}" data-scheme="${advK}" data-field="${field}"><button type="button" class="fav-toggle sg-tog ${adv[field] ? 'on' : ''}" data-scheme="${advK}" data-field="${field}" ${dis}></button></td>`;
+    const togCell  = (field) => {
+      const glbOn = !!_globalAdv[field];
+      return `<td class="sg-td sg-td-tog${sc(advOv(field))}" data-scheme="${advK}" data-field="${field}"><button type="button" class="fav-toggle sg-tog ${adv[field] ? 'on' : ''}${glbOn ? ' sg-tog-global' : ''}" data-scheme="${advK}" data-field="${field}" ${dis}></button></td>`;
+    };
     const HA_ICONS = {
       '':       `<svg viewBox="0 0 14 10" fill="none" stroke="currentColor" stroke-linecap="round" width="14" height="10"><path d="M1 2h12M1 5.5h7M1 9h9" stroke-width="1.4"/></svg>`,
       center:   `<svg viewBox="0 0 14 10" fill="none" stroke="currentColor" stroke-linecap="round" width="14" height="10"><path d="M1 2h12M3.5 5.5h7M2.5 9h9" stroke-width="1.4"/></svg>`,
@@ -5984,10 +5993,10 @@ function renderSchemeGrid(sv, rs, dis) {
       </select></td>
       ${haBtn('', 'Left')}${haBtn('center', 'Center')}${haBtn('right', 'Right')}${haBtn('justify', 'Justify')}
       ${vaBtn('', 'Top')}${vaBtn('middle', 'Middle')}${vaBtn('bottom', 'Bottom')}
-      <td class="sg-td sg-td-tog${sc(advOv('strokeEnabled'))}" data-scheme="${advK}" data-field="strokeEnabled"><button type="button" class="fav-toggle sg-tog ${adv.strokeEnabled ? 'on' : ''}" data-scheme="${advK}" data-field="strokeEnabled" ${dis}></button></td>
+      ${togCell('strokeEnabled')}
       ${numCell('strokeWidth', 1, 0.5)}
       ${colorCell('strokeColor', '#000000')}
-      <td class="sg-td sg-td-tog${sc(advOv('shadowEnabled'))}" data-scheme="${advK}" data-field="shadowEnabled"><button type="button" class="fav-toggle sg-tog ${adv.shadowEnabled ? 'on' : ''}" data-scheme="${advK}" data-field="shadowEnabled" ${dis}></button></td>
+      ${togCell('shadowEnabled')}
       ${colorCell('shadowColor', '#000000')}
       ${numCell('shadowAngle', 315, 15)}
       ${numCell('shadowOffset', 5, 0.5)}

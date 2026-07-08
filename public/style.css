@@ -4403,11 +4403,21 @@ body.dark .g-tip-title { color: #ff8a4c; }
 }
 .sg-tog:empty::before { content: '○'; font-size: 9px; }
 .sg-tog.on:empty::before { content: '●'; }
-.sg-tog.on {
+/* custom override, on — orange */
+.sg-tog.on:not(.sg-tog-global) {
   background: rgba(234,88,12,.15);
   border-color: rgba(234,88,12,.5);
   color: #fdba74;
 }
+/* inheriting global, on — blue */
+.sg-tog.sg-tog-global.on {
+  background: rgba(14,165,233,.13);
+  border-color: rgba(14,165,233,.45);
+  color: #7dd3fc;
+}
+/* global is on but custom forces it off — dim-blue ghost so the global state stays visible */
+.sg-tog.sg-tog-global:not(.on) { border-color: rgba(14,165,233,.2); }
+.sg-tog.sg-tog-global:not(.on):empty::before { content: '●'; color: rgba(14,165,233,.3); }
 .sg-tog:hover { border-color: var(--accent); color: var(--accent); }
 
 /* Alignment radio buttons */
@@ -4443,9 +4453,6 @@ body.dark .g-tip-title { color: #ff8a4c; }
 }
 .sg-td.sg-td-scheme select,
 .sg-td.sg-td-scheme input[type="number"] {
-  color: rgba(34,197,94,.85);
-}
-.sg-td.sg-td-scheme .sg-tog {
   color: rgba(34,197,94,.85);
 }
 
