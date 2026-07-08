@@ -2,9 +2,16 @@
 
 // ─── Version & Changelog ──────────────────────────────────────────────────────
 
-const APP_VERSION = '4.7.4';
+const APP_VERSION = '4.7.5';
 
 const CHANGELOG = [
+  {
+    version: '4.7.5',
+    date: '2026-07-08',
+    changes: [
+      'Removed the "Updated!" rollback popup that appeared on launch after an update. Rollback is still available any time from the ··· menu ("Rollback to vX.Y.Z…") — it just no longer nags on startup.',
+    ],
+  },
   {
     version: '4.7.4',
     date: '2026-07-08',
@@ -8320,7 +8327,6 @@ function attachHeaderHandlers() {
     moreMenu?.classList.remove('open');
     const label = document.getElementById('mm-rollback-label')?.textContent || '';
     const prevVersion = label.replace('Rollback to v', '').replace('…', '').trim();
-    document.getElementById('rollback-banner')?.remove();
     showDeliveryOverlay(['Rolling back', 'Relaunching'], {
       title: 'Rolling Back',
       subtitle: `Restoring DeckPro v${prevVersion || 'previous version'}`,
@@ -11733,46 +11739,13 @@ async function checkRollbackAvailable() {
   try {
     const r = await fetch('/api/update/rollback-info').then(x => x.json());
     if (r.ok && r.available) {
-      showRollbackBanner(r.prevVersion);
+      // No auto-popup — rollback lives in the ··· menu so it never nags on launch.
       const btn   = document.getElementById('mm-rollback');
       const label = document.getElementById('mm-rollback-label');
       if (btn)   btn.style.display = '';
       if (label) label.textContent = `Rollback to v${r.prevVersion || '?'}…`;
     }
   } catch (_) {}
-}
-
-function showRollbackBanner(prevVersion) {
-  document.getElementById('rollback-banner')?.remove();
-  const banner = document.createElement('div');
-  banner.id = 'rollback-banner';
-  banner.className = 'rollback-banner';
-  banner.innerHTML = `
-    <span class="rollback-banner-text">
-      <strong>Updated!</strong><span class="rollback-banner-sub">was v${esc(prevVersion || '?')}</span>
-    </span>
-    <button class="rollback-banner-btn" id="rollback-banner-btn">Rollback</button>
-    <button class="rollback-banner-dismiss" id="rollback-banner-dismiss" title="Dismiss">×</button>
-  `;
-  document.body.appendChild(banner);
-  document.getElementById('rollback-banner-btn').addEventListener('click', async () => {
-    banner.remove();
-    showDeliveryOverlay(['Rolling back', 'Relaunching'], {
-      title: 'Rolling Back',
-      subtitle: `Restoring DeckPro v${prevVersion || 'previous version'}`,
-    });
-    updateDeliveryStep(0, false);
-    try {
-      const r = await fetch('/api/update/rollback', { method: 'POST' }).then(x => x.json());
-      if (r.ok) {
-        updateDeliveryStep(0, true);
-      } else {
-        hideDeliveryOverlay();
-        toast('error', 'Rollback failed', r.error || 'Unknown error');
-      }
-    } catch (_) {}
-  });
-  document.getElementById('rollback-banner-dismiss').addEventListener('click', () => banner.remove());
 }
 
 function formatUpdateNotes(md, maxItems = 5) {

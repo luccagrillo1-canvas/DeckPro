@@ -4106,33 +4106,6 @@ details[open] .font-adv-summary::before { transform: rotate(90deg); }
 .sync-status.ok::before     { content: '✓ '; color: #86efac; }
 .sync-status.paused::before { content: '⏸ '; color: #fdba74; }
 
-/* Rollback banner (shown after a successful update) */
-.rollback-banner {
-  position: fixed; top: 18px; left: 50%; transform: translateX(-50%);
-  z-index: 300;
-  display: flex; align-items: center; gap: 12px;
-  background: var(--surface); border: 1px solid rgba(251,146,60,.45);
-  border-radius: 12px; padding: 10px 14px;
-  box-shadow: 0 12px 36px rgba(0,0,0,.3);
-  font-size: 13px; color: var(--text);
-  animation: rollback-banner-in .25s ease;
-}
-@keyframes rollback-banner-in {
-  from { opacity: 0; transform: translateX(-50%) translateY(-12px); }
-  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
-}
-.rollback-banner-text { flex: 1; }
-.rollback-banner-sub { color: var(--muted); font-size: 11.5px; margin-left: 4px; }
-.rollback-banner-btn {
-  background: none; border: 1px solid rgba(251,146,60,.5); color: #fdba74;
-  border-radius: 7px; padding: 5px 12px; font-size: 12px; font-weight: 600; cursor: pointer;
-}
-.rollback-banner-btn:hover { background: rgba(251,146,60,.1); }
-.rollback-banner-dismiss {
-  background: none; border: none; color: var(--muted);
-  font-size: 17px; cursor: pointer; line-height: 1; padding: 0 2px;
-}
-
 /* ─── Tooltip ─────────────────────────────────────────────────────────── */
 .g-tip {
   position: fixed;
