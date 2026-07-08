@@ -2,9 +2,16 @@
 
 // ─── Version & Changelog ──────────────────────────────────────────────────────
 
-const APP_VERSION = '4.7.0';
+const APP_VERSION = '4.7.1';
 
 const CHANGELOG = [
+  {
+    version: '4.7.1',
+    date: '2026-07-08',
+    changes: [
+      'Fix: changing a font color in the Custom grid (Text tab) now overrides only that one field. Previously it wrote the palette-wide neutral/accent color, so editing one row\'s color changed every row that shared it. Each row is now an independent per-field override; right-click a cell to reset it back to the palette color.',
+    ],
+  },
   {
     version: '4.7.0',
     date: '2026-07-08',
@@ -5941,7 +5948,7 @@ function renderSchemeGrid(sv, rs, dis) {
       <td class="sg-td sg-td-sty${sc(fontOv || fontFieldOv)}" data-typokey="${fontTypoKey || ''}">${noFont ? '<span class="sg-na">—</span>'
         : typoKey ? `<select class="sg-typo-sty sg-sty" id="sg-typo-sty-${id}" data-typokey="${typoKey}" ${dis}>${styOptsFn(curFam, ps)}</select>`
         : `<select class="sf-sty-select sg-sty" id="sf-sty-${fontF}" ${dis}>${styOptsFn(curFam, ps)}</select>`}</td>
-      <td class="sg-td sg-td-color${sc(advOv('color'))}" data-scheme="${advK}" data-field="color"><input type="color" class="fav-color sg-color" data-scheme="${advK}" value="${colorVal(adv.color)}" ${dis}></td>
+      <td class="sg-td sg-td-color${sc(advOv('color'))}" data-scheme="${advK}" data-field="color"><input type="color" class="sg-adv-color sg-color" data-scheme="${advK}" data-field="color" value="${colorVal(adv.color)}" ${dis}></td>
       <td class="sg-td${sc(sizeOv)}" data-typokey="${sizeF || ''}">${sizeF
         ? `<input type="number" class="sz-input sf-size sg-size" id="ss-${sizeF}" value="${sv[sizeF] ?? 44}" min="1" max="400" step="1" ${dis}>`
         : '<span class="sg-na">—</span>'}</td>
