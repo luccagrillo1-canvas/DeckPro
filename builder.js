@@ -360,6 +360,41 @@ function capitalizationCustomAttributes(adv, charCount) {
   return cap ? [{ range: { end: charCount }, capitalization: cap }] : [{ range: { end: charCount } }];
 }
 
+/**
+ * Per-span capitalization ranges — for bodies that mix plain text (baseAdv) with
+ * alt/emphasis-marked words (altAdv), e.g. scripture bold-word highlighting.
+ * The RTF already applies \caps per-run; ProPresenter's live rendering also needs
+ * the same split reflected as separate customAttributes ranges, or an alt word's
+ * own capitalization setting (e.g. Bold row set to ALL CAPS) never shows on screen.
+ *
+ * Every range gets an EXPLICIT capitalization value (CAPITALIZATION_NONE when the
+ * row has no caps set) rather than omitting the field — omitting it would mean
+ * "inherit the element's base capitalization," which silently breaks the case
+ * where the base body IS capitalized but the alt words should NOT be.
+ * Adjacent spans with the same effective capitalization are merged into one range.
+ */
+function spanCapitalizationRanges(spans, baseAdv, altAdv) {
+  const list = spans || [];
+  const totalLen = list.reduce((n, s) => n + (s.text || '').length, 0);
+  if (!totalLen) return [];
+  const NONE = 'CAPITALIZATION_NONE';
+  const ranges = [];
+  let pos = 0, curCap = null, curStart = 0;
+  for (const s of list) {
+    const len = (s.text || '').length;
+    if (!len) continue;
+    const cap = resolveCapitalization(s.alt ? altAdv : baseAdv) || NONE;
+    if (pos === 0) { curCap = cap; curStart = 0; }
+    else if (cap !== curCap) {
+      ranges.push({ range: { start: curStart, end: pos }, capitalization: curCap });
+      curCap = cap; curStart = pos;
+    }
+    pos += len;
+  }
+  ranges.push({ range: { start: curStart, end: pos }, capitalization: curCap });
+  return ranges;
+}
+
 function resolveStroke(adv, defaultStroke) {
   if (!adv?.strokeEnabled) return defaultStroke;
   return { width: adv.strokeWidth ?? 1, color: hexToColor(adv.strokeColor || '#ffffff') };
@@ -398,8 +433,12 @@ function bounds(x, y, w, h) {
   return { origin: { x, y }, size: { width: w, height: h } };
 }
 
-function makeBodyElement({ name = 'body', x, y, w, h, rtfData, charCount }, rs = {}) {
+function makeBodyElement({ name = 'body', x, y, w, h, rtfData, charCount, spans }, rs = {}) {
   const id = uuid();
+  const hasAlt = (spans || []).some(s => s.alt);
+  const customAttrs = hasAlt
+    ? spanCapitalizationRanges(spans, rs.bodyFontAdv, rs.boldFontAdv)
+    : capitalizationCustomAttributes(rs.bodyFontAdv, charCount);
   return {
     uuid: id,
     name,
@@ -419,7 +458,7 @@ function makeBodyElement({ name = 'body', x, y, w, h, rtfData, charCount }, rs =
         paragraphStyle: { lineHeightMultiple: 1, defaultTabInterval: 84, textList: {} },
         strikethroughStyle: {},
         ...resolveTextStroke(rs.bodyFontAdv),
-        customAttributes: capitalizationCustomAttributes(rs.bodyFontAdv, charCount),
+        customAttributes: customAttrs,
       },
       shadow: resolveTextShadow(rs.bodyFontAdv, TXT_SHADOW_LO),
       rtfData,
@@ -1357,7 +1396,7 @@ function buildScriptureCues(spec, rs) {
       ? estimateTitleY(displayBody, bw, rs)
       : (rs.titleY ?? 880);
     const titleEl = makeTitleElement({ reference: spec.reference, titleY: computedTitleY }, rs);
-    const bodyEl  = makeBodyElement({ x: bx, y: by + bodyYOff, w: bw, h: bh, rtfData: bodyRtf, charCount: plainBody.length }, rs);
+    const bodyEl  = makeBodyElement({ x: bx, y: by + bodyYOff, w: bw, h: bh, rtfData: bodyRtf, charCount: plainBody.length, spans: displayBody }, rs);
     const gradEl  = makeGradientElement(rs);
 
     const slots = [
@@ -1837,11 +1876,13 @@ function buildPresentation(spec, propUuidMap = {}) {
     return sa?.label?.text || '';
   };
 
-  const queueMode = spec.queueMode || 'ref'; // 'list' | 'ref' | 'refPhrase'
+  const queueMode = spec.queueMode || 'ref'; // 'list' (full upcoming queue) | 'ref' | 'refPhrase' (next slide only)
   for (let i = 0; i < rawCues.length; i++) {
-    const futureLabels = rawCues
-      .slice(i + 1)
-      .filter(c => !c._isBlankBefore)
+    // 'ref'/'refPhrase' show only the single next slide \u2014 'list' is the only mode
+    // that shows the full upcoming queue.
+    const upcoming = rawCues.slice(i + 1).filter(c => !c._isBlankBefore);
+    const relevantCues = queueMode === 'list' ? upcoming : upcoming.slice(0, 1);
+    const futureLabels = relevantCues
       .map(c => {
         const lbl = getCueLabel(c);
         if (queueMode === 'list') return lbl;            // full label, as-is

@@ -196,5 +196,26 @@ const bodyRtf = c => {
   ok('live element absent on blank',      !liveEl(cues[2]));
 })();
 
+// ---- 13. Queue mode: 'ref'/'refPhrase' show only the next slide; 'list' shows all upcoming ----
+(() => {
+  const queueRtf = c => {
+    const a = slideAction(c);
+    const els = (a?.slide?.presentation?.baseSlide?.elements || []).map(s => s.element);
+    const el = els.find(e => e.name === 'queue');
+    try { return Buffer.from(el.text.rtfData, 'base64').toString('utf8'); } catch { return ''; }
+  };
+  const slides = [
+    { type: 'scripture', label: 'John 3:16', reference: 'John 3:16', bodies: [[{ text: 'a' }]], propName: 'A' },
+    { type: 'scripture', label: 'Romans 8:28', reference: 'Romans 8:28', bodies: [[{ text: 'b' }]], propName: 'B' },
+    { type: 'scripture', label: 'Psalm 23:1', reference: 'Psalm 23:1', bodies: [[{ text: 'c' }]], propName: 'C' },
+  ];
+  const refCues  = cuesOf({ name: 'T', queueMode: 'ref',  slides });
+  const listCues = cuesOf({ name: 'T', queueMode: 'list', slides });
+  const refRtf  = queueRtf(refCues[0]);
+  const listRtf = queueRtf(listCues[0]);
+  ok('queueMode ref shows next slide only',  refRtf.includes('Romans 8:28') && !refRtf.includes('Psalm 23:1'));
+  ok('queueMode list shows all upcoming',    listRtf.includes('Romans 8:28') && listRtf.includes('Psalm 23:1'));
+})();
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

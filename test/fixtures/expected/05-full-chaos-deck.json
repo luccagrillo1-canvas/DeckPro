@@ -20,7 +20,7 @@
               "bold": false
             },
             {
-              "text": "Psalm 23:1-2\nPsalm 23:1-2\nThree Things\nThree Things\nThree Things\nLong Point\nSermon Bumper\nBlank Hold\nCustom Build Slot\nTest 1:1\nResponse Card Blank\nResponse Card\nResponse 1\nResponse 2\nResponse 3\nResponse Card Hold\nEnd of Notes",
+              "text": "Psalm 23:1-2",
               "super": false,
               "bold": false
             }
@@ -41,7 +41,7 @@
           "transitionDuration": 0.6,
           "bodies": [
             {
-              "text": "Psalm 23:1-2\nPsalm 23:1-2\nThree Things\nThree Things\nThree Things\nLong Point\nSermon Bumper\nBlank Hold\nCustom Build Slot\nTest 1:1\nResponse Card Blank\nResponse Card\nResponse 1\nResponse 2\nResponse 3\nResponse Card Hold\nEnd of Notes",
+              "text": "Psalm 23:1-2",
               "super": false,
               "bold": false
             }
@@ -73,7 +73,7 @@
               "bold": false
             },
             {
-              "text": "Psalm 23:1-2\nThree Things\nThree Things\nThree Things\nLong Point\nSermon Bumper\nBlank Hold\nCustom Build Slot\nTest 1:1\nResponse Card Blank\nResponse Card\nResponse 1\nResponse 2\nResponse 3\nResponse Card Hold\nEnd of Notes",
+              "text": "Psalm 23:1-2",
               "super": false,
               "bold": false
             }
@@ -122,7 +122,7 @@
               "bold": true
             },
             {
-              "text": "Three Things\nThree Things\nThree Things\nLong Point\nSermon Bumper\nBlank Hold\nCustom Build Slot\nTest 1:1\nResponse Card Blank\nResponse Card\nResponse 1\nResponse 2\nResponse 3\nResponse Card Hold\nEnd of Notes",
+              "text": "Three Things",
               "super": false,
               "bold": false
             }
@@ -166,7 +166,7 @@
               "bold": false
             },
             {
-              "text": "Three Things\nThree Things\nLong Point\nSermon Bumper\nBlank Hold\nCustom Build Slot\nTest 1:1\nResponse Card Blank\nResponse Card\nResponse 1\nResponse 2\nResponse 3\nResponse Card Hold\nEnd of Notes",
+              "text": "Three Things",
               "super": false,
               "bold": false
             }
@@ -210,7 +210,7 @@
               "bold": false
             },
             {
-              "text": "Three Things\nLong Point\nSermon Bumper\nBlank Hold\nCustom Build Slot\nTest 1:1\nResponse Card Blank\nResponse Card\nResponse 1\nResponse 2\nResponse 3\nResponse Card Hold\nEnd of Notes",
+              "text": "Three Things",
               "super": false,
               "bold": false
             }
@@ -254,7 +254,7 @@
               "bold": false
             },
             {
-              "text": "Long Point\nSermon Bumper\nBlank Hold\nCustom Build Slot\nTest 1:1\nResponse Card Blank\nResponse Card\nResponse 1\nResponse 2\nResponse 3\nResponse Card Hold\nEnd of Notes",
+              "text": "Long Point",
               "super": false,
               "bold": false
             }
@@ -298,7 +298,7 @@
               "bold": false
             },
             {
-              "text": "Sermon Bumper\nBlank Hold\nCustom Build Slot\nTest 1:1\nResponse Card Blank\nResponse Card\nResponse 1\nResponse 2\nResponse 3\nResponse Card Hold\nEnd of Notes",
+              "text": "Sermon Bumper",
               "super": false,
               "bold": false
             }
@@ -332,7 +332,7 @@
           "transitionDuration": 0.6,
           "bodies": [
             {
-              "text": "Sermon Bumper\nBlank Hold\nCustom Build Slot\nTest 1:1\nResponse Card Blank\nResponse Card\nResponse 1\nResponse 2\nResponse 3\nResponse Card Hold\nEnd of Notes",
+              "text": "Sermon Bumper",
               "super": false,
               "bold": false
             }
@@ -354,7 +354,7 @@
               "bold": false
             },
             {
-              "text": "Blank Hold\nCustom Build Slot\nTest 1:1\nResponse Card Blank\nResponse Card\nResponse 1\nResponse 2\nResponse 3\nResponse Card Hold\nEnd of Notes",
+              "text": "Blank Hold",
               "super": false,
               "bold": false
             }
@@ -379,7 +379,7 @@
           "transitionDuration": 0.6,
           "bodies": [
             {
-              "text": "Custom Build Slot\nTest 1:1\nResponse Card Blank\nResponse Card\nResponse 1\nResponse 2\nResponse 3\nResponse Card Hold\nEnd of Notes",
+              "text": "Custom Build Slot",
               "super": false,
               "bold": false
             }
@@ -396,7 +396,7 @@
           "transitionDuration": 0.6,
           "bodies": [
             {
-              "text": "Test 1:1\nResponse Card Blank\nResponse Card\nResponse 1\nResponse 2\nResponse 3\nResponse Card Hold\nEnd of Notes",
+              "text": "Test 1:1",
               "super": false,
               "bold": false
             }
@@ -423,7 +423,7 @@
               "bold": false
             },
             {
-              "text": "Response Card Blank\nResponse Card\nResponse 1\nResponse 2\nResponse 3\nResponse Card Hold\nEnd of Notes",
+              "text": "Response Card Blank",
               "super": false,
               "bold": false
             }
@@ -457,7 +457,7 @@
           "transitionDuration": 0.6,
           "bodies": [
             {
-              "text": "Response Card\nResponse 1\nResponse 2\nResponse 3\nResponse Card Hold\nEnd of Notes",
+              "text": "Response Card",
               "super": false,
               "bold": false
             }
@@ -494,7 +494,7 @@
               "bold": false
             },
             {
-              "text": "Response 1\nResponse 2\nResponse 3\nResponse Card Hold\nEnd of Notes",
+              "text": "Response 1",
               "super": false,
               "bold": false
             }
@@ -539,7 +539,7 @@
               "bold": false
             },
             {
-              "text": "Response 2\nResponse 3\nResponse Card Hold\nEnd of Notes",
+              "text": "Response 2",
               "super": false,
               "bold": false
             }
@@ -584,7 +584,7 @@
               "bold": false
             },
             {
-              "text": "Response 3\nResponse Card Hold\nEnd of Notes",
+              "text": "Response 3",
               "super": false,
               "bold": false
             }
@@ -629,7 +629,7 @@
               "bold": false
             },
             {
-              "text": "Response Card Hold\nEnd of Notes",
+              "text": "Response Card Hold",
               "super": false,
               "bold": false
             }

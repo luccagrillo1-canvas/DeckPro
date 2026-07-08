@@ -182,8 +182,12 @@ const APP_INFO = {
 
 // ─── Element builder for props ────────────────────────────────────────────
 
-function makeTextElement({ name, x, y, w, h, rtfData, font, fontSize, center, charCount, vertAlign, scaleBehavior, margins, adv }, rs = {}) {
+function makeTextElement({ name, x, y, w, h, rtfData, font, fontSize, center, charCount, vertAlign, scaleBehavior, margins, adv, spans, altAdv }, rs = {}) {
   const id = uuid();
+  const hasAlt = (spans || []).some(s => s.alt);
+  const customAttrs = hasAlt
+    ? spanCapitalizationRanges(spans, adv, altAdv)
+    : capitalizationCustomAttributes(adv, charCount);
   const paraStyle = {
     lineHeightMultiple: 1,
     defaultTabInterval: 84,
@@ -218,7 +222,7 @@ function makeTextElement({ name, x, y, w, h, rtfData, font, fontSize, center, ch
         paragraphStyle: paraStyle,
         strikethroughStyle: {},
         ...resolveTextStroke(adv),
-        customAttributes: capitalizationCustomAttributes(adv, charCount),
+        customAttributes: customAttrs,
       },
       shadow: resolveTextShadow(adv, TXT_SHADOW),
       rtfData,
@@ -315,6 +319,32 @@ function capitalizationCustomAttributes(adv, charCount) {
   if (!charCount) return [];
   const cap = resolveCapitalization(adv);
   return cap ? [{ range: { end: charCount }, capitalization: cap }] : [{ range: { end: charCount } }];
+}
+
+// Mirrors builder.js — see its spanCapitalizationRanges for the full rationale.
+// Every range gets an explicit value (CAPITALIZATION_NONE when unset) rather than
+// omitting the field, since an omitted field inherits the element's base
+// capitalization instead of explicitly clearing it.
+function spanCapitalizationRanges(spans, baseAdv, altAdv) {
+  const list = spans || [];
+  const totalLen = list.reduce((n, s) => n + (s.text || '').length, 0);
+  if (!totalLen) return [];
+  const NONE = 'CAPITALIZATION_NONE';
+  const ranges = [];
+  let pos = 0, curCap = null, curStart = 0;
+  for (const s of list) {
+    const len = (s.text || '').length;
+    if (!len) continue;
+    const cap = resolveCapitalization(s.alt ? altAdv : baseAdv) || NONE;
+    if (pos === 0) { curCap = cap; curStart = 0; }
+    else if (cap !== curCap) {
+      ranges.push({ range: { start: curStart, end: pos }, capitalization: curCap });
+      curCap = cap; curStart = pos;
+    }
+    pos += len;
+  }
+  ranges.push({ range: { start: curStart, end: pos }, capitalization: curCap });
+  return ranges;
 }
 
 function resolveStroke(adv, defaultStroke) {
@@ -416,6 +446,8 @@ function buildScripturePropCue(spec, rs = {}) {
     scaleBehavior: 'SCALE_BEHAVIOR_SCALE_FONT_DOWN',
     margins: resolveMargins(prs.propBodyFontAdv, { bottom: 60 }),
     adv: prs.propBodyFontAdv,
+    spans: allSpans,
+    altAdv: prs.boldFontAdv,
   }, rs);
 
   const th = prs.propTitleH ?? 50.51;

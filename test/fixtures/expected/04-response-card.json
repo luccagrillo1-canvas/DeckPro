@@ -20,7 +20,7 @@
               "bold": false
             },
             {
-              "text": "Romans 10:9\nRespond Today\nResponse Card Blank\nResponse Card\nResponse 1\nResponse 2\nResponse 3\nResponse Card Hold\nEnd of Notes",
+              "text": "Romans 10:9",
               "super": false,
               "bold": false
             }
@@ -56,7 +56,7 @@
               "bold": false
             },
             {
-              "text": "Respond Today\nResponse Card Blank\nResponse Card\nResponse 1\nResponse 2\nResponse 3\nResponse Card Hold\nEnd of Notes",
+              "text": "Respond Today",
               "super": false,
               "bold": false
             }
@@ -87,7 +87,7 @@
               "bold": false
             },
             {
-              "text": "Response Card Blank\nResponse Card\nResponse 1\nResponse 2\nResponse 3\nResponse Card Hold\nEnd of Notes",
+              "text": "Response Card Blank",
               "super": false,
               "bold": false
             }
@@ -108,7 +108,7 @@
           "transitionDuration": 0.6,
           "bodies": [
             {
-              "text": "Response Card\nResponse 1\nResponse 2\nResponse 3\nResponse Card Hold\nEnd of Notes",
+              "text": "Response Card",
               "super": false,
               "bold": false
             }
@@ -140,7 +140,7 @@
               "bold": false
             },
             {
-              "text": "Response 1\nResponse 2\nResponse 3\nResponse Card Hold\nEnd of Notes",
+              "text": "Response 1",
               "super": false,
               "bold": false
             }
@@ -176,7 +176,7 @@
               "bold": false
             },
             {
-              "text": "Response 2\nResponse 3\nResponse Card Hold\nEnd of Notes",
+              "text": "Response 2",
               "super": false,
               "bold": false
             }
@@ -212,7 +212,7 @@
               "bold": false
             },
             {
-              "text": "Response 3\nResponse Card Hold\nEnd of Notes",
+              "text": "Response 3",
               "super": false,
               "bold": false
             }
@@ -248,7 +248,7 @@
               "bold": false
             },
             {
-              "text": "Response Card Hold\nEnd of Notes",
+              "text": "Response Card Hold",
               "super": false,
               "bold": false
             }

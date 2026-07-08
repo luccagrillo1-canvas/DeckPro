@@ -2,9 +2,19 @@
 
 // ─── Version & Changelog ──────────────────────────────────────────────────────
 
-const APP_VERSION = '4.7.8';
+const APP_VERSION = '4.7.9';
 
 const CHANGELOG = [
+  {
+    version: '4.7.9',
+    date: '2026-07-08',
+    changes: [
+      'Fix: turning on ALL CAPS for the Bold/emphasis row (Display 1 or Display 2) now actually shows up. The emphasis-marked words within a scripture body were only ever getting the base row\'s capitalization at the rendering-critical layer — the Bold row\'s own capitalization setting never reached it. Each word now carries its own explicit capitalization based on which row actually applies to it.',
+      'Renamed queue format "Reference only" → "Next Reference Only" (and "Reference + first phrase" → "Next Reference + First Phrase"). Fixed the matching bug: these modes were showing the entire remaining upcoming-slide list instead of just the next slide — that\'s what "Full List" is for. Full List is unaffected.',
+      'Investigated and flagged (not fixed, needs a design call): Display 2 (LED wall) styling never actually falls back to Display 1 when left untouched — every scheme creates Display 2\'s advanced styling pre-filled with factory defaults, which silently defeats the fallback check. Explicitly setting a Display 2 row still works correctly; only the "inherit from Display 1 automatically" behavior is broken, and always has been.',
+      'Investigated, confirmed already correct (no change made): quote-mismatch warning counts straight and curly quotes correctly; Display 1 Title capitalization already respects its own setting; a "_V2" file-naming convention was searched for and does not exist anywhere in the app — only in a changelog line describing a feature that was seemingly never built.',
+    ],
+  },
   {
     version: '4.7.8',
     date: '2026-07-08',
@@ -2065,7 +2075,7 @@ function bibleBookAutocomplete(raw) {
 const TOOLTIPS = {
   // Preferences — Queue
   'queue':                    'Queue\nThe strip on the confidence monitor that lists what\'s coming up next.',
-  'queue-format':             'Queue format\nHow each upcoming item is shown in the queue strip.',
+  'queue-format':             'Queue format\nNext Reference / Reference + Phrase show only the single next slide. Full List shows every upcoming slide.',
   // Preferences — Schemes panel
   'feature-visibility':       'Feature Visibility\nHide advanced fields so the slide editor is simpler when handing off to other users. Turning one off just hides it — it doesn\'t change exports.',
   'scheme-new':               'New Palette\nCreate a blank palette from defaults.',
@@ -4511,9 +4521,9 @@ function renderConfigPanel(panel) {
         <div class="field" style="margin-bottom:0">
           <label data-tip-key="queue-format">Upcoming-slide format</label>
           <select id="cfg-queue-mode" style="flex:1">
-            <option value="ref"${(cfg.queueMode || 'ref') === 'ref' ? ' selected' : ''}>Reference only — e.g. "Ephesians 5:18"</option>
-            <option value="refPhrase"${cfg.queueMode === 'refPhrase' ? ' selected' : ''}>Reference + first phrase</option>
-            <option value="list"${cfg.queueMode === 'list' ? ' selected' : ''}>Full label (list)</option>
+            <option value="ref"${(cfg.queueMode || 'ref') === 'ref' ? ' selected' : ''}>Next Reference Only — e.g. "Ephesians 5:18"</option>
+            <option value="refPhrase"${cfg.queueMode === 'refPhrase' ? ' selected' : ''}>Next Reference + First Phrase</option>
+            <option value="list"${cfg.queueMode === 'list' ? ' selected' : ''}>Full List</option>
           </select>
         </div>
       </div>
