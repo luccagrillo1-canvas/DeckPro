@@ -2,9 +2,16 @@
 
 // ─── Version & Changelog ──────────────────────────────────────────────────────
 
-const APP_VERSION = '4.7.1';
+const APP_VERSION = '4.7.2';
 
 const CHANGELOG = [
+  {
+    version: '4.7.2',
+    date: '2026-07-08',
+    changes: [
+      'Follow-up to the Custom color fix: confirmed custom font-color edits no longer write back into the palette (the palette-wide neutral/accent colors are only ever set from the Palette tab). Also fixed a related bug where editing a Palette-tab color left a stray hidden field on the scheme; existing schemes are cleaned up automatically on load.',
+    ],
+  },
   {
     version: '4.7.1',
     date: '2026-07-08',
@@ -2600,6 +2607,8 @@ function applySavedState(saved) {
         }
         // Merge with defaults so all new fields get values
         const merged = { ...DEF, ...out };
+        // Clean up junk 'undefined' key left by a pre-4.7.2 double-bound color handler
+        delete merged['undefined'];
         merged._needsTypographyMigration = !out.typography;
         // Merge nested fontAdv objects too
         for (const k of ['bodyFontAdv','propBodyFontAdv','boldFontAdv','titleFontAdv','propTitleFontAdv','startEndFontAdv','notesFontAdv','liveFontAdv','queueFontAdv']) {
@@ -6576,6 +6585,7 @@ function renderStylePanel(panel) {
     picker.addEventListener('input', e => {
       const s = getScheme(); if (!s) return;
       const key = picker.dataset.scheme;
+      if (!key) return; // palette-tab color slots have their own handler; ignore here
       if (!s[key]) s[key] = FONT_ADV_DEFAULTS();
       s[key].color = e.target.value; // always #RRGGBB from native picker
       const typoKey = ADV_FIELD_TO_TYPO_KEY[key];
@@ -6595,6 +6605,7 @@ function renderStylePanel(panel) {
     hexIn.addEventListener('input', e => {
       const s = getScheme(); if (!s) return;
       const key = hexIn.dataset.scheme;
+      if (!key) return; // palette-tab hex fields have their own handler; ignore here
       if (!s[key]) s[key] = FONT_ADV_DEFAULTS();
       const raw = e.target.value.replace(/^#/, '');
       if (/^[0-9a-fA-F]{6}$/.test(raw)) {
@@ -6616,6 +6627,7 @@ function renderStylePanel(panel) {
     btn.addEventListener('click', () => {
       const s = getScheme(); if (!s) return;
       const key = btn.dataset.scheme;
+      if (!key) return; // palette-tab clear buttons have their own handler; ignore here
       if (!s[key]) s[key] = FONT_ADV_DEFAULTS();
       s[key].color = '';
       const typoKey = ADV_FIELD_TO_TYPO_KEY[key];
