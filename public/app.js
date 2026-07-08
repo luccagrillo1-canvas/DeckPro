@@ -2,9 +2,16 @@
 
 // ─── Version & Changelog ──────────────────────────────────────────────────────
 
-const APP_VERSION = '4.7.9';
+const APP_VERSION = '4.7.10';
 
 const CHANGELOG = [
+  {
+    version: '4.7.10',
+    date: '2026-07-08',
+    changes: [
+      'Quotes are now uniformed live, as you type or paste — not just at export. Previously DeckPro silently converted curly quotes to straight ones only in the final exported file, so the editor itself could still show a mix (macOS auto-curly quotes while typing, curly quotes pasted from Bible sites or Word docs). Now every text field and body editor normalizes immediately, so what you see always matches what exports.',
+    ],
+  },
   {
     version: '4.7.9',
     date: '2026-07-08',
@@ -8582,6 +8589,60 @@ function normalizeDeckQuotes(value) {
     .replace(/[‘’‚‛]/g, "'");
 }
 
+// Live quote uniforming — export already normalizes everything via
+// normalizeDeckQuotes(), but that only ran at the very end, so the editor
+// itself could still show a mix of straight/curly (macOS smart-quotes while
+// typing, curly quotes pasted from Bible sites or Word docs). Normalize as
+// the user types/pastes too, so what's displayed always matches what exports.
+function normalizeQuotesInElement(el) {
+  // Reassigning a Text node's .textContent resets any active Selection's
+  // offset to 0 even when the node object and string length are unchanged —
+  // so the cursor must be explicitly saved and restored around the mutation,
+  // or every normalized quote would knock typing back to the start of the line.
+  const sel = window.getSelection();
+  const hasFocusInside = sel.rangeCount > 0 && el.contains(sel.focusNode);
+  const restoreNode = hasFocusInside ? sel.focusNode : null;
+  const restoreOffset = hasFocusInside ? sel.focusOffset : null;
+
+  const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+  let node, changed = false;
+  while ((node = walker.nextNode())) {
+    const normalized = normalizeDeckQuotes(node.textContent);
+    if (normalized !== node.textContent) { node.textContent = normalized; changed = true; }
+  }
+
+  if (changed && restoreNode && restoreNode.isConnected) {
+    try {
+      const range = document.createRange();
+      const maxOffset = restoreNode.textContent?.length ?? 0;
+      range.setStart(restoreNode, Math.min(restoreOffset, maxOffset));
+      range.collapse(true);
+      sel.removeAllRanges();
+      sel.addRange(range);
+    } catch (_) {}
+  }
+}
+
+function initLiveQuoteNormalization() {
+  // Capture phase so this runs BEFORE each field's own input handler reads
+  // the value/DOM — otherwise the field would save the un-normalized text
+  // and only the display would end up fixed.
+  document.addEventListener('input', e => {
+    const t = e.target;
+    if (!t) return;
+    if (t.isContentEditable) {
+      normalizeQuotesInElement(t);
+    } else if ((t.tagName === 'INPUT' && (t.type === 'text' || t.type === 'search')) || t.tagName === 'TEXTAREA') {
+      const normalized = normalizeDeckQuotes(t.value);
+      if (normalized !== t.value) {
+        const { selectionStart, selectionEnd } = t;
+        t.value = normalized;
+        try { t.setSelectionRange(selectionStart, selectionEnd); } catch (_) {}
+      }
+    }
+  }, true);
+}
+
 function normalizeExportSpans(spans) {
   return (spans || []).map(span => ({ ...span, text: normalizeDeckQuotes(span.text || '') }));
 }
@@ -12533,6 +12594,7 @@ async function bootstrap() {
 
   await loadState();
   initTheme();
+  initLiveQuoteNormalization();
   syncUidCounter();
   attachHeaderHandlers();
   initDecks();
