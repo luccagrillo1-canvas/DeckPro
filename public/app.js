@@ -2,9 +2,17 @@
 
 // ─── Version & Changelog ──────────────────────────────────────────────────────
 
-const APP_VERSION = '4.6.23';
+const APP_VERSION = '4.7.0';
 
 const CHANGELOG = [
+  {
+    version: '4.7.0',
+    date: '2026-07-08',
+    changes: [
+      'New: iCloud Sync (Preferences → iCloud Sync). Opt-in per machine — keeps your palettes and preferences (display names, feature visibility, Bible defaults, book names, speakers, response card, queue format, global typography/layout) in step across your Macs through iCloud Drive. Machine-specific settings (Pro7 paths & password, export folder, API keys, theme) and the current draft never leave the computer.',
+      'Sync uses smart per-section and per-palette merging with deletion tombstones — editing a palette on one Mac and a different preference on another never clobbers either, and deleted palettes stay deleted. On a same-item conflict the newer edit wins.',
+    ],
+  },
   {
     version: '4.6.23',
     date: '2026-07-08',
@@ -2252,6 +2260,7 @@ const DEFAULT_STATE = () => ({
     pro7RootFolder:      '',
     pro7LibraryFolder:   '',
     setupComplete:       false,
+    icloudSync:          false, // machine-local: whether THIS Mac syncs portable settings via iCloud (never itself synced)
     theme:               '',
     features:            DEFAULT_FEATURES(),
     stageScreen:         DEFAULT_STAGESCREEN(),
@@ -2554,6 +2563,7 @@ function saveState() {
   renderNotesPanel();
   clearTimeout(_autosaveTimer);
   _autosaveTimer = setTimeout(autosaveDeck, 1500);
+  bumpSyncMeta();
 }
 
 function applySavedState(saved) {
@@ -4344,6 +4354,18 @@ function renderConfigPanel(panel) {
       </div>
 
       <div class="settings-section">
+        <h3>iCloud Sync</h3>
+        <div class="rc-toggle-row" id="sync-toggle-row">
+          <div class="toggle ${cfg.icloudSync === true ? 'on' : ''}" id="sync-toggle"></div>
+          <span>Sync portable settings with iCloud</span>
+        </div>
+        <div style="font-size:11.5px;color:var(--muted);margin-top:6px;line-height:1.5">
+          Keeps your <strong>palettes</strong> and preferences (display names, feature visibility, Bible defaults, book names, speakers, response card, queue format) in step across your Macs via iCloud Drive. Machine-specific settings — Pro7 paths &amp; password, export folder, API keys, theme — and the current draft stay on this computer.
+        </div>
+        <div class="sync-status" id="sync-status" style="margin-top:8px"></div>
+      </div>
+
+      <div class="settings-section">
         <h3>Display Names</h3>
         <p style="color:var(--muted);font-size:12px;margin:0 0 10px">
           Rename outputs to match your setup — these labels appear throughout the app.
@@ -4572,6 +4594,17 @@ function renderConfigPanel(panel) {
       toast('success', 'Library reset to default location', r.libraryDir);
     }
   });
+
+  // iCloud sync toggle
+  const syncToggle = document.getElementById('sync-toggle');
+  if (syncToggle) {
+    syncToggle.addEventListener('click', () => {
+      const on = !state.config.icloudSync;
+      syncToggle.classList.toggle('on', on);
+      setSyncEnabled(on);
+    });
+  }
+  updateSyncStatusUI();
 
   // Pro7 root folder
   document.getElementById('btn-pro7-root-browse')?.addEventListener('click', async () => {
@@ -12019,6 +12052,322 @@ function initChangelog() {
   modal.addEventListener('click', e => { if (e.target === modal) modal.classList.remove('open'); });
 }
 
+// ─── iCloud portable-settings sync ─────────────────────────────────────────────
+//
+// Syncs PALETTES + a subset of preferences between the user's Macs via a single
+// JSON file in iCloud Drive. Machine-specific settings (Pro7 paths/password,
+// output folder, setup state, API keys, theme) and the current draft never sync.
+//
+// Merge is section-by-section (each preference group) and per-palette-by-id, so
+// an edit on one Mac never clobbers an unrelated change on the other. Deletions
+// use tombstones so a removed palette doesn't resurrect. Timestamps mean
+// "when a user last changed this here"; a brand-new machine's baseline is 0 so
+// the established config on iCloud wins on first sync. Ties favour the remote
+// copy (don't clobber what's already shared); the id union preserves local-only
+// palettes regardless.
+
+const SYNC_META_KEY = 'deckpro-sync-meta';
+const DEVICE_ID_KEY = 'deckpro-device-id';
+
+// Which parts of state travel. Each entry reads/writes its slice of state.
+function SYNC_SECTIONS() {
+  const c = state.config;
+  return {
+    features:         { get: () => c.features,        set: v => { c.features = v; } },
+    displayNames:     { get: () => c.displayNames,    set: v => { c.displayNames = v; } },
+    bible:            { get: () => ({ bibleList: c.bibleList, bibleId: c.bibleId, bibleName: c.bibleName }),
+                        set: v => { c.bibleList = v.bibleList || []; c.bibleId = v.bibleId || ''; c.bibleName = v.bibleName || ''; } },
+    verse:            { get: () => ({ verseNumbers: c.verseNumbers, verseSuper: c.verseSuper }),
+                        set: v => { c.verseNumbers = !!v.verseNumbers; c.verseSuper = !!v.verseSuper; } },
+    queueMode:        { get: () => ({ v: c.queueMode }), set: v => { c.queueMode = v.v || 'ref'; } },
+    bookNames:        { get: () => c.bookNames,        set: v => { c.bookNames = v || {}; } },
+    speakers:         { get: () => c.speakers,         set: v => { c.speakers = v || []; } },
+    responses:        { get: () => c.responses,        set: v => { c.responses = v || {}; } },
+    notesStyleMap:    { get: () => c.notesStyleMap,    set: v => { c.notesStyleMap = v || {}; } },
+    stageScreen:      { get: () => c.stageScreen,      set: v => { c.stageScreen = v; } },
+    globalTypography: { get: () => state.globalTypography, set: v => { state.globalTypography = v; } },
+    globalLayout:     { get: () => state.globalLayout,     set: v => { state.globalLayout = v; } },
+    globalFontAdv:    { get: () => state.globalFontAdv,    set: v => { state.globalFontAdv = v; } },
+  };
+}
+
+let _syncMeta   = null;
+let _syncing    = false;
+let _syncPushTimer = null;
+let _syncHostname  = '';
+let _syncStatus = { state: 'off', at: 0 }; // off | syncing | synced | paused
+
+function stableHash(obj) {
+  try { return JSON.stringify(obj ?? null); } catch { return ''; }
+}
+
+function getDeviceId() {
+  let id = null;
+  try { id = localStorage.getItem(DEVICE_ID_KEY); } catch (_) {}
+  if (!id) {
+    id = (crypto?.randomUUID?.() || ('dev-' + Math.random().toString(36).slice(2, 10)));
+    try { localStorage.setItem(DEVICE_ID_KEY, id); } catch (_) {}
+  }
+  return id;
+}
+
+function loadSyncMeta() {
+  try { _syncMeta = JSON.parse(localStorage.getItem(SYNC_META_KEY) || 'null'); } catch { _syncMeta = null; }
+  return _syncMeta;
+}
+function persistSyncMeta() {
+  try { localStorage.setItem(SYNC_META_KEY, JSON.stringify(_syncMeta)); } catch (_) {}
+}
+function persistStateLocal() {
+  // Save merged state without the undo/autosave side effects of saveState()
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (_) {}
+}
+
+// First-enable baseline: record current hashes at updatedAt 0 ("never edited
+// here") so the established iCloud config wins on first sync.
+function buildBaselineSyncMeta() {
+  const meta = { deviceId: getDeviceId(), sections: {}, palettes: {}, tombstones: {}, lastPulledAt: 0, lastPushedAt: 0 };
+  const secs = SYNC_SECTIONS();
+  for (const name of Object.keys(secs)) meta.sections[name] = { hash: stableHash(secs[name].get()), updatedAt: 0 };
+  for (const sc of state.styleSchemes || []) meta.palettes[sc.id] = { hash: stableHash(sc), updatedAt: 0 };
+  _syncMeta = meta;
+  persistSyncMeta();
+}
+
+// Detect local edits since last save and stamp them now(). Auto-tombstones any
+// palette that has disappeared. Runs on every saveState when sync is enabled.
+function bumpSyncMeta() {
+  if (!state.config.icloudSync) return;
+  if (!_syncMeta) buildBaselineSyncMeta();
+  const now = Date.now();
+  let changed = false;
+  const secs = SYNC_SECTIONS();
+  for (const name of Object.keys(secs)) {
+    const h = stableHash(secs[name].get());
+    const m = _syncMeta.sections[name];
+    if (!m || m.hash !== h) { _syncMeta.sections[name] = { hash: h, updatedAt: now }; changed = true; }
+  }
+  const seen = new Set();
+  for (const sc of state.styleSchemes || []) {
+    seen.add(sc.id);
+    const h = stableHash(sc);
+    const m = _syncMeta.palettes[sc.id];
+    if (!m || m.hash !== h) { _syncMeta.palettes[sc.id] = { hash: h, updatedAt: now }; changed = true; }
+    if (_syncMeta.tombstones[sc.id]) { delete _syncMeta.tombstones[sc.id]; changed = true; }
+  }
+  for (const id of Object.keys(_syncMeta.palettes)) {
+    if (!seen.has(id)) { delete _syncMeta.palettes[id]; _syncMeta.tombstones[id] = now; changed = true; }
+  }
+  if (changed) { persistSyncMeta(); scheduleSyncPush(); }
+}
+
+function buildSyncDoc() {
+  const deviceId = getDeviceId();
+  const secs = SYNC_SECTIONS();
+  const sections = {};
+  let top = 0;
+  for (const name of Object.keys(secs)) {
+    const ts = _syncMeta.sections[name]?.updatedAt || 0;
+    sections[name] = { data: secs[name].get(), updatedAt: ts, updatedByDeviceId: deviceId };
+    if (ts > top) top = ts;
+  }
+  const items = {};
+  for (const sc of state.styleSchemes || []) {
+    const ts = _syncMeta.palettes[sc.id]?.updatedAt || 0;
+    items[sc.id] = { id: sc.id, data: sc, updatedAt: ts, deletedAt: null, updatedByDeviceId: deviceId };
+    if (ts > top) top = ts;
+  }
+  for (const [id, ts] of Object.entries(_syncMeta.tombstones)) {
+    items[id] = { id, data: null, updatedAt: 0, deletedAt: ts, updatedByDeviceId: deviceId };
+    if (ts > top) top = ts;
+  }
+  sections.palettes = { items };
+  return { schemaVersion: 1, appVersion: APP_VERSION, updatedAt: top, updatedByDeviceId: deviceId,
+           deviceLabel: _syncHostname || '', sections };
+}
+
+// Merge remote doc into local state + meta. Returns { changed, localAhead }.
+function mergeSyncDoc(remote) {
+  if (!_syncMeta) buildBaselineSyncMeta();
+  let changed = false, localAhead = false;
+  const secs = SYNC_SECTIONS();
+
+  for (const name of Object.keys(secs)) {
+    const lt = _syncMeta.sections[name]?.updatedAt || 0;
+    const rSec = remote?.sections?.[name];
+    const rt = rSec?.updatedAt || 0;
+    if (rt > lt || (rt === lt && rt > 0)) {
+      // remote newer, or tie at a real timestamp → adopt remote if it differs
+      if (rSec && stableHash(secs[name].get()) !== stableHash(rSec.data)) {
+        secs[name].set(rSec.data);
+        _syncMeta.sections[name] = { hash: stableHash(rSec.data), updatedAt: rt };
+        changed = true;
+      } else if (rSec) {
+        _syncMeta.sections[name] = { hash: stableHash(secs[name].get()), updatedAt: rt };
+      }
+    } else if (lt > rt) {
+      localAhead = true;
+    }
+  }
+
+  // Palettes: union of every id we know about anywhere
+  const remoteItems = remote?.sections?.palettes?.items || {};
+  const localById = new Map((state.styleSchemes || []).map(s => [s.id, s]));
+  const ids = new Set([
+    ...localById.keys(),
+    ...Object.keys(_syncMeta.palettes),
+    ...Object.keys(_syncMeta.tombstones),
+    ...Object.keys(remoteItems),
+  ]);
+  const nextSchemes = [];
+  const nextPaletteMeta = {};
+  const nextTombstones = {};
+  for (const id of ids) {
+    const lTomb = _syncMeta.tombstones[id] || 0;
+    const lTs   = _syncMeta.palettes[id]?.updatedAt || 0;
+    const local = localById.has(id)
+      ? { deleted: false, ts: lTs, data: localById.get(id) }
+      : (lTomb > 0 ? { deleted: true, ts: lTomb } : { deleted: false, ts: 0, data: null });
+    const rItem = remoteItems[id];
+    const remoteState = rItem
+      ? (() => { const rTs = Math.max(rItem.updatedAt || 0, rItem.deletedAt || 0);
+                 return { deleted: !!rItem.deletedAt && (rItem.deletedAt >= (rItem.updatedAt || 0)),
+                          ts: rTs, data: rItem.data }; })()
+      : { deleted: false, ts: 0, data: null };
+
+    // Winner: higher ts; tie → remote (if it exists)
+    let win = local, side = 'local';
+    if (remoteState.ts > local.ts || (remoteState.ts === local.ts && rItem)) { win = remoteState; side = 'remote'; }
+
+    if (win.deleted) {
+      nextTombstones[id] = win.ts;
+      if (localById.has(id) || !_syncMeta.tombstones[id]) changed = true;
+    } else if (win.data) {
+      nextSchemes.push(win.data);
+      nextPaletteMeta[id] = { hash: stableHash(win.data), updatedAt: win.ts };
+      if (!localById.has(id) || stableHash(localById.get(id)) !== stableHash(win.data)) changed = true;
+    }
+    if (side === 'local' && local.ts > remoteState.ts) localAhead = true;
+  }
+
+  // Apply palette results
+  _syncMeta.palettes = nextPaletteMeta;
+  _syncMeta.tombstones = nextTombstones;
+  if (!nextSchemes.length) { const d = DEFAULT_STYLE_SCHEME(); nextSchemes.push(d); _syncMeta.palettes[d.id] = { hash: stableHash(d), updatedAt: 0 }; }
+  // Preserve local ordering where possible, then append any new remote palettes
+  const order = new Map((state.styleSchemes || []).map((s, i) => [s.id, i]));
+  nextSchemes.sort((a, b) => (order.has(a.id) ? order.get(a.id) : 1e9) - (order.has(b.id) ? order.get(b.id) : 1e9));
+  state.styleSchemes = nextSchemes;
+  if (!nextSchemes.some(s => s.id === state.activeSchemeId)) {
+    state.activeSchemeId = nextSchemes.some(s => s.id === 'default') ? 'default' : nextSchemes[0].id;
+  }
+
+  return { changed, localAhead };
+}
+
+function scheduleSyncPush() {
+  clearTimeout(_syncPushTimer);
+  _syncPushTimer = setTimeout(() => syncCycle('local-edit'), 2000);
+}
+
+async function syncCycle(reason) {
+  if (!state.config.icloudSync || _syncing) return;
+  _syncing = true;
+  setSyncStatus('syncing');
+  try {
+    const pull = await fetch('/api/sync/pull').then(r => r.json()).catch(() => null);
+    if (!pull || !pull.available) { setSyncStatus('paused'); return; }
+    if (!_syncMeta) buildBaselineSyncMeta();
+
+    const { changed, localAhead } = mergeSyncDoc(pull.doc);
+    if (changed) {
+      persistSyncMeta();
+      persistStateLocal();
+      render();
+    }
+    const doc = buildSyncDoc();
+    const remoteTop = pull.doc?.updatedAt ?? -1;
+    if (!pull.doc || localAhead || doc.updatedAt > remoteTop) {
+      const pr = await fetch('/api/sync/push', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ doc }),
+      }).then(r => r.json()).catch(() => null);
+      if (pr?.ok) _syncMeta.lastPushedAt = Date.now();
+    }
+    _syncMeta.lastPulledAt = Date.now();
+    persistSyncMeta();
+    setSyncStatus('synced');
+  } catch (_) {
+    setSyncStatus('paused');
+  } finally {
+    _syncing = false;
+    updateSyncStatusUI();
+  }
+}
+
+function setSyncStatus(s) { _syncStatus = { state: s, at: Date.now() }; updateSyncStatusUI(); }
+
+function relTime(ts) {
+  if (!ts) return '';
+  const s = Math.round((Date.now() - ts) / 1000);
+  if (s < 5)   return 'just now';
+  if (s < 60)  return `${s}s ago`;
+  const m = Math.round(s / 60);
+  if (m < 60)  return `${m}m ago`;
+  const h = Math.round(m / 60);
+  if (h < 24)  return `${h}h ago`;
+  return `${Math.round(h / 24)}d ago`;
+}
+
+function updateSyncStatusUI() {
+  const el = document.getElementById('sync-status');
+  if (!el) return;
+  if (!state.config.icloudSync) { el.textContent = ''; el.className = 'sync-status'; return; }
+  let txt, cls = 'sync-status';
+  switch (_syncStatus.state) {
+    case 'syncing': txt = 'Syncing…'; break;
+    case 'paused':  txt = 'iCloud sync paused — will retry'; cls += ' paused'; break;
+    case 'synced':  txt = `Synced ${relTime(_syncMeta?.lastPulledAt)}`; cls += ' ok'; break;
+    default:        txt = 'Waiting for iCloud…';
+  }
+  el.textContent = txt;
+  el.className = cls;
+}
+
+let _syncListenersBound = false;
+function bindSyncListeners() {
+  if (_syncListenersBound) return;
+  _syncListenersBound = true;
+  window.addEventListener('focus', () => syncCycle('focus'));
+  setInterval(() => syncCycle('interval'), 60 * 1000);
+}
+
+async function setSyncEnabled(on) {
+  state.config.icloudSync = on;
+  saveState();
+  if (on) {
+    // Confirm iCloud is actually there before promising anything
+    const st = await fetch('/api/sync/status').then(r => r.json()).catch(() => null);
+    _syncHostname = st?.hostname || _syncHostname;
+    if (!st?.available) { setSyncStatus('paused'); toast('info', 'iCloud not available', 'DeckPro will sync once iCloud Drive is reachable.'); return; }
+    if (!_syncMeta) buildBaselineSyncMeta();
+    bindSyncListeners();
+    syncCycle('enable');
+  } else {
+    setSyncStatus('off');
+  }
+}
+
+function initSync() {
+  loadSyncMeta();
+  getDeviceId();
+  fetch('/api/sync/status').then(r => r.json()).then(st => { _syncHostname = st?.hostname || ''; }).catch(() => {});
+  if (state.config.icloudSync) {
+    bindSyncListeners();
+    syncCycle('launch');
+  }
+}
+
 // ─── Theme ────────────────────────────────────────────────────────────────────
 
 const THEME_KEY = 'deckpro-theme';
@@ -12084,6 +12433,7 @@ async function bootstrap() {
   checkForUpdates();
   setInterval(() => checkForUpdates(), 6 * 60 * 60 * 1000); // re-check every 6h
   checkRollbackAvailable();
+  initSync();
 
   // Poll Pro7 every 10s — reconnects automatically when Pro7 opens
   setInterval(() => checkPro7(true), 10000);

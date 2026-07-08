@@ -4100,6 +4100,12 @@ details[open] .font-adv-summary::before { transform: rotate(90deg); }
   font-size: 11.5px; color: var(--muted);
 }
 
+/* iCloud sync status line (Preferences) */
+.sync-status { font-size: 11.5px; color: var(--muted); line-height: 1.5; }
+.sync-status:empty { display: none; }
+.sync-status.ok::before     { content: '✓ '; color: #86efac; }
+.sync-status.paused::before { content: '⏸ '; color: #fdba74; }
+
 /* Rollback banner (shown after a successful update) */
 .rollback-banner {
   position: fixed; top: 18px; left: 50%; transform: translateX(-50%);

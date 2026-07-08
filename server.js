@@ -1000,6 +1000,59 @@ open -n /Applications/DeckPro.app
   }
 });
 
+// ── iCloud portable-settings sync ─────────────────────────────────────────
+const ICLOUD_ROOT = path.join(os.homedir(), 'Library', 'Mobile Documents', 'com~apple~CloudDocs');
+const SYNC_DIR    = path.join(ICLOUD_ROOT, 'DeckPro');
+const SYNC_FILE   = path.join(SYNC_DIR, 'sync.json');
+const SYNC_BAK    = path.join(SYNC_DIR, 'sync.backup.json');
+
+app.get('/api/sync/status', (req, res) => {
+  res.json({
+    ok: true,
+    available: fsu.existsSync(ICLOUD_ROOT),
+    fileExists: fsu.existsSync(SYNC_FILE),
+    path: SYNC_FILE,
+    hostname: os.hostname().replace(/\.local$/, ''),
+  });
+});
+
+app.get('/api/sync/pull', (req, res) => {
+  if (!fsu.existsSync(ICLOUD_ROOT)) return res.json({ ok: true, available: false, doc: null });
+  if (!fsu.existsSync(SYNC_FILE))   return res.json({ ok: true, available: true, doc: null });
+  try {
+    const raw = fsu.readFileSync(SYNC_FILE, 'utf8');
+    const doc = JSON.parse(raw);
+    res.json({ ok: true, available: true, doc });
+  } catch (err) {
+    // Corrupt / half-written — set it aside and report empty so the app can recover
+    try {
+      const corrupt = path.join(SYNC_DIR, `sync.corrupt-${Date.now()}.json`);
+      fsu.copyFileSync(SYNC_FILE, corrupt);
+    } catch (_) {}
+    res.json({ ok: true, available: true, doc: null, warning: 'sync.json was corrupt and has been set aside' });
+  }
+});
+
+app.post('/api/sync/push', (req, res) => {
+  const { doc } = req.body || {};
+  if (!doc || typeof doc !== 'object') return res.status(400).json({ ok: false, error: 'Missing doc' });
+  if (!fsu.existsSync(ICLOUD_ROOT))    return res.json({ ok: false, available: false, error: 'iCloud Drive not available' });
+  try {
+    fsu.mkdirSync(SYNC_DIR, { recursive: true });
+    // Back up the existing good copy before overwriting
+    if (fsu.existsSync(SYNC_FILE)) {
+      try { fsu.copyFileSync(SYNC_FILE, SYNC_BAK); } catch (_) {}
+    }
+    // Atomic write: temp file then rename
+    const tmp = path.join(SYNC_DIR, `.sync-${process.pid}-${Date.now()}.tmp`);
+    fsu.writeFileSync(tmp, JSON.stringify(doc, null, 2), 'utf8');
+    fsu.renameSync(tmp, SYNC_FILE);
+    res.json({ ok: true, available: true });
+  } catch (err) {
+    res.json({ ok: false, error: err.message });
+  }
+});
+
 // ── Generate presentation ─────────────────────────────────────────────────
 
 app.post('/api/generate', async (req, res) => {
