@@ -102,11 +102,13 @@ const advFull = (advKey, { prop = false } = {}) => ([
   { name: `${advKey}.alignment(right)`,       prop, set: s => deep(s, advKey, 'alignment', 'right'),    checks: [r(`\\qr`)] },
   { name: `${advKey}.italic`,                 prop, set: s => deep(s, advKey, 'italic', true),          checks: [r(`\\i `)] },
   { name: `${advKey}.underline`,              prop, set: s => deep(s, advKey, 'underline', true),       checks: [r(`\\ul `)] },
-  { name: `${advKey}.capitalization(allCaps)`,prop, set: s => deep(s, advKey, 'capitalization', 'allCaps'), checks: [r(`\\caps `)] },
-  // color must reach BOTH layers: RTF \colortbl AND the element textSolidFill —
-  // ProPresenter renders the element textSolidFill, so RTF alone is not enough.
+  // capitalization and bold must reach BOTH layers too — ProPresenter reads the meta
+  // attributes.font.{bold,capitalization} for live rendering, not just the embedded RTF.
+  // (This is precisely the gap that let buildProp.js ship with no meta capitalization
+  // at all for Display 2 — the old RTF-only check couldn't see it.)
+  { name: `${advKey}.capitalization(allCaps)`,prop, set: s => deep(s, advKey, 'capitalization', 'allCaps'), checks: [r(`\\caps `), m(`CAPITALIZATION_ALL_CAPS`)] },
   { name: `${advKey}.color`,                  prop, set: s => deep(s, advKey, 'color', S.hex),          checks: [r(colorRtf), m(colorMeta)] },
-  { name: `${advKey}.bold`,                   prop, set: s => deep(s, advKey, 'bold', true),            checks: [r(`\\b `)] },
+  { name: `${advKey}.bold`,                   prop, set: s => deep(s, advKey, 'bold', true),            checks: [r(`\\b `), m(`"bold":true`)] },
   { name: `${advKey}.strikethrough`,          prop, set: s => deep(s, advKey, 'strikethrough', true),   checks: [r(`\\strike`)] },
   { name: `${advKey}.verticalAlignment(top)`, prop, set: s => deep(s, advKey, 'verticalAlignment', 'top'), checks: [m(`VERTICAL_ALIGNMENT_TOP`)] },
   { name: `${advKey}.marginLeft`,             prop, set: s => deep(s, advKey, 'marginLeft', S.margin),  checks: [m(`"left":${S.margin}`)] },
@@ -141,6 +143,8 @@ const FIELDS = [
   { name: 'rcTitleFont',set: s => { s.rcTitleFont = S.font;}, checks: [m(`"name":"${S.font}"`), r(S.font)] },
   { name: 'startEndFont',set: s => { s.startEndFont = S.font;},checks: [m(`"name":"${S.font}"`), r(S.font)] },
   { name: 'notesFont',  set: s => { s.notesFont = S.font; },  checks: [r(S.font)] },
+  { name: 'notesBoldFont', set: s => { s.notesBoldFont = S.font; }, checks: [r(S.font)],
+    note: 'confidence-monitor alt/emphasis font — exercised via the sink deck\'s alt-marked scripture span' },
 
   // ── Prop font names ──
   { name: 'propBodyFont', set: s => { s.propBodyFont = S.font; }, prop: true, checks: [r(S.font)] },
@@ -210,6 +214,8 @@ const FIELDS = [
   { name: 'boldFontAdv.color',                       set: s => deep(s, 'boldFontAdv', 'color', S.hex),                  checks: [r(colorRtf)] },
   { name: 'propBoldFontAdv.capitalization(allCaps)', set: s => deep(s, 'propBoldFontAdv', 'capitalization', 'allCaps'), prop: true, checks: [r(`\\caps `)] },
   { name: 'propBoldFontAdv.color',                   set: s => deep(s, 'propBoldFontAdv', 'color', S.hex),              prop: true, checks: [r(colorRtf)] },
+  { name: 'notesBoldFontAdv.capitalization(allCaps)', set: s => deep(s, 'notesBoldFontAdv', 'capitalization', 'allCaps'), checks: [r(`\\caps `)] },
+  { name: 'notesBoldFontAdv.color',                   set: s => deep(s, 'notesBoldFontAdv', 'color', S.hex),              checks: [r(colorRtf)] },
 
   // ── liveFontAdv: color (RTF + meta) + margins ──
   { name: 'liveFontAdv.color',     set: s => deep(s, 'liveFontAdv', 'color', S.hex),     checks: [r(colorRtf), m(colorMeta)] },

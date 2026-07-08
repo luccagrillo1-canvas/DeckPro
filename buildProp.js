@@ -211,13 +211,14 @@ function makeTextElement({ name, x, y, w, h, rtfData, font, fontSize, center, ch
     feather: { radius: 0.05 },
     text: {
       attributes: {
-        font: { name: font, size: fontSize, family: font },
+        font: { name: font, size: fontSize, bold: !!adv?.bold, family: font },
+        ...capitalizationAttr(adv),
         textSolidFill: adv?.color ? hexToColor(adv.color) : C_WHITE,
         underlineStyle: {},
         paragraphStyle: paraStyle,
         strikethroughStyle: {},
         ...resolveTextStroke(adv),
-        customAttributes: charCount ? [{ range: { end: charCount } }] : [],
+        customAttributes: capitalizationCustomAttributes(adv, charCount),
       },
       shadow: resolveTextShadow(adv, TXT_SHADOW),
       rtfData,
@@ -293,6 +294,27 @@ function resolveScaleBehavior(adv, defaultVal) {
   if (!v) return defaultVal;
   if (v === 'none') return undefined;
   return v;
+}
+
+// Mirrors builder.js — LED-wall (prop) text needs the same meta-level
+// capitalization attribute as the main screen, or ProPresenter won't render it.
+function resolveCapitalization(adv) {
+  const map = {
+    allCaps: 'CAPITALIZATION_ALL_CAPS',
+    smallCaps: 'CAPITALIZATION_SMALL_CAPS',
+    titleCase: 'CAPITALIZATION_TITLE_CASE',
+    startCase: 'CAPITALIZATION_START_CASE',
+  };
+  return map[adv?.capitalization] || null;
+}
+function capitalizationAttr(adv) {
+  const cap = resolveCapitalization(adv);
+  return cap ? { capitalization: cap } : {};
+}
+function capitalizationCustomAttributes(adv, charCount) {
+  if (!charCount) return [];
+  const cap = resolveCapitalization(adv);
+  return cap ? [{ range: { end: charCount }, capitalization: cap }] : [{ range: { end: charCount } }];
 }
 
 function resolveStroke(adv, defaultStroke) {

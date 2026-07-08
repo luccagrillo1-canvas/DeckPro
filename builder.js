@@ -145,7 +145,7 @@ function resolveStyle(style = {}) {
     'bodyFontAdv', 'propBodyFontAdv', 'boldFontAdv', 'propBoldFontAdv',
     'pointFontAdv', 'propPointFontAdv', 'titleFontAdv', 'propTitleFontAdv',
     'rcBodyFontAdv', 'rcTitleFontAdv',
-    'startEndFontAdv', 'notesFontAdv', 'liveFontAdv', 'queueFontAdv',
+    'startEndFontAdv', 'notesFontAdv', 'notesBoldFontAdv', 'liveFontAdv', 'queueFontAdv',
   ];
   const out = {
     ...s,
@@ -412,13 +412,14 @@ function makeBodyElement({ name = 'body', x, y, w, h, rtfData, charCount }, rs =
     feather: { radius: 0.05 },
     text: {
       attributes: {
-        font: { name: rs.bodyFont || 'Montserrat-Medium', size: rs.bodySize || 44, family: 'Montserrat' },
+        font: { name: rs.bodyFont || 'Montserrat-Medium', size: rs.bodySize || 44, bold: !!rs.bodyFontAdv?.bold, family: 'Montserrat' },
+        ...capitalizationAttr(rs.bodyFontAdv),
         textSolidFill: textColorFromAdv(rs.bodyFontAdv),
         underlineStyle: {},
         paragraphStyle: { lineHeightMultiple: 1, defaultTabInterval: 84, textList: {} },
         strikethroughStyle: {},
         ...resolveTextStroke(rs.bodyFontAdv),
-        customAttributes: charCount ? [{ range: { end: charCount } }] : [],
+        customAttributes: capitalizationCustomAttributes(rs.bodyFontAdv, charCount),
       },
       shadow: resolveTextShadow(rs.bodyFontAdv, TXT_SHADOW_LO),
       rtfData,

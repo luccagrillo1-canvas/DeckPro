@@ -2,9 +2,19 @@
 
 // ─── Version & Changelog ──────────────────────────────────────────────────────
 
-const APP_VERSION = '4.7.7';
+const APP_VERSION = '4.7.8';
 
 const CHANGELOG = [
+  {
+    version: '4.7.8',
+    date: '2026-07-08',
+    changes: [
+      'New: "Notes Alt" row in the Custom grid (Display 3 — right under Slide Notes). This is the confidence-monitor\'s own bold/emphasis font, matching the alt look scripture uses on the main screen — previously the field that controlled this had been silently deleted from the app, so alt-marked words on the monitor never looked different from regular text. Defaults to the palette\'s Bold font, independently overridable.',
+      'Fix: Display 2 (LED wall / prop) text — body, title, and point — now exports capitalization (ALL CAPS etc.) and bold at the level ProPresenter actually reads for live rendering. It was only ever reaching the embedded RTF, which is why turning on ALL CAPS or Bold for Display 2 rows visibly did nothing.',
+      'Fix: the same gap existed for the main-screen Body row (and Response Card Body, which shares it) — capitalization and bold toggles on that row now reach the same rendering-critical layer as every other row.',
+      'Hardening: the export audit now checks bold and capitalization at the same layer ProPresenter renders from, not just the embedded RTF — this is what caught both fixes above, and stops this class of bug from shipping silently again.',
+    ],
+  },
   {
     version: '4.7.7',
     date: '2026-07-08',
@@ -2184,10 +2194,10 @@ const TYPOGRAPHY_KEYS = ['font1', 'font2', 'boldFont', 'colorNeutral', 'colorAcc
 const COLOR_TYPO_KEYS = new Set(['colorNeutral', 'colorAccent']);
 const REGULAR_FONT_FIELDS   = ['bodyFont', 'propBodyFont', 'pointFont', 'propPointFont', 'rcBodyFont', 'startEndFont', 'notesFont', 'liveFont', 'queueFont'];
 const HIGHLIGHT_FONT_FIELDS = ['titleFont', 'propTitleFont', 'rcTitleFont'];
-const BOLD_FONT_FIELDS      = ['boldFont', 'propBoldFont'];
+const BOLD_FONT_FIELDS      = ['boldFont', 'propBoldFont', 'notesBoldFont'];
 const REGULAR_ADV_FIELDS    = ['bodyFontAdv', 'propBodyFontAdv', 'pointFontAdv', 'propPointFontAdv', 'rcBodyFontAdv', 'startEndFontAdv', 'notesFontAdv', 'liveFontAdv', 'queueFontAdv'];
 const HIGHLIGHT_ADV_FIELDS  = ['titleFontAdv', 'propTitleFontAdv', 'rcTitleFontAdv'];
-const BOLD_ADV_FIELDS       = ['boldFontAdv', 'propBoldFontAdv'];
+const BOLD_ADV_FIELDS       = ['boldFontAdv', 'propBoldFontAdv', 'notesBoldFontAdv'];
 const ADV_SCHEME_KEYS = [...REGULAR_ADV_FIELDS, ...HIGHLIGHT_ADV_FIELDS, ...BOLD_ADV_FIELDS];
 const DEFAULT_GLOBAL_FONT_ADV = () => Object.fromEntries(ADV_SCHEME_KEYS.map(k => [k, FONT_ADV_DEFAULTS()]));
 function ensureGlobalFontAdv() {
@@ -2232,6 +2242,7 @@ const DEFAULT_STYLE_SCHEME = () => ({
   propTitleFont:'Montserrat-ExtraBold',
   startEndFont: 'Montserrat-ExtraBold',
   notesFont:     'Montserrat-Medium',
+  notesBoldFont: 'Montserrat-Black',  // alt/emphasis words on the confidence monitor — matches scripture's bold look by default
   liveFont:      'HelveticaNeue',  // "live" confidence-monitor badge
   queueFont:     'HelveticaNeue',  // upcoming-slide queue sidebar
   // Sizes (pt — backend doubles for RTF automatically)
@@ -2286,6 +2297,7 @@ const DEFAULT_STYLE_SCHEME = () => ({
   propTitleFontAdv:FONT_ADV_DEFAULTS(),
   startEndFontAdv: FONT_ADV_DEFAULTS(),
   notesFontAdv:    FONT_ADV_DEFAULTS(),
+  notesBoldFontAdv:FONT_ADV_DEFAULTS(),
   liveFontAdv:     FONT_ADV_DEFAULTS(),
   queueFontAdv:    FONT_ADV_DEFAULTS(),
   // Build order per slide type
@@ -2663,7 +2675,7 @@ function applySavedState(saved) {
         delete merged['undefined'];
         merged._needsTypographyMigration = !out.typography;
         // Merge nested fontAdv objects too
-        for (const k of ['bodyFontAdv','propBodyFontAdv','boldFontAdv','titleFontAdv','propTitleFontAdv','startEndFontAdv','notesFontAdv','liveFontAdv','queueFontAdv','pointFontAdv','propPointFontAdv','rcBodyFontAdv','rcTitleFontAdv']) {
+        for (const k of ['bodyFontAdv','propBodyFontAdv','boldFontAdv','propBoldFontAdv','notesBoldFontAdv','titleFontAdv','propTitleFontAdv','startEndFontAdv','notesFontAdv','liveFontAdv','queueFontAdv','pointFontAdv','propPointFontAdv','rcBodyFontAdv','rcTitleFontAdv']) {
           merged[k] = { ...FONT_ADV_DEFAULTS(), ...(out[k] || {}) };
         }
         // Seed slide-notes font fields for schemes saved before notes were customizable
@@ -5953,7 +5965,8 @@ function renderSchemeGrid(sv, rs, dis) {
       { id: 'point2', lbl: 'Point',       fontF: 'propPointFont', advK: 'propPointFontAdv', sizeF: 'propPointSize' },
     ]},
     { label: 'Display 3', rows: [
-      { id: 'notes',  lbl: 'Slide Notes', fontF: 'notesFont',     advK: 'notesFontAdv',     sizeF: 'notesSize' },
+      { id: 'notes',      lbl: 'Slide Notes', fontF: 'notesFont',     advK: 'notesFontAdv',     sizeF: 'notesSize' },
+      { id: 'notesBold',  lbl: 'Notes Alt',   fontF: 'notesBoldFont', advK: 'notesBoldFontAdv', sizeF: null },
     ]},
     { label: 'Utility', rows: [
       { id: 'se',    lbl: 'Utility',     fontF: 'startEndFont',  advK: 'startEndFontAdv',  sizeF: 'startEndSize' },
@@ -6463,7 +6476,7 @@ function renderStylePanel(panel) {
   });
 
   // Font selects (family + style)
-  ['bodyFont', 'propBodyFont', 'boldFont', 'propBoldFont', 'pointFont', 'propPointFont', 'rcBodyFont', 'rcTitleFont', 'titleFont', 'propTitleFont', 'startEndFont', 'notesFont', 'liveFont', 'queueFont'].forEach(field => {
+  ['bodyFont', 'propBodyFont', 'boldFont', 'propBoldFont', 'pointFont', 'propPointFont', 'rcBodyFont', 'rcTitleFont', 'titleFont', 'propTitleFont', 'startEndFont', 'notesFont', 'notesBoldFont', 'liveFont', 'queueFont'].forEach(field => {
     const famSel = document.getElementById(`sf-fam-${field}`);
     const stySel = document.getElementById(`sf-sty-${field}`);
     if (!famSel || !stySel) return;
