@@ -2,9 +2,16 @@
 
 // ─── Version & Changelog ──────────────────────────────────────────────────────
 
-const APP_VERSION = '4.6.22';
+const APP_VERSION = '4.6.23';
 
 const CHANGELOG = [
+  {
+    version: '4.6.23',
+    date: '2026-07-08',
+    changes: [
+      'Rollback to previous version is now accessible in the ··· menu ("Rollback to vX.Y.Z…") — hidden until a backup exists, then appears next to Check for Updates.',
+    ],
+  },
   {
     version: '4.6.22',
     date: '2026-07-07',
