@@ -2,9 +2,16 @@
 
 // ─── Version & Changelog ──────────────────────────────────────────────────────
 
-const APP_VERSION = '4.7.16';
+const APP_VERSION = '4.7.17';
 
 const CHANGELOG = [
+  {
+    version: '4.7.17',
+    date: '2026-07-09',
+    changes: [
+      'The LED wall (Display 2) now actually inherits the main screen (Display 1) styling when you leave it alone — and lets you override any of it per row, exactly like every other setting. Previously Display 2\'s advanced styling (colour, italic/underline, alignment, margins, stroke, shadow) was locked to blank factory defaults and never followed Display 1, even when untouched — the inheritance was silently broken and had been forever. Now: a Display 2 row you haven\'t touched shows and uses Display 1\'s look live; the moment you change one of its cells it becomes its own override (keeping whatever it was inheriting as the starting point, so nothing jumps); and right-clicking an overridden Display 2 row gives you "Reset to Display 1" to hand it back. Existing palettes are untouched — their Display 2 keeps its current look; only new palettes start out inheriting.',
+    ],
+  },
   {
     version: '4.7.16',
     date: '2026-07-09',
@@ -2382,18 +2389,20 @@ const DEFAULT_STYLE_SCHEME = () => ({
   propPointX: 0, propPointY: 853, propPointW: 3200, propPointH: 427,
   propTitleX: -0.30, propTitleY: 1040, propTitleW: 3200.30, propTitleH: 60,
   propAutoTitleY: true, propTitleAutoGap: 16,
-  // Font advanced styling
+  // Font advanced styling. Display 2 (LED-wall prop) advanced styling defaults
+  // to null = "inherit Display 1" — resolved live from the matching Display 1
+  // row in applyTypographyToStyle. A concrete object here means "overridden".
   bodyFontAdv:     FONT_ADV_DEFAULTS(),
-  propBodyFontAdv: FONT_ADV_DEFAULTS(),
+  propBodyFontAdv: null,
   boldFontAdv:     FONT_ADV_DEFAULTS(),
-  propBoldFontAdv: FONT_ADV_DEFAULTS(),
+  propBoldFontAdv: null,
   pointFontAdv:    FONT_ADV_DEFAULTS(),
-  propPointFontAdv:FONT_ADV_DEFAULTS(),
+  propPointFontAdv:null,
   pointStackedFontAdv: FONT_ADV_DEFAULTS(),
   rcBodyFontAdv:   FONT_ADV_DEFAULTS(),
   rcTitleFontAdv:  FONT_ADV_DEFAULTS(),
   titleFontAdv:    FONT_ADV_DEFAULTS(),
-  propTitleFontAdv:FONT_ADV_DEFAULTS(),
+  propTitleFontAdv:null,
   startEndFontAdv: FONT_ADV_DEFAULTS(),
   notesFontAdv:    FONT_ADV_DEFAULTS(),
   notesBoldFontAdv:FONT_ADV_DEFAULTS(),
@@ -2596,7 +2605,35 @@ function applyTypographyToStyle(scheme, global = ensureGlobalTypography()) {
     if (scheme[key]?.color) style[key] = { ...FONT_ADV_DEFAULTS(), ...(scheme[key] || {}) };
     else setAdvColor(style, key, t.colorNeutral);
   }
+  // Display 2 (LED-wall prop) advanced styling inherits Display 1 when the
+  // scheme leaves it null. The loops above already resolved the Display 1
+  // counterparts, so clone those over — live, so changing Display 1 carries to
+  // Display 2 until the user overrides it. A concrete value is left untouched.
+  for (const [d2, d1] of Object.entries(D2_ADV_INHERIT)) {
+    if (scheme[d2] == null) style[d2] = deepClone(style[d1]);
+  }
   return style;
+}
+
+// Display 2 prop advanced-styling field → the Display 1 field it inherits from.
+const D2_ADV_INHERIT = {
+  propBodyFontAdv:  'bodyFontAdv',
+  propPointFontAdv: 'pointFontAdv',
+  propTitleFontAdv: 'titleFontAdv',
+  propBoldFontAdv:  'boldFontAdv',
+};
+
+// Materialize a scheme's advanced-styling object before an edit. A Display 2
+// field that's inheriting (null) forks from its resolved Display 1 counterpart
+// so the edit starts from what was on screen — not blank defaults, which would
+// silently drop the inherited colour/style. Everything else forks from blanks.
+function forkAdv(scheme, key) {
+  if (scheme[key]) return scheme[key];
+  const d1 = D2_ADV_INHERIT[key];
+  scheme[key] = d1
+    ? deepClone(styleForExport(scheme)[d1] || FONT_ADV_DEFAULTS())
+    : FONT_ADV_DEFAULTS();
+  return scheme[key];
 }
 
 function styleForExport(scheme) {
@@ -6946,6 +6983,7 @@ function renderStylePanel(panel) {
     const p = { ...deepClone(DEFAULT_STYLE_SCHEME()), id: 'scheme_' + Date.now(), name: 'New Scheme', isLocked: false };
     for (const f of LAYOUT_FIELDS) p[f] = null;
     for (const f of MOTION_SCALAR_FIELDS) p[f] = null;
+    for (const f of Object.keys(D2_ADV_INHERIT)) p[f] = null;   // Display 2 inherits Display 1
     p.buildOrders = null; p.macros = null; p.stageDisplays = null; p.rcElements = null;
     state.styleSchemes.push(p); state.activeSchemeId = p.id;
     saveState(); renderStylePanel(panel);
@@ -7188,7 +7226,7 @@ function renderStylePanel(panel) {
       const s = getScheme(); if (!s) return;
       const key   = inp.dataset.scheme;
       const field = inp.dataset.field;
-      if (!s[key]) s[key] = FONT_ADV_DEFAULTS();
+      forkAdv(s, key);
       s[key][field] = parseFloat(inp.value) || 0;
       saveState();
     });
@@ -7203,7 +7241,7 @@ function renderStylePanel(panel) {
         const key = seg.dataset.scheme;
         seg.querySelectorAll('button').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
-        if (!s[key]) s[key] = FONT_ADV_DEFAULTS();
+        forkAdv(s, key);
         s[key].verticalAlignment = btn.dataset.val;
         saveState();
       });
@@ -7218,7 +7256,7 @@ function renderStylePanel(panel) {
         const key = seg.dataset.scheme;
         seg.querySelectorAll('button').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
-        if (!s[key]) s[key] = FONT_ADV_DEFAULTS();
+        forkAdv(s, key);
         s[key].alignment = btn.dataset.val;
         saveState();
       });
@@ -7231,7 +7269,7 @@ function renderStylePanel(panel) {
       const s = getScheme(); if (!s) return;
       const key   = lbl.dataset.scheme;
       const field = lbl.dataset.field;
-      if (!s[key]) s[key] = FONT_ADV_DEFAULTS();
+      forkAdv(s, key);
       s[key][field] = !s[key][field];
       lbl.classList.toggle('on', s[key][field]);
       saveState();
@@ -7244,7 +7282,7 @@ function renderStylePanel(panel) {
       const s = getScheme(); if (!s) return;
       const key   = sel.dataset.scheme;
       const field = sel.dataset.field;
-      if (!s[key]) s[key] = FONT_ADV_DEFAULTS();
+      forkAdv(s, key);
       s[key][field] = sel.value;
       saveState();
     });
@@ -7256,7 +7294,7 @@ function renderStylePanel(panel) {
       const s = getScheme(); if (!s) return;
       const key = picker.dataset.scheme;
       if (!key) return; // palette-tab color slots have their own handler; ignore here
-      if (!s[key]) s[key] = FONT_ADV_DEFAULTS();
+      forkAdv(s, key);
       s[key].color = e.target.value; // always #RRGGBB from native picker
       const typoKey = ADV_FIELD_TO_TYPO_KEY[key];
       if (typoKey) {
@@ -7276,7 +7314,7 @@ function renderStylePanel(panel) {
       const s = getScheme(); if (!s) return;
       const key = hexIn.dataset.scheme;
       if (!key) return; // palette-tab hex fields have their own handler; ignore here
-      if (!s[key]) s[key] = FONT_ADV_DEFAULTS();
+      forkAdv(s, key);
       const raw = e.target.value.replace(/^#/, '');
       if (/^[0-9a-fA-F]{6}$/.test(raw)) {
         const full = '#' + raw;
@@ -7298,7 +7336,7 @@ function renderStylePanel(panel) {
       const s = getScheme(); if (!s) return;
       const key = btn.dataset.scheme;
       if (!key) return; // palette-tab clear buttons have their own handler; ignore here
-      if (!s[key]) s[key] = FONT_ADV_DEFAULTS();
+      forkAdv(s, key);
       s[key].color = '';
       const typoKey = ADV_FIELD_TO_TYPO_KEY[key];
       if (typoKey) {
@@ -7321,7 +7359,7 @@ function renderStylePanel(panel) {
       const s = getScheme(); if (!s) return;
       const key   = chk.dataset.scheme;
       const field = chk.dataset.field;
-      if (!s[key]) s[key] = FONT_ADV_DEFAULTS();
+      forkAdv(s, key);
       s[key][field] = chk.checked;
       const body = chk.closest('.fav-section')?.querySelector('.fav-section-body');
       if (body) body.classList.toggle('fav-section-off', !chk.checked);
@@ -7335,7 +7373,7 @@ function renderStylePanel(panel) {
       const s = getScheme(); if (!s) return;
       const key   = picker.dataset.scheme;
       const field = picker.dataset.which;
-      if (!s[key]) s[key] = FONT_ADV_DEFAULTS();
+      forkAdv(s, key);
       s[key][field] = e.target.value;
       const hex = picker.closest('.fav-inline-row')?.querySelector('.fav-sc-hex[data-which="' + field + '"]');
       if (hex) hex.value = e.target.value.replace(/^#/, '');
@@ -7347,7 +7385,7 @@ function renderStylePanel(panel) {
       const s = getScheme(); if (!s) return;
       const key   = hexIn.dataset.scheme;
       const field = hexIn.dataset.which;
-      if (!s[key]) s[key] = FONT_ADV_DEFAULTS();
+      forkAdv(s, key);
       const raw = e.target.value.replace(/^#/, '');
       if (/^[0-9a-fA-F]{6}$/.test(raw)) {
         const full = '#' + raw;
@@ -7397,7 +7435,7 @@ function renderStylePanel(panel) {
     btn.addEventListener('click', () => {
       const s = getScheme(); if (!s) return;
       const key = btn.dataset.scheme;
-      if (!s[key]) s[key] = FONT_ADV_DEFAULTS();
+      forkAdv(s, key);
       s[key].alignment = btn.dataset.val;
       panel.querySelectorAll(`.sg-halign-btn[data-scheme="${key}"]`).forEach(b =>
         b.classList.toggle('on', b.dataset.val === btn.dataset.val));
@@ -7410,7 +7448,7 @@ function renderStylePanel(panel) {
     btn.addEventListener('click', () => {
       const s = getScheme(); if (!s) return;
       const key = btn.dataset.scheme;
-      if (!s[key]) s[key] = FONT_ADV_DEFAULTS();
+      forkAdv(s, key);
       s[key].verticalAlignment = btn.dataset.val;
       panel.querySelectorAll(`.sg-valign-btn[data-scheme="${key}"]`).forEach(b =>
         b.classList.toggle('on', b.dataset.val === btn.dataset.val));
@@ -7424,7 +7462,7 @@ function renderStylePanel(panel) {
       const s = getScheme(); if (!s) return;
       const key   = picker.dataset.scheme;
       const field = picker.dataset.field;
-      if (!s[key]) s[key] = FONT_ADV_DEFAULTS();
+      forkAdv(s, key);
       s[key][field] = e.target.value;
       saveState();
     });
@@ -7494,6 +7532,7 @@ function renderStylePanel(panel) {
     m.innerHTML =
       `<button id="sg-ctx-reset" type="button">↺ Reset to global</button>` +
       `<button id="sg-ctx-push" type="button">↑ Push to global</button>` +
+      `<button id="sg-ctx-inherit-d1" type="button">↺ Reset to Display 1</button>` +
       `<button id="sg-ctx-reset-def" type="button">↺ Reset to default</button>`;
     document.body.appendChild(m);
     document.addEventListener('click', e => {
@@ -7542,6 +7581,13 @@ function renderStylePanel(panel) {
     }
     saveState(); renderStylePanel(panel); _sgCtx.style.display = 'none';
   };
+  // Reset a whole Display 2 prop row back to inheriting Display 1 (null it out).
+  document.getElementById('sg-ctx-inherit-d1').onclick = () => {
+    const s = getScheme(); if (!s) return;
+    const advKey = _sgCtx.dataset.scheme;
+    if (advKey && D2_ADV_INHERIT[advKey]) s[advKey] = null;
+    saveState(); renderStylePanel(panel); _sgCtx.style.display = 'none';
+  };
   document.getElementById('sg-ctx-reset-def').onclick = () => {
     const s = getScheme(); if (!s) return;
     const lyField = _sgCtx.dataset.lyfield;
@@ -7579,9 +7625,12 @@ function renderStylePanel(panel) {
       })());
       const resetBtn    = document.getElementById('sg-ctx-reset');
       const pushBtn     = document.getElementById('sg-ctx-push');
+      const inheritBtn  = document.getElementById('sg-ctx-inherit-d1');
       const resetDefBtn = document.getElementById('sg-ctx-reset-def');
       resetBtn.style.display    = (typoKey && isOvTypo) || (advKey && advFld && isOvAdv) ? '' : 'none';
       pushBtn.style.display     = (typoKey || (advKey && advFld)) ? '' : 'none';
+      // "Reset to Display 1" only for a Display 2 prop row that's currently overriding.
+      inheritBtn.style.display  = (advKey && D2_ADV_INHERIT[advKey] && s?.[advKey] != null) ? '' : 'none';
       resetDefBtn.style.display = 'none';
       const hasItems = typoKey || (advKey && advFld);
       if (!hasItems) return;
@@ -7604,6 +7653,7 @@ function renderStylePanel(panel) {
       _sgCtx.dataset.field   = '';
       document.getElementById('sg-ctx-reset').style.display     = '';
       document.getElementById('sg-ctx-push').style.display      = '';
+      document.getElementById('sg-ctx-inherit-d1').style.display = 'none';
       document.getElementById('sg-ctx-reset-def').style.display = 'none';
       _sgCtx.style.cssText = `display:block;position:fixed;left:${e.clientX}px;top:${e.clientY}px;`;
     });
