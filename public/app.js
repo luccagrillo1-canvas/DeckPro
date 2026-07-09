@@ -2,9 +2,18 @@
 
 // ─── Version & Changelog ──────────────────────────────────────────────────────
 
-const APP_VERSION = '4.7.13';
+const APP_VERSION = '4.7.14';
 
 const CHANGELOG = [
+  {
+    version: '4.7.14',
+    date: '2026-07-09',
+    changes: [
+      'Fit Width rebuilt around a weighted scoring model instead of a single rigid rule. It now proposes many candidate box widths, reads how each one actually breaks the text into lines, and scores every option against tunable penalties — preferring fewer lines, avoiding a lone short word stranded on the last line (orphans), never splitting an emphasis/bold phrase across two lines, keeping line widths even, and — for point slides — breaking after punctuation (. ! ? … : ; ,) rather than mid-clause. The lowest-cost layout wins.',
+      'Fixed: Fit Width could produce a box WIDER than the palette\'s body width for schemes that inherit their layout from Global — the width cap was silently falling back to the full 1920 canvas. It is now a hard limit against the resolved body width, so Fit Width can only ever shrink the box, never grow it.',
+      'Fixed: point slides whose text fit on one line were sometimes forced onto three. Fit Width was measuring point text at the Body font size instead of the (usually larger) Point size, so it computed a box too small for the real glyphs. It now measures at the correct Point size and weight.',
+    ],
+  },
   {
     version: '4.7.13',
     date: '2026-07-09',
@@ -3269,29 +3278,172 @@ function spansToHtmlPreview(spans) {
   }).join('');
 }
 
-/**
- * Measure text spans in a hidden div and find the optimal body width.
- * Poetry mode (has \n): find minimum width that fits each explicit line without soft-wrapping.
- * Balance mode (no \n): binary-search for the tightest width that keeps text in the same line count.
- * Returns { bodyW, bodyX } in Pro7 canvas coordinates.
- */
 function activeStyleScheme() {
   return (state.styleSchemes || []).find(s => s.id === state.activeSchemeId) || (state.styleSchemes || [])[0] || {};
 }
 
-function computeOptimalBodyWidth(spans, rs) {
-  const bodySize = rs?.bodySize ?? 44;
-  const canvasW  = rs?.canvasW  ?? 1920;
-  // Fit-width may never exceed the scheme's body width
-  const schemeMaxW = Math.min(rs?.bodyW || canvasW, canvasW);
-  const padding  = 80; // breathing room added after fitting
+// ─── Fit Width: weighted line-break scoring ──────────────────────────────────
+//
+// Instead of one rigid rule ("keep the same line count as full width"), Fit
+// Width now proposes many candidate box widths, reads the line breakdown each
+// one induces, and scores it against a set of tunable penalties. The lowest
+// cost wins. Tune the feel by editing FIT_WEIGHTS — nothing else changes.
+//
+// Cost model (all soft terms are >= 0, so more lines always costs more baseline
+// and the punctuation terms only decide *where* a needed break lands, never add
+// lines): each line adds `perLine`; an internal break adds 0..breakMidClause
+// depending on the punctuation it follows; a lone short word on the last line
+// adds `orphan`; splitting an emphasis (bold) phrase across lines adds
+// `highlightSplit`; uneven line widths add a raggedness cost. Hard constraints
+// (line wider than the box, or more than maxLines) disqualify a candidate.
+const FIT_WEIGHTS = {
+  perLine:        16,   // baseline cost per line → prefer fewer lines
+  orphan:         60,   // last line is a single short word (widow)
+  orphanMaxChars:  7,   // "short" = this many letters or fewer
+  shortLast:       0,   // reserved (kept 0; raggedness already covers this)
+  breakSentence:   0,   // breaking after . ! ? … is the ideal break point
+  breakClause:     1,   // after : ;
+  breakSoft:       3,   // after ,
+  breakMidClause: 10,   // breaking with NO punctuation is the worst place
+  highlightSplit: 40,   // an emphasis phrase straddling two lines
+  raggedPerPx:  0.04,   // penalty per px of line-width std-deviation
+  maxLines:        6,   // hard cap on line count
+  pad:            24,   // breathing room added to the winning width
+};
 
-  const hasExplicit = spans.some(s => s.text?.includes('\n'));
+// Flatten spans into words, tagging each with style + the punctuation that
+// ends it (used to rate break quality). Assumes no explicit newlines.
+function _fitWordList(spans) {
+  const words = [];
+  for (const s of (spans || [])) {
+    if (!s || !s.text) continue;
+    for (const tok of String(s.text).split(/\s+/)) {
+      if (!tok) continue;
+      const m = tok.match(/[.!?…:;,]+$/);
+      const end = m ? m[0] : '';
+      const rank = /[.!?…]$/.test(end) ? 3 : /[:;]$/.test(end) ? 2 : /,$/.test(end) ? 1 : 0;
+      words.push({ text: tok, bold: !!s.bold, italic: !!s.italic, underline: !!s.underline, punctRank: rank });
+    }
+  }
+  return words;
+}
 
-  // Hidden measurement container — 1:1 canvas coordinate space
+// Render the word list at a given box width and read back the actual line
+// breakdown (which words landed on which line, and each line's pixel width).
+function _fitLinesAtWidth(inner, words, w) {
+  inner.style.whiteSpace = 'normal';
+  inner.style.display    = 'block';
+  inner.style.width      = `${w}px`;
+  inner.innerHTML = words.map((wd, i) => {
+    let h = esc(wd.text);
+    if (wd.underline) h = `<u>${h}</u>`;
+    if (wd.italic)    h = `<em>${h}</em>`;
+    if (wd.bold)      h = `<strong>${h}</strong>`;
+    return `<span class="_fw" data-i="${i}">${h}</span>`;
+  }).join(' ');
+
+  const els   = inner.querySelectorAll('span._fw');
+  const lines = [];
+  let cur = null, lastTop = null;
+  els.forEach((el, i) => {
+    const top = el.offsetTop;
+    if (lastTop === null || Math.abs(top - lastTop) > 1) {
+      cur = { words: [], left: Infinity, right: 0 };
+      lines.push(cur);
+      lastTop = top;
+    }
+    cur.words.push(words[i]);
+    cur.left  = Math.min(cur.left,  el.offsetLeft);
+    cur.right = Math.max(cur.right, el.offsetLeft + el.offsetWidth);
+  });
+  for (const ln of lines) ln.width = Math.max(0, ln.right - ln.left);
+  return lines;
+}
+
+// Score a line breakdown. Lower is better; returns Infinity if disqualified.
+function _fitScore(lines, words, boxW) {
+  const W = FIT_WEIGHTS;
+  const n = lines.length;
+  if (!n) return Infinity;
+  if (n > W.maxLines) return Infinity;
+  // Hard constraint: a single word wider than the box (guaranteed overflow).
+  for (const ln of lines) if (ln.width > boxW + 1) return Infinity;
+
+  let cost = n * W.perLine;
+
+  // Where each internal break lands (rate by the punctuation it follows).
+  for (let i = 0; i < n - 1; i++) {
+    const lw = lines[i].words[lines[i].words.length - 1];
+    cost += lw.punctRank === 3 ? W.breakSentence
+          : lw.punctRank === 2 ? W.breakClause
+          : lw.punctRank === 1 ? W.breakSoft
+          :                       W.breakMidClause;
+  }
+
+  // Orphan / widow: a lone short word stranded on the final line.
+  if (n > 1) {
+    const last = lines[n - 1];
+    if (last.words.length === 1) {
+      const letters = last.words[0].text.replace(/[^A-Za-z0-9]/g, '').length;
+      if (letters <= W.orphanMaxChars) cost += W.orphan;
+    }
+  }
+
+  // Splitting an emphasis phrase across lines — only meaningful when the block
+  // is NOT entirely bold (a fully-bold point has no "highlight" to protect).
+  if (!words.every(w => w.bold)) {
+    const lineOf = new Map();
+    lines.forEach((ln, li) => ln.words.forEach(w => lineOf.set(w, li)));
+    let i = 0;
+    while (i < words.length) {
+      if (words[i].bold) {
+        let j = i; while (j < words.length && words[j].bold) j++;
+        const a = lineOf.get(words[i]), b = lineOf.get(words[j - 1]);
+        if (a !== undefined && b !== undefined && b > a) cost += W.highlightSplit * (b - a);
+        i = j;
+      } else i++;
+    }
+  }
+
+  // Raggedness: reward evenly-filled lines.
+  if (n > 1) {
+    const ws   = lines.map(l => l.width);
+    const mean = ws.reduce((a, b) => a + b, 0) / n;
+    const varc = ws.reduce((a, b) => a + (b - mean) * (b - mean), 0) / n;
+    cost += Math.sqrt(varc) * W.raggedPerPx;
+  }
+
+  return cost;
+}
+
+/**
+ * Measure text spans in a hidden div and find the optimal body width.
+ * Poetry mode (has \n): tightest width that fits each explicit line no-wrap.
+ * Balance mode (no \n): sweep candidate widths, score the induced line break,
+ *   pick the lowest-cost layout (see FIT_WEIGHTS).
+ * `type` selects the render size/weight ('point' → pointSize + bold).
+ * Returns { bodyW, bodyX } in Pro7 canvas coordinates.
+ */
+function computeOptimalBodyWidth(spans, rs, type = 'body') {
+  // Resolve the scheme so inherited body width / sizes are real numbers, not
+  // nulls — otherwise the cap silently falls back to the full canvas and the
+  // measurement font size is wrong (the two long-standing Fit Width bugs).
+  const st = styleForExport(rs || activeStyleScheme()) || {};
+  const canvasW = st.canvasW ?? 1920;
+  const size    = type === 'point'
+    ? (st.pointSize ?? st.bodySize ?? 44)
+    : (st.bodySize ?? 44);
+  // Hard wall: Fit Width may only ever shrink the box, never exceed the scheme.
+  const maxW    = Math.max(1, Math.min(st.bodyW || canvasW, canvasW));
+  const padding = 80; // breathing room for the poetry branch
+
+  const hasExplicit = (spans || []).some(s => s.text?.includes('\n'));
+  const centered = (w) => ({ bodyW: w, bodyX: Math.round((canvasW - w) / 2) });
+
+  // Hidden measurement container — 1:1 canvas coordinate space.
   const msr   = document.createElement('div');
   const style = document.createElement('style');
-  style.textContent = '._msr strong{font-family:Montserrat,"Montserrat-Black",sans-serif;font-weight:900}._msr em{font-style:italic}';
+  style.textContent = '._msr strong{font-family:Montserrat,"Montserrat-Black",sans-serif;font-weight:900}._msr em{font-style:italic}._msr ._fw{display:inline}';
   const inner = document.createElement('div');
   inner.className = '_msr';
   msr.appendChild(style);
@@ -3299,16 +3451,16 @@ function computeOptimalBodyWidth(spans, rs) {
   Object.assign(msr.style, {
     position: 'fixed', top: '-9999px', left: '-9999px',
     visibility: 'hidden', pointerEvents: 'none',
-    fontSize: `${bodySize}px`,
+    fontSize: `${size}px`,
     fontFamily: 'Montserrat,"Montserrat-Medium",sans-serif',
-    fontWeight: '500',
+    fontWeight: type === 'point' ? '900' : '500',
     lineHeight: '1.3',
   });
   document.body.appendChild(msr);
 
   try {
     if (hasExplicit) {
-      // Poetry: measure each explicit line at no-wrap, take the max
+      // Poetry: measure each explicit line at no-wrap, take the widest.
       inner.style.whiteSpace = 'nowrap';
       inner.style.display    = 'inline-block';
 
@@ -3321,50 +3473,57 @@ function computeOptimalBodyWidth(spans, rs) {
         });
       }
 
-      let maxW = 0;
+      let widest = 0;
       for (const line of lines) {
         if (!line.length) continue;
         inner.innerHTML = spansToHtml(line);
-        maxW = Math.max(maxW, inner.scrollWidth);
+        widest = Math.max(widest, inner.scrollWidth);
       }
-
-      const optimalW = Math.min(Math.ceil(maxW) + padding, schemeMaxW);
-      return { bodyW: optimalW, bodyX: Math.round((canvasW - optimalW) / 2) };
-
-    } else {
-      // Balance: find minimum width that keeps text in same # of lines as at full width
-      const lineH = Math.round(bodySize * 1.3);
-      inner.style.whiteSpace = 'normal';
-      inner.style.display    = 'block';
-      inner.innerHTML        = spansToHtmlPreview(spans);
-
-      inner.style.width = `${schemeMaxW}px`;
-      const fullLines = Math.max(1, Math.round(inner.scrollHeight / lineH));
-
-      if (fullLines <= 1) {
-        // Single line: shrink to text width
-        inner.style.whiteSpace = 'nowrap';
-        inner.style.width      = 'auto';
-        const textW    = inner.scrollWidth;
-        const optimalW = Math.min(textW + padding, schemeMaxW);
-        return { bodyW: optimalW, bodyX: Math.round((canvasW - optimalW) / 2) };
-      }
-
-      // Binary search: smallest W where line count stays at fullLines
-      inner.style.whiteSpace = 'normal';
-      inner.innerHTML        = spansToHtmlPreview(spans);
-      let lo = 200, hi = schemeMaxW, best = schemeMaxW;
-      while (lo <= hi) {
-        const mid = Math.round((lo + hi) / 2);
-        inner.style.width = `${mid}px`;
-        const lines = Math.round(inner.scrollHeight / lineH);
-        if (lines <= fullLines) { best = mid; hi = mid - 1; }
-        else lo = mid + 1;
-      }
-
-      const optimalW = Math.min(best + padding, schemeMaxW);
-      return { bodyW: optimalW, bodyX: Math.round((canvasW - optimalW) / 2) };
+      return centered(Math.min(Math.ceil(widest) + padding, maxW));
     }
+
+    // ── Balance mode: weighted candidate search ──
+    const words = _fitWordList(spans);
+    if (!words.length) return centered(maxW);
+
+    // Floor: never narrower than the widest single word (would force overflow).
+    let widestWord = 0;
+    inner.style.whiteSpace = 'nowrap';
+    inner.style.display    = 'inline-block';
+    for (const wd of words) {
+      inner.innerHTML = wd.bold ? `<strong>${esc(wd.text)}</strong>` : esc(wd.text);
+      widestWord = Math.max(widestWord, inner.scrollWidth);
+    }
+    const floorW = Math.min(Math.ceil(widestWord) + 4, maxW);
+
+    // Sweep widths from floor → maxW; keep the narrowest width that yields each
+    // distinct line layout, score it, and track the best.
+    const STEP = 24;
+    const seen = new Set();
+    let best = null;
+    for (let w = floorW; w <= maxW; w += STEP) {
+      const lines = _fitLinesAtWidth(inner, words, w);
+      const sig = lines.map(l => l.words.length).join(',');
+      if (seen.has(sig)) continue;
+      seen.add(sig);
+      const cost = _fitScore(lines, words, w);
+      if (cost === Infinity) continue;
+      // Tightest box that reproduces this layout: widest line + a little pad,
+      // clamped so it can't spill past the candidate width (which would re-wrap).
+      const tight = Math.min(Math.max(...lines.map(l => l.width)) + FIT_WEIGHTS.pad, w, maxW);
+      if (!best || cost < best.cost - 0.01) best = { cost, width: Math.ceil(tight), lines: lines.length };
+    }
+    // Always consider the full-width layout too (covers the single-line case).
+    {
+      const lines = _fitLinesAtWidth(inner, words, maxW);
+      const cost  = _fitScore(lines, words, maxW);
+      const tight = Math.min(Math.max(...lines.map(l => l.width)) + FIT_WEIGHTS.pad, maxW);
+      if (cost !== Infinity && (!best || cost < best.cost - 0.01)) {
+        best = { cost, width: Math.ceil(tight), lines: lines.length };
+      }
+    }
+
+    return centered(best ? Math.min(best.width, maxW) : maxW);
   } finally {
     document.body.removeChild(msr);
   }
@@ -8573,7 +8732,7 @@ function attachFormHandlers(slide) {
     }
     if (!spans.length || spans.every(s => !s.text)) return;
     const scheme = activeStyleScheme();
-    const result = computeOptimalBodyWidth(spans, scheme);
+    const result = computeOptimalBodyWidth(spans, scheme, slide.type);
     slide.bodyW = result.bodyW;
     slide.bodyX = result.bodyX;
   }
@@ -9343,7 +9502,7 @@ async function generate() {
         spans = [{ text, bold: true }];
       }
       if (spans && spans.some(s => s.text)) {
-        const r = computeOptimalBodyWidth(spans, scheme);
+        const r = computeOptimalBodyWidth(spans, scheme, slide.type);
         slide.bodyW = r.bodyW; slide.bodyX = r.bodyX;
       }
     }
