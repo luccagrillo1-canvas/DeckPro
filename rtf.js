@@ -458,19 +458,28 @@ function rtfPointBody(bullet, style = {}) {
  * title: optional string rendered as a header line (Montserrat-Medium fs60, dimmed) before the bullets.
  */
 function rtfRevealingPoints(points, title, style = {}) {
-  const bodyFont   = style.bodyFont || 'Montserrat-Medium';
+  const bodyFont    = style.bodyFont || 'Montserrat-Medium';
   // Point text uses its own font (falls back to boldFont for pre-split schemes)
-  const boldFont   = style.pointFont || style.boldFont || bodyFont;
-  const fsActive   = (style.pointSize || style.bodySize || 44) * 2;
-  const fsInactive = Math.round(fsActive * 0.82);
-  const fsTitle    = Math.round(fsActive * 0.75);
-  const adv        = style.pointFontAdv || style.boldFontAdv || {};
-  const cf         = charFmt(adv);
-  const { colortbl, sw } = textStroke(adv, adv.color);
-  const fonttbl = `{\\fonttbl\\f0\\fnil\\fcharset0 ${bodyFont};\\f1\\fnil\\fcharset0 ${boldFont};}`;
-  const pard    = makePard(adv, !adv.alignment);  // default center
+  const activeFont  = style.pointFont || style.boldFont || bodyFont;
+  // Previously-revealed (stacked) bullets have their own dedicated row —
+  // independent font/size/color/formatting from the active bullet.
+  const stackedFont = style.pointStackedFont || bodyFont;
+  const fsActive     = (style.pointSize || style.bodySize || 44) * 2;
+  const fsStacked    = (style.pointStackedSize || Math.round((style.pointSize || style.bodySize || 44) * 0.82)) * 2;
+  const fsTitle      = Math.round(fsActive * 0.75);
+  const activeAdv    = style.pointFontAdv || style.boldFontAdv || {};
+  const stackedAdv   = style.pointStackedFontAdv || {};
+  const cf           = charFmt(activeAdv);
+  const stackedCf    = charFmt(stackedAdv);
+  const activeColor  = activeAdv.color || '#ffffff';
+  const stackedColor = stackedAdv.color || activeColor;
+  const colorDiffers = stackedColor !== activeColor;
+  const { colortbl, sw } = textStroke(activeAdv, activeColor, colorDiffers ? [stackedColor] : []);
+  const fonttbl = `{\\fonttbl\\f0\\fnil\\fcharset0 ${bodyFont};\\f1\\fnil\\fcharset0 ${activeFont};\\f2\\fnil\\fcharset0 ${stackedFont};}`;
+  const pard    = makePard(activeAdv, !activeAdv.alignment);  // default center
 
   const COMMON = ` \\cf2 \\CocoaLigature0 \\outl0\\strokewidth-${sw} \\strokec3`;
+  const STACKED_COLOR = colorDiffers ? '\\cf4 ' : '';
   const parts  = [];
   let needsCommon = true;
 
@@ -494,7 +503,6 @@ function rtfRevealingPoints(points, title, style = {}) {
         parts.push(`\\f1\\b\\fs${fsActive}${common} ${cf}${label}`);
       } else {
         // Mixed bold — prefix in bodyFont, then spans
-        let first = true;
         let segment = `\\f0\\fs${fsActive}${common} ${cf}${prefix}`;
         for (const s of spans) {
           if (!s.text) continue;
@@ -508,7 +516,7 @@ function rtfRevealingPoints(points, title, style = {}) {
       }
     } else {
       const label = escapeRtf(`${i + 1} \u2014 ${plainText}`);
-      parts.push(`\\f0\\fs${fsInactive}${common} ${label}`);
+      parts.push(`\\f2\\fs${fsStacked}${common}${STACKED_COLOR} ${stackedCf}${label}`);
     }
     needsCommon = false;
   }

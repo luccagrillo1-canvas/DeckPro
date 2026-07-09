@@ -151,6 +151,8 @@ const FIELDS = [
   { name: 'propBoldFont', set: s => { s.propBoldFont = S.font; }, prop: true, checks: [r(S.font)] },
   { name: 'propPointFont',set: s => { s.propPointFont = S.font; },prop: true, checks: [r(S.font)] },
   { name: 'propTitleFont',set: s => { s.propTitleFont = S.font; },prop: true, checks: [r(S.font)] },
+  { name: 'pointStackedFont', set: s => { s.pointStackedFont = S.font; }, prop: true, checks: [r(S.font)],
+    note: 'revealing-point prop — previously-revealed (stacked) bullets, exercised via the sink deck\'s 2-bullet revealing point' },
 
   // ── Main sizes ──
   { name: 'bodySize',    set: s => { s.bodySize = S.size; },    checks: [m(`"size":${S.size}`), r(`\\fs${S.size*2}`)] },
@@ -165,6 +167,10 @@ const FIELDS = [
   { name: 'propBodySize', set: s => { s.propBodySize = S.size; }, prop: true, checks: [m(`"size":${S.size}`), r(`\\fs${S.size*2}`)] },
   { name: 'propPointSize',set: s => { s.propPointSize = S.size;}, prop: true, checks: [m(`"size":${S.size}`), r(`\\fs${S.size*2}`)] },
   { name: 'propTitleSize',set: s => { s.propTitleSize = S.size;}, prop: true, checks: [m(`"size":${S.size}`), r(`\\fs${S.size*2}`)] },
+  // pointStackedSize has no meta-layer equivalent — the shared prop element has
+  // one font.size attribute (driven by the active bullet); stacked bullets are
+  // sized only via the per-run RTF \fs code.
+  { name: 'pointStackedSize', set: s => { s.pointStackedSize = S.size; }, prop: true, checks: [r(`\\fs${S.size*2}`)] },
 
   // ── Transitions ──
   { name: 'transitionType(dissolve)',  set: s => { s.transitionType = 'dissolve'; }, checks: [m(`Dissolve`)] },
@@ -214,6 +220,7 @@ const FIELDS = [
   { name: 'boldFontAdv.color',                       set: s => deep(s, 'boldFontAdv', 'color', S.hex),                  checks: [r(colorRtf)] },
   { name: 'propBoldFontAdv.capitalization(allCaps)', set: s => deep(s, 'propBoldFontAdv', 'capitalization', 'allCaps'), prop: true, checks: [r(`\\caps `)] },
   { name: 'propBoldFontAdv.color',                   set: s => deep(s, 'propBoldFontAdv', 'color', S.hex),              prop: true, checks: [r(colorRtf)] },
+  { name: 'pointStackedFontAdv.color',               set: s => deep(s, 'pointStackedFontAdv', 'color', S.hex),          prop: true, checks: [r(colorRtf)] },
   { name: 'notesBoldFontAdv.capitalization(allCaps)', set: s => deep(s, 'notesBoldFontAdv', 'capitalization', 'allCaps'), checks: [r(`\\caps `)] },
   { name: 'notesBoldFontAdv.color',                   set: s => deep(s, 'notesBoldFontAdv', 'color', S.hex),              checks: [r(colorRtf)] },
 

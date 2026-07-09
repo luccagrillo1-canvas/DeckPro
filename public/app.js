@@ -2,9 +2,16 @@
 
 // ─── Version & Changelog ──────────────────────────────────────────────────────
 
-const APP_VERSION = '4.7.11';
+const APP_VERSION = '4.7.12';
 
 const CHANGELOG = [
+  {
+    version: '4.7.12',
+    date: '2026-07-08',
+    changes: [
+      'New: "Point Stacked" row in the Custom grid (Display 2, under Point). Revealing points on the LED wall show previously-revealed bullets stacked above the current one — those stacked bullets now have their own independent font, weight, size, and color instead of being locked to a fixed 82% of the active Point size with no color control of their own. Also fixed the "refPhrase" queue mode (Next Reference + First Phrase) showing the same text twice when a Point slide\'s title was auto-derived from its own body text — it now collapses to just the title in that case.',
+    ],
+  },
   {
     version: '4.7.11',
     date: '2026-07-08',
@@ -2206,6 +2213,7 @@ const DEFAULT_GLOBAL_SIZES = {
   startEndSize: 45,
   propBodySize: 80,
   propPointSize: 80,
+  pointStackedSize: 66,
   propTitleSize: 110,
   notesSize: 50,
   liveSize: 42,
@@ -2216,10 +2224,10 @@ const SIZE_FIELD_SET = new Set(SIZE_FIELDS);
 const SIZE_FIELD_TO_TYPO_KEY = Object.fromEntries(SIZE_FIELDS.map(k => [k, k]));
 const TYPOGRAPHY_KEYS = ['font1', 'font2', 'boldFont', 'colorNeutral', 'colorAccent', ...SIZE_FIELDS];
 const COLOR_TYPO_KEYS = new Set(['colorNeutral', 'colorAccent']);
-const REGULAR_FONT_FIELDS   = ['bodyFont', 'propBodyFont', 'pointFont', 'propPointFont', 'rcBodyFont', 'startEndFont', 'notesFont', 'liveFont', 'queueFont'];
+const REGULAR_FONT_FIELDS   = ['bodyFont', 'propBodyFont', 'pointFont', 'propPointFont', 'pointStackedFont', 'rcBodyFont', 'startEndFont', 'notesFont', 'liveFont', 'queueFont'];
 const HIGHLIGHT_FONT_FIELDS = ['titleFont', 'propTitleFont', 'rcTitleFont'];
 const BOLD_FONT_FIELDS      = ['boldFont', 'propBoldFont', 'notesBoldFont'];
-const REGULAR_ADV_FIELDS    = ['bodyFontAdv', 'propBodyFontAdv', 'pointFontAdv', 'propPointFontAdv', 'rcBodyFontAdv', 'startEndFontAdv', 'notesFontAdv', 'liveFontAdv', 'queueFontAdv'];
+const REGULAR_ADV_FIELDS    = ['bodyFontAdv', 'propBodyFontAdv', 'pointFontAdv', 'propPointFontAdv', 'pointStackedFontAdv', 'rcBodyFontAdv', 'startEndFontAdv', 'notesFontAdv', 'liveFontAdv', 'queueFontAdv'];
 const HIGHLIGHT_ADV_FIELDS  = ['titleFontAdv', 'propTitleFontAdv', 'rcTitleFontAdv'];
 const BOLD_ADV_FIELDS       = ['boldFontAdv', 'propBoldFontAdv', 'notesBoldFontAdv'];
 const ADV_SCHEME_KEYS = [...REGULAR_ADV_FIELDS, ...HIGHLIGHT_ADV_FIELDS, ...BOLD_ADV_FIELDS];
@@ -2259,7 +2267,8 @@ const DEFAULT_STYLE_SCHEME = () => ({
   bodyFont:     'Montserrat-Medium',
   propBodyFont: 'Montserrat-SemiBold',
   pointFont:    'Montserrat-ExtraBold',   // point text (main screen)
-  propPointFont:'Montserrat-ExtraBold',   // point text (LED wall)
+  propPointFont:'Montserrat-ExtraBold',   // point text (LED wall) — active/current bullet
+  pointStackedFont: 'Montserrat-Medium',  // revealing points on the LED wall — previously-revealed (stacked) bullets
   rcBodyFont:   'Montserrat-Medium',
   rcTitleFont:  'Montserrat-ExtraBold',
   titleFont:    'Montserrat-ExtraBold',
@@ -2278,6 +2287,7 @@ const DEFAULT_STYLE_SCHEME = () => ({
   startEndSize:  45,
   propBodySize:  80,
   propPointSize: 80,
+  pointStackedSize: 66,
   propTitleSize: 110,
   notesSize:     50,
   liveSize:      42,
@@ -2315,6 +2325,7 @@ const DEFAULT_STYLE_SCHEME = () => ({
   propBoldFontAdv: FONT_ADV_DEFAULTS(),
   pointFontAdv:    FONT_ADV_DEFAULTS(),
   propPointFontAdv:FONT_ADV_DEFAULTS(),
+  pointStackedFontAdv: FONT_ADV_DEFAULTS(),
   rcBodyFontAdv:   FONT_ADV_DEFAULTS(),
   rcTitleFontAdv:  FONT_ADV_DEFAULTS(),
   titleFontAdv:    FONT_ADV_DEFAULTS(),
@@ -2699,7 +2710,7 @@ function applySavedState(saved) {
         delete merged['undefined'];
         merged._needsTypographyMigration = !out.typography;
         // Merge nested fontAdv objects too
-        for (const k of ['bodyFontAdv','propBodyFontAdv','boldFontAdv','propBoldFontAdv','notesBoldFontAdv','titleFontAdv','propTitleFontAdv','startEndFontAdv','notesFontAdv','liveFontAdv','queueFontAdv','pointFontAdv','propPointFontAdv','rcBodyFontAdv','rcTitleFontAdv']) {
+        for (const k of ['bodyFontAdv','propBodyFontAdv','boldFontAdv','propBoldFontAdv','notesBoldFontAdv','titleFontAdv','propTitleFontAdv','startEndFontAdv','notesFontAdv','liveFontAdv','queueFontAdv','pointFontAdv','propPointFontAdv','pointStackedFontAdv','rcBodyFontAdv','rcTitleFontAdv']) {
           merged[k] = { ...FONT_ADV_DEFAULTS(), ...(out[k] || {}) };
         }
         // Seed slide-notes font fields for schemes saved before notes were customizable
@@ -5987,6 +5998,7 @@ function renderSchemeGrid(sv, rs, dis) {
       { id: 'bold2',  lbl: 'Bold',        fontF: 'propBoldFont',  advK: 'propBoldFontAdv',  sizeF: null },
       { id: 'title2', lbl: 'Title',       fontF: 'propTitleFont', advK: 'propTitleFontAdv', sizeF: 'propTitleSize' },
       { id: 'point2', lbl: 'Point',       fontF: 'propPointFont', advK: 'propPointFontAdv', sizeF: 'propPointSize' },
+      { id: 'pointStacked', lbl: 'Point Stacked', fontF: 'pointStackedFont', advK: 'pointStackedFontAdv', sizeF: 'pointStackedSize' },
     ]},
     { label: 'Display 3', rows: [
       { id: 'notes',      lbl: 'Slide Notes', fontF: 'notesFont',     advK: 'notesFontAdv',     sizeF: 'notesSize' },
@@ -6500,7 +6512,7 @@ function renderStylePanel(panel) {
   });
 
   // Font selects (family + style)
-  ['bodyFont', 'propBodyFont', 'boldFont', 'propBoldFont', 'pointFont', 'propPointFont', 'rcBodyFont', 'rcTitleFont', 'titleFont', 'propTitleFont', 'startEndFont', 'notesFont', 'notesBoldFont', 'liveFont', 'queueFont'].forEach(field => {
+  ['bodyFont', 'propBodyFont', 'boldFont', 'propBoldFont', 'pointFont', 'propPointFont', 'pointStackedFont', 'rcBodyFont', 'rcTitleFont', 'titleFont', 'propTitleFont', 'startEndFont', 'notesFont', 'notesBoldFont', 'liveFont', 'queueFont'].forEach(field => {
     const famSel = document.getElementById(`sf-fam-${field}`);
     const stySel = document.getElementById(`sf-sty-${field}`);
     if (!famSel || !stySel) return;
@@ -6589,7 +6601,7 @@ function renderStylePanel(panel) {
   });
 
   // Size inputs
-  ['bodySize', 'pointSize', 'titleSize', 'rcBodySize', 'rcTitleSize', 'startEndSize', 'propBodySize', 'propPointSize', 'propTitleSize', 'notesSize', 'liveSize', 'queueSize'].forEach(field => {
+  ['bodySize', 'pointSize', 'titleSize', 'rcBodySize', 'rcTitleSize', 'startEndSize', 'propBodySize', 'propPointSize', 'pointStackedSize', 'propTitleSize', 'notesSize', 'liveSize', 'queueSize'].forEach(field => {
     const inp = document.getElementById(`ss-${field}`);
     if (!inp) return;
     inp.addEventListener('input', e => {

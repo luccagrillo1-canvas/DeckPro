@@ -1894,7 +1894,13 @@ function buildPresentation(spec, propUuidMap = {}) {
         const lbl = getCueLabel(c);
         if (queueMode === 'list') return lbl;            // full label, as-is
         const ref = c._queueRef || lbl;
-        if (queueMode === 'refPhrase' && c._queuePhrase) {
+        // Point slides often have their title auto-derived from the body text \u2014
+        // if the phrase is just a truncated prefix of the ref, showing both is
+        // redundant ("Trust the process \u2014 Trust the process\u2026"). Skip the phrase
+        // and fall through to ref-only in that case.
+        const phraseCore = (c._queuePhrase || '').replace(/\u2026$/, '').trim().toLowerCase();
+        const phraseRedundant = phraseCore && ref.trim().toLowerCase().startsWith(phraseCore);
+        if (queueMode === 'refPhrase' && c._queuePhrase && !phraseRedundant) {
           const s = `${ref} \u2014 ${c._queuePhrase}`;
           return s.length > 42 ? s.slice(0, 41) + '\u2026' : s;
         }

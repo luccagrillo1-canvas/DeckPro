@@ -244,5 +244,34 @@ const bodyRtf = c => {
     blank1ListRtf.includes('Scripture 1') && blank1ListRtf.includes('Scripture 2') && blank1ListRtf.includes('Scripture 3'));
 })();
 
+// ---- 15. refPhrase queue collapses to ref-only when the phrase is redundant with the title ----
+(() => {
+  const queueRtf = c => {
+    const a = slideAction(c);
+    const els = (a?.slide?.presentation?.baseSlide?.elements || []).map(s => s.element);
+    const el = els.find(e => e.name === 'queue');
+    try { return Buffer.from(el.text.rtfData, 'base64').toString('utf8'); } catch { return ''; }
+  };
+  // cue[0]'s queue describes cue[1] (the next slide) in refPhrase mode.
+  const redundantCues = cuesOf({ name: 'T', queueMode: 'refPhrase', slides: [
+    { type: 'point', mode: 'single', label: 'First', bodyText: 'filler', propName: 'P0' },
+    { type: 'point', mode: 'single', label: 'Trust the process even when hard', bodyText: 'Trust the process even when hard', propName: 'P1' },
+  ] });
+  const distinctCues = cuesOf({ name: 'T', queueMode: 'refPhrase', slides: [
+    { type: 'point', mode: 'single', label: 'First', bodyText: 'filler', propName: 'P0' },
+    { type: 'point', mode: 'single', label: 'Be Filled', bodyText: 'You must surrender daily to keep walking in the Spirit', propName: 'P1' },
+  ] });
+  const scriptureCues = cuesOf({ name: 'T', queueMode: 'refPhrase', slides: [
+    { type: 'point', mode: 'single', label: 'First', bodyText: 'filler', propName: 'P0' },
+    { type: 'scripture', label: 'John 3:16', reference: 'John 3:16', bodies: [[{ text: 'For God so loved the world.' }]] },
+  ] });
+  ok('refPhrase drops the phrase when title == body (no em-dash repeat)',
+    !queueRtf(redundantCues[0]).includes('\\\'97')); // '\'97' is the RTF em-dash separator
+  ok('refPhrase keeps both ref and phrase when they genuinely differ',
+    queueRtf(distinctCues[0]).includes('\\\'97') && queueRtf(distinctCues[0]).includes('Be Filled'));
+  ok('refPhrase keeps both for scripture (reference never looks redundant with verse text)',
+    queueRtf(scriptureCues[0]).includes('\\\'97') && queueRtf(scriptureCues[0]).includes('John 3:16'));
+})();
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

@@ -70,6 +70,7 @@ const DEFAULT_STYLE = {
   propBodyFont: 'Montserrat-SemiBold',
   pointFont:    'Montserrat-ExtraBold',
   propPointFont:'Montserrat-ExtraBold',
+  pointStackedFont: 'Montserrat-Medium',
   titleFont:    'Montserrat-ExtraBold',
   startEndFont: 'Montserrat-ExtraBold',
   bodySize:      44,
@@ -77,6 +78,7 @@ const DEFAULT_STYLE = {
   startEndSize:  45,
   propBodySize:  80,
   propPointSize: 80,
+  pointStackedSize: 66,
   propTitleSize: 110,
   transitionType:         'fade',
   transitionDuration:     0.6,
@@ -87,6 +89,7 @@ const DEFAULT_STYLE = {
   propBodyFontAdv: null,
   pointFontAdv:    null,
   propPointFontAdv:null,
+  pointStackedFontAdv: null,
   titleFontAdv:    null,
   propTitleFontAdv:null,
   boldFontAdv:     null,
@@ -142,7 +145,7 @@ function resolveStyle(style = {}) {
     cFill:        { ...hexToColor(s.bodyFill),  alpha: fa },
     cTitleFill:   { ...hexToColor(s.titleFill), alpha: fa },
   };
-  for (const k of ['bodyFontAdv', 'propBodyFontAdv', 'titleFontAdv', 'propTitleFontAdv', 'boldFontAdv', 'propBoldFontAdv', 'pointFontAdv', 'propPointFontAdv']) {
+  for (const k of ['bodyFontAdv', 'propBodyFontAdv', 'titleFontAdv', 'propTitleFontAdv', 'boldFontAdv', 'propBoldFontAdv', 'pointFontAdv', 'propPointFontAdv', 'pointStackedFontAdv']) {
     out[k] = { ...FONT_ADV_DEFAULTS(), ...(s[k] || {}) };
   }
   return out;
