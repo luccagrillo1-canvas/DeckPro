@@ -2,9 +2,16 @@
 
 // ─── Version & Changelog ──────────────────────────────────────────────────────
 
-const APP_VERSION = '4.7.17';
+const APP_VERSION = '4.7.18';
 
 const CHANGELOG = [
+  {
+    version: '4.7.18',
+    date: '2026-07-09',
+    changes: [
+      'The Response Card text (RC Body / RC Title on the LED wall) now inherits the main Body / Title styling the same way everything else does — leave it alone and it follows your Body/Title look live; change any of its cells and it becomes its own override; right-click an overridden RC row for "Reset to Display 1" to hand it back. This extends the Display 2 inheritance from the last update to the Response Card rows too, so every LED-wall text style is now separable with a main-screen default. Existing palettes keep their current Response Card look untouched; only new palettes start out inheriting.',
+    ],
+  },
   {
     version: '4.7.17',
     date: '2026-07-09',
@@ -2399,8 +2406,8 @@ const DEFAULT_STYLE_SCHEME = () => ({
   pointFontAdv:    FONT_ADV_DEFAULTS(),
   propPointFontAdv:null,
   pointStackedFontAdv: FONT_ADV_DEFAULTS(),
-  rcBodyFontAdv:   FONT_ADV_DEFAULTS(),
-  rcTitleFontAdv:  FONT_ADV_DEFAULTS(),
+  rcBodyFontAdv:   null,
+  rcTitleFontAdv:  null,
   titleFontAdv:    FONT_ADV_DEFAULTS(),
   propTitleFontAdv:null,
   startEndFontAdv: FONT_ADV_DEFAULTS(),
@@ -2615,12 +2622,16 @@ function applyTypographyToStyle(scheme, global = ensureGlobalTypography()) {
   return style;
 }
 
-// Display 2 prop advanced-styling field → the Display 1 field it inherits from.
+// LED-wall advanced-styling field → the Display 1 field it inherits from when
+// left null. Covers the Display 2 prop rows and the Response Card text rows,
+// which all default to following their main-screen counterpart.
 const D2_ADV_INHERIT = {
   propBodyFontAdv:  'bodyFontAdv',
   propPointFontAdv: 'pointFontAdv',
   propTitleFontAdv: 'titleFontAdv',
   propBoldFontAdv:  'boldFontAdv',
+  rcBodyFontAdv:    'bodyFontAdv',
+  rcTitleFontAdv:   'titleFontAdv',
 };
 
 // Materialize a scheme's advanced-styling object before an edit. A Display 2
