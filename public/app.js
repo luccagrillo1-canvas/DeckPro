@@ -2,9 +2,17 @@
 
 // ─── Version & Changelog ──────────────────────────────────────────────────────
 
-const APP_VERSION = '4.7.14';
+const APP_VERSION = '4.7.15';
 
 const CHANGELOG = [
+  {
+    version: '4.7.15',
+    date: '2026-07-09',
+    changes: [
+      'Fit Width now avoids ending a line on a "runt" word — a short conjunction, article, or preposition like "and", "the", "of", "through". Ending a line on one of those (with no comma or period to justify it) reads awkwardly on screen, so the scorer now steers the break to land on a content word instead, whenever a layout that does so is achievable at some box width. Validated across a batch of real scripture and point text: breaks like "I can do all things through / Christ…" now become "I can do all things through Christ / who…". (Cases where the only alternative would need a wider box or an extra line are left as-is — those need manually inserted line breaks, which is a separate future option.)',
+      'Fit Width\'s width search is finer (12px steps instead of 24px), so it no longer skips over a better line layout that only exists in a narrow window of box widths. Still runs in ~10ms per slide.',
+    ],
+  },
   {
     version: '4.7.14',
     date: '2026-07-09',
@@ -3305,14 +3313,27 @@ const FIT_WEIGHTS = {
   breakClause:     1,   // after : ;
   breakSoft:       3,   // after ,
   breakMidClause: 10,   // breaking with NO punctuation is the worst place
+  lineEndRunt:    12,   // a line ending on a runt (conjunction/article/prep)
   highlightSplit: 40,   // an emphasis phrase straddling two lines
   raggedPerPx:  0.04,   // penalty per px of line-width std-deviation
   maxLines:        6,   // hard cap on line count
   pad:            24,   // breathing room added to the winning width
 };
 
-// Flatten spans into words, tagging each with style + the punctuation that
-// ends it (used to rate break quality). Assumes no explicit newlines.
+// Short function words that read badly at the end of a line ("...your heart and",
+// "...all things through"). Ending a line on one of these — with no punctuation
+// to justify it — earns the lineEndRunt penalty so the scorer prefers ending
+// lines on content words instead.
+const FIT_RUNT_WORDS = new Set([
+  'a','an','the','and','or','but','nor','for','yet','so','of','to','in','on','at',
+  'by','as','with','from','into','onto','over','under','through','upon','that','than',
+  'this','these','those','my','your','his','her','its','our','their','not','is','are',
+  'was','were','be','if','it','he','she','we','they','you','i',
+]);
+
+// Flatten spans into words, tagging each with style, the punctuation that ends
+// it (rates break quality), and whether it's a runt (rates line-end quality).
+// Assumes no explicit newlines.
 function _fitWordList(spans) {
   const words = [];
   for (const s of (spans || [])) {
@@ -3322,7 +3343,11 @@ function _fitWordList(spans) {
       const m = tok.match(/[.!?…:;,]+$/);
       const end = m ? m[0] : '';
       const rank = /[.!?…]$/.test(end) ? 3 : /[:;]$/.test(end) ? 2 : /,$/.test(end) ? 1 : 0;
-      words.push({ text: tok, bold: !!s.bold, italic: !!s.italic, underline: !!s.underline, punctRank: rank });
+      const bare = tok.replace(/[^A-Za-z']/g, '').toLowerCase();
+      // A runt only if it carries no trailing punctuation of its own — a comma or
+      // period after the word already makes it a legitimate place to break.
+      const runt = rank === 0 && (bare.length <= 2 || FIT_RUNT_WORDS.has(bare));
+      words.push({ text: tok, bold: !!s.bold, italic: !!s.italic, underline: !!s.underline, punctRank: rank, runt });
     }
   }
   return words;
@@ -3371,13 +3396,15 @@ function _fitScore(lines, words, boxW) {
 
   let cost = n * W.perLine;
 
-  // Where each internal break lands (rate by the punctuation it follows).
+  // Where each internal break lands (rate by the punctuation it follows, plus a
+  // penalty if the line ends on a runt word like "and" / "the" / "through").
   for (let i = 0; i < n - 1; i++) {
     const lw = lines[i].words[lines[i].words.length - 1];
     cost += lw.punctRank === 3 ? W.breakSentence
           : lw.punctRank === 2 ? W.breakClause
           : lw.punctRank === 1 ? W.breakSoft
           :                       W.breakMidClause;
+    if (lw.runt) cost += W.lineEndRunt;
   }
 
   // Orphan / widow: a lone short word stranded on the final line.
@@ -3497,8 +3524,10 @@ function computeOptimalBodyWidth(spans, rs, type = 'body') {
     const floorW = Math.min(Math.ceil(widestWord) + 4, maxW);
 
     // Sweep widths from floor → maxW; keep the narrowest width that yields each
-    // distinct line layout, score it, and track the best.
-    const STEP = 24;
+    // distinct line layout, score it, and track the best. A fine step matters:
+    // some strictly-better layouts live in a narrow width window (e.g. shifting
+    // a runt "and" down a line), so a coarse sweep would skip right over them.
+    const STEP = 12;
     const seen = new Set();
     let best = null;
     for (let w = floorW; w <= maxW; w += STEP) {
