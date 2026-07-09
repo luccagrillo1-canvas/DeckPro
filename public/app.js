@@ -2,9 +2,16 @@
 
 // ─── Version & Changelog ──────────────────────────────────────────────────────
 
-const APP_VERSION = '4.7.10';
+const APP_VERSION = '4.7.11';
 
 const CHANGELOG = [
+  {
+    version: '4.7.11',
+    date: '2026-07-08',
+    changes: [
+      'Fix: on a "Blank slide before this one," the queue (Next Reference / Next Reference + Phrase modes) now shows the slide AFTER its own content instead of repeating that content slide. A blank-before\'s Slide Notes already preview its own content slide on the confidence monitor ahead of time, so showing it again as "next" was redundant — the queue now correctly starts from the following slide. The content slide\'s own queue, and Full List mode, are unaffected.',
+    ],
+  },
   {
     version: '4.7.10',
     date: '2026-07-08',

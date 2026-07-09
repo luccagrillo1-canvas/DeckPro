@@ -217,5 +217,32 @@ const bodyRtf = c => {
   ok('queueMode list shows all upcoming',    listRtf.includes('Romans 8:28') && listRtf.includes('Psalm 23:1'));
 })();
 
+// ---- 14. Blank-before's queue skips its own content slide (already fed via its notes) ----
+(() => {
+  const queueRtf = c => {
+    const a = slideAction(c);
+    const els = (a?.slide?.presentation?.baseSlide?.elements || []).map(s => s.element);
+    const el = els.find(e => e.name === 'queue');
+    try { return Buffer.from(el.text.rtfData, 'base64').toString('utf8'); } catch { return ''; }
+  };
+  const slides = [
+    { type: 'scripture', label: 'Scripture 1', reference: 'Scripture 1', bodies: [[{ text: 'a' }]], propName: 'A', blankBefore: true },
+    { type: 'scripture', label: 'Scripture 2', reference: 'Scripture 2', bodies: [[{ text: 'b' }]], propName: 'B', blankBefore: true },
+    { type: 'scripture', label: 'Scripture 3', reference: 'Scripture 3', bodies: [[{ text: 'c' }]], propName: 'C', blankBefore: true },
+  ];
+  const refCues  = cuesOf({ name: 'T', queueMode: 'ref',  slides });
+  const listCues = cuesOf({ name: 'T', queueMode: 'list', slides });
+  // cue[0] = Blank-before-1, cue[1] = Scripture 1, cue[2] = Blank-before-2, ...
+  const blank1RefRtf  = queueRtf(refCues[0]);
+  const scr1RefRtf    = queueRtf(refCues[1]);
+  const blank1ListRtf = queueRtf(listCues[0]);
+  ok('blank-before ref queue skips its own content slide, shows the one after',
+    blank1RefRtf.includes('Scripture 2') && !blank1RefRtf.includes('Scripture 1'));
+  ok('the content slide\'s own ref queue is unaffected (shows the normal next slide)',
+    scr1RefRtf.includes('Scripture 2') && !scr1RefRtf.includes('Scripture 3'));
+  ok('blank-before list queue is NOT skipped — full remaining list, unfiltered',
+    blank1ListRtf.includes('Scripture 1') && blank1ListRtf.includes('Scripture 2') && blank1ListRtf.includes('Scripture 3'));
+})();
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

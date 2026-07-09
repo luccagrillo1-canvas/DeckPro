@@ -1881,7 +1881,14 @@ function buildPresentation(spec, propUuidMap = {}) {
     // 'ref'/'refPhrase' show only the single next slide \u2014 'list' is the only mode
     // that shows the full upcoming queue.
     const upcoming = rawCues.slice(i + 1).filter(c => !c._isBlankBefore);
-    const relevantCues = queueMode === 'list' ? upcoming : upcoming.slice(0, 1);
+    // A blank-before cue's own notes already preview its content slide ahead of
+    // time (see buildBlankCue call sites above \u2014 "Notes for blank-before = full
+    // scripture body so confidence monitor shows upcoming content"), so showing
+    // that same slide again as "next" is redundant. Skip past it and start from
+    // the one after. Only applies to the single-next modes \u2014 'list' stays the
+    // complete, unfiltered remaining queue.
+    const skipAhead = (queueMode !== 'list' && rawCues[i]._isBlankBefore) ? 1 : 0;
+    const relevantCues = queueMode === 'list' ? upcoming : upcoming.slice(skipAhead, skipAhead + 1);
     const futureLabels = relevantCues
       .map(c => {
         const lbl = getCueLabel(c);
