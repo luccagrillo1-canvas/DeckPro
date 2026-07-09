@@ -4429,6 +4429,22 @@ body.dark .g-tip-title { color: #ff8a4c; }
   color: #fdba74;
 }
 
+/* Whole-field/whole-list Global inherit-or-custom controls (Motion, Macros,
+   Stage Displays, Response Card) — same blue/orange language as the grid. */
+.wf-row {
+  display: flex; align-items: center; gap: 8px;
+  margin: 8px 0 12px;
+}
+.wf-badge {
+  font-size: 11.5px; font-weight: 600;
+  padding: 3px 8px; border-radius: 10px;
+}
+.wf-badge.wf-inherit { background: rgba(14,165,233,.13); color: #7dd3fc; border: 1px solid rgba(14,165,233,.35); }
+.wf-badge.wf-custom  { background: rgba(234,88,12,.13);  color: #fdba74; border: 1px solid rgba(234,88,12,.35); }
+.wf-reset, .wf-push {
+  font-size: 11.5px; padding: 3px 9px;
+}
+
 /* Scheme grid right-click context menu */
 #sg-ctx-menu {
   display: none; position: fixed; z-index: 9999;

@@ -2,9 +2,16 @@
 
 // ─── Version & Changelog ──────────────────────────────────────────────────────
 
-const APP_VERSION = '4.7.12';
+const APP_VERSION = '4.7.13';
 
 const CHANGELOG = [
+  {
+    version: '4.7.13',
+    date: '2026-07-09',
+    changes: [
+      'Global defaults now apply to Motion (transitions + build orders), Macros, Stage Displays, and Response Card — matching the existing Text/Layout behavior. Every scheme can inherit these from Global by default, or go Custom and override them individually. New schemes start out inheriting everything; existing schemes keep their current values until you explicitly click "Reset to Global" on a field. Each area shows a "Using Global" / "Custom" badge with Reset/Push buttons, and the Global tab (read-only) now has Motion/Macros/Stage/Response Card views alongside Text/Layout.',
+    ],
+  },
   {
     version: '4.7.12',
     date: '2026-07-08',
@@ -2204,6 +2211,39 @@ function ensureGlobalLayout() {
   return state.globalLayout;
 }
 
+// Motion: transition type/duration (main + prop) and build orders. Same
+// null-means-inherit-from-global pattern as layout fields — a scheme keeps a
+// concrete value until the user explicitly resets it back to null.
+const MOTION_SCALAR_FIELDS = ['transitionType', 'transitionDuration', 'propTransitionType', 'propTransitionDuration'];
+const DEFAULT_GLOBAL_MOTION = () => {
+  const d = DEFAULT_STYLE_SCHEME();
+  return {
+    ...Object.fromEntries(MOTION_SCALAR_FIELDS.map(k => [k, d[k]])),
+    buildOrders: deepClone(d.buildOrders),
+  };
+};
+function ensureGlobalMotion() {
+  const def = DEFAULT_GLOBAL_MOTION();
+  state.globalMotion = { ...def, ...(state.globalMotion || {}), buildOrders: (state.globalMotion || {}).buildOrders || def.buildOrders };
+  return state.globalMotion;
+}
+
+// Macros / Stage Displays / Response Card: whole-list inherit. scheme.macros
+// (etc) === null means "use Global's list live"; an array means the scheme
+// has broken off into its own custom list. Global itself is always a real array.
+function ensureGlobalMacros() {
+  if (!Array.isArray(state.globalMacros)) state.globalMacros = [];
+  return state.globalMacros;
+}
+function ensureGlobalStageDisplays() {
+  if (!Array.isArray(state.globalStageDisplays)) state.globalStageDisplays = [];
+  return state.globalStageDisplays;
+}
+function ensureGlobalRcElements() {
+  if (!Array.isArray(state.globalRcElements)) state.globalRcElements = DEFAULT_RC_ELEMENTS();
+  return state.globalRcElements;
+}
+
 const DEFAULT_GLOBAL_SIZES = {
   bodySize: 44,
   pointSize: 44,
@@ -2404,6 +2444,10 @@ const DEFAULT_STATE = () => ({
   globalTypography: DEFAULT_GLOBAL_TYPOGRAPHY(),
   globalLayout:     DEFAULT_GLOBAL_LAYOUT(),
   globalFontAdv:    DEFAULT_GLOBAL_FONT_ADV(),
+  globalMotion:     DEFAULT_GLOBAL_MOTION(),
+  globalMacros:     [],
+  globalStageDisplays: [],
+  globalRcElements: DEFAULT_RC_ELEMENTS(),
   styleSchemes:  [DEFAULT_STYLE_SCHEME()],
   activeSchemeId: 'default',
   showBlanks: true,
@@ -2537,6 +2581,12 @@ function styleForExport(scheme) {
   for (const f of LAYOUT_FIELDS) {
     if (resolved[f] == null && glb[f] != null) resolved[f] = glb[f];
   }
+  const glbMotion = ensureGlobalMotion();
+  for (const f of MOTION_SCALAR_FIELDS) {
+    if (resolved[f] == null && glbMotion[f] != null) resolved[f] = glbMotion[f];
+  }
+  if (resolved.buildOrders == null) resolved.buildOrders = glbMotion.buildOrders;
+  if (resolved.rcElements == null) resolved.rcElements = ensureGlobalRcElements();
   const {
     id: _sid,
     name: _sname,
@@ -2769,15 +2819,21 @@ function applySavedState(saved) {
         // Strip legacy isDefault flag — all schemes are equal now
         delete merged.isDefault;
         if (p.isLocked === undefined) merged.isLocked = false;
-        // Merge buildOrders — fill any missing tab keys with defaults
-        merged.buildOrders = deepClone({ ...DEF.buildOrders, ...(out.buildOrders || {}) });
-        // Migrate old 'this slide' → 'body', and drop the retired 'atem_gradient'
-        // build-order entries (the gradient is now a Pro7 macro, not an element).
-        for (const tabKey of Object.keys(merged.buildOrders)) {
-          if (Array.isArray(merged.buildOrders[tabKey])) {
-            merged.buildOrders[tabKey] = merged.buildOrders[tabKey]
-              .filter(entry => entry.element !== 'atem_gradient')
-              .map(entry => entry.element === 'this slide' ? { ...entry, element: 'body' } : entry);
+        // Merge buildOrders — fill any missing tab keys with defaults. A scheme
+        // that explicitly has buildOrders: null (inheriting Global) stays null —
+        // only materialize/fill defaults for schemes that HAVE their own object.
+        if (out.buildOrders === null) {
+          merged.buildOrders = null;
+        } else {
+          merged.buildOrders = deepClone({ ...DEF.buildOrders, ...(out.buildOrders || {}) });
+          // Migrate old 'this slide' → 'body', and drop the retired 'atem_gradient'
+          // build-order entries (the gradient is now a Pro7 macro, not an element).
+          for (const tabKey of Object.keys(merged.buildOrders)) {
+            if (Array.isArray(merged.buildOrders[tabKey])) {
+              merged.buildOrders[tabKey] = merged.buildOrders[tabKey]
+                .filter(entry => entry.element !== 'atem_gradient')
+                .map(entry => entry.element === 'this slide' ? { ...entry, element: 'body' } : entry);
+            }
           }
         }
         return deepClone(merged);
@@ -2821,6 +2877,12 @@ function applySavedState(saved) {
     } else {
       state.globalFontAdv = DEFAULT_GLOBAL_FONT_ADV();
     }
+    state.globalMotion = saved.globalMotion
+      ? { ...DEFAULT_GLOBAL_MOTION(), ...saved.globalMotion, buildOrders: saved.globalMotion.buildOrders || DEFAULT_GLOBAL_MOTION().buildOrders }
+      : DEFAULT_GLOBAL_MOTION();
+    state.globalMacros        = Array.isArray(saved.globalMacros)        ? saved.globalMacros        : [];
+    state.globalStageDisplays = Array.isArray(saved.globalStageDisplays) ? saved.globalStageDisplays : [];
+    state.globalRcElements    = Array.isArray(saved.globalRcElements)    ? saved.globalRcElements    : DEFAULT_RC_ELEMENTS();
     // Support old 'activeStyleId' key for migration
     state.activeSchemeId = saved.activeSchemeId || saved.activeStyleId
       || (state.styleSchemes[0]?.id ?? 'default');
@@ -3771,7 +3833,7 @@ const BO_TRANSITIONS = [
 ];
 
 function renderBuildTable(tab, scheme, locked) {
-  const entries  = (scheme.buildOrders || {})[tab] || [];
+  const entries  = (scheme.buildOrders ?? ensureGlobalMotion().buildOrders)[tab] || [];
   const elements = BO_ELEMENTS[tab] || ['this slide'];
   const dis      = locked ? 'disabled' : '';
 
@@ -3852,7 +3914,9 @@ function attachBuildOrderHandlers(getScheme, panel, locked) {
 
   const getEntries = () => {
     const s = getScheme(); if (!s) return [];
-    if (!s.buildOrders) s.buildOrders = {};
+    // Forking point: the first edit on an inheriting scheme materializes a copy
+    // of Global's current build orders, then detaches from Global going forward.
+    if (s.buildOrders == null) s.buildOrders = deepClone(ensureGlobalMotion().buildOrders);
     if (!Array.isArray(s.buildOrders[_boActiveTab])) s.buildOrders[_boActiveTab] = [];
     return s.buildOrders[_boActiveTab];
   };
@@ -3870,6 +3934,20 @@ function attachBuildOrderHandlers(getScheme, panel, locked) {
       panel.querySelectorAll('.bo-tab').forEach(b => b.classList.toggle('active', b.dataset.tab === _boActiveTab));
       refresh();
     });
+  });
+
+  // Whole-object reset-to-global / push-to-global
+  panel.querySelector('.wf-reset[data-wf="buildOrders"]')?.addEventListener('click', () => {
+    const s = getScheme(); if (!s) return;
+    s.buildOrders = null;
+    saveState(); renderStylePanel(panel);
+  });
+  panel.querySelector('.wf-push[data-wf="buildOrders"]')?.addEventListener('click', () => {
+    const s = getScheme(); if (!s) return;
+    const glbMotion = ensureGlobalMotion();
+    glbMotion.buildOrders = deepClone(s.buildOrders ?? glbMotion.buildOrders);
+    saveState(); renderStylePanel(panel);
+    toast('success', 'Pushed to Global', 'Every palette inheriting build orders will now use this.');
   });
 
   attachBuildRowHandlers(getEntries, wrap, getScheme, panel, locked);
@@ -4005,7 +4083,7 @@ const CUSTOM_MACRO_TRIGGERS = [
 function showMacroPicker(onSelect, singleSelect = false) {
   document.getElementById('macro-picker-overlay')?.remove();
   const liveMacros = pro7rt.liveMacros || [];
-  const existing   = new Set((activeStyleScheme().macros || []).map(m => m.uuid));
+  const existing   = new Set((activeStyleScheme().macros ?? ensureGlobalMacros()).map(m => m.uuid));
   const selected   = new Set(); // UUIDs currently ticked
 
   const mName  = (m) => (m.id?.name?.string ?? m.id?.name ?? m.name?.string ?? m.name ?? '');
@@ -4135,9 +4213,28 @@ function attachSchemesMacrosTab(containerId) {
   if (!el) return;
 
   const getScheme = () => state.styleSchemes.find(s => s.id === state.activeSchemeId) || state.styleSchemes[0];
+  // Read-only: what to DISPLAY — falls to Global while the scheme is null (inheriting).
+  const resolvedMacros = () => getScheme()?.macros ?? ensureGlobalMacros();
+  // Fork point: first edit on an inheriting scheme materializes a copy of
+  // Global's current macros, then detaches going forward.
+  function fork() {
+    const s = getScheme(); if (!s) return null;
+    if (s.macros == null) s.macros = deepClone(ensureGlobalMacros());
+    return s;
+  }
+  function badgeHtml() {
+    const s = getScheme();
+    const inherit = !s || s.macros == null;
+    return `<div class="wf-row">
+      <span class="wf-badge ${inherit ? 'wf-inherit' : 'wf-custom'}">${inherit ? '● Using Global' : '● Custom'}</span>
+      ${inherit ? '' : `<button class="btn-sm wf-reset" type="button" id="smac-wf-reset">↺ Reset to Global</button>`}
+      <button class="btn-sm wf-push" type="button" id="smac-wf-push">↑ Push to Global</button>
+    </div>`;
+  }
 
   function rerender() {
-    const macros = getScheme()?.macros || [];
+    const macros = resolvedMacros();
+    el.querySelector('.smac-badge-wrap').innerHTML = badgeHtml();
     el.querySelector('.smac-list').innerHTML = macros.length ? macros.map((m, idx) => `
       <div class="smac-row custom-macro-row">
         <div class="custom-macro-fields">
@@ -4163,6 +4260,7 @@ function attachSchemesMacrosTab(containerId) {
   }
 
   el.innerHTML = `
+    <div class="smac-badge-wrap"></div>
     <div style="display:flex;justify-content:flex-end;margin-bottom:8px">
       <button class="btn-sm" id="smac-add-btn">+ Add Macro</button>
     </div>
@@ -4172,9 +4270,8 @@ function attachSchemesMacrosTab(containerId) {
 
   el.querySelector('#smac-add-btn').addEventListener('click', () => {
     showMacroPicker((selected) => {
-      const scheme = getScheme();
+      const scheme = fork();
       if (!scheme) return;
-      if (!scheme.macros) scheme.macros = [];
       for (const { name, uuid, color } of selected) {
         if (!scheme.macros.some(m => m.uuid === uuid))
           scheme.macros.push({ id: uid(), name, uuid, color, triggers: [] });
@@ -4185,27 +4282,39 @@ function attachSchemesMacrosTab(containerId) {
   });
 
   el.addEventListener('click', e => {
+    if (e.target.id === 'smac-wf-reset') {
+      const s = getScheme(); if (!s) return;
+      s.macros = null;
+      saveState(); rerender();
+      return;
+    }
+    if (e.target.id === 'smac-wf-push') {
+      state.globalMacros = deepClone(resolvedMacros());
+      saveState(); rerender();
+      toast('success', 'Pushed to Global', 'Every palette inheriting macros will now use this.');
+      return;
+    }
     if (e.target.classList.contains('smac-del')) {
       const idx = parseInt(e.target.dataset.idx, 10);
-      const scheme = getScheme();
+      const scheme = fork();
       if (!isNaN(idx) && scheme?.macros) { scheme.macros.splice(idx, 1); saveState(); rerender(); }
     }
     if (e.target.classList.contains('cm-chip')) {
       const idx     = parseInt(e.target.dataset.idx, 10);
       const trigger = e.target.dataset.trigger;
-      const scheme  = getScheme();
+      const scheme  = fork();
       if (isNaN(idx) || !scheme?.macros?.[idx]) return;
       const mTriggers = scheme.macros[idx].triggers || [];
       const ti = mTriggers.indexOf(trigger);
       if (ti === -1) mTriggers.push(trigger); else mTriggers.splice(ti, 1);
       scheme.macros[idx].triggers = mTriggers;
       saveState();
-      e.target.classList.toggle('active', mTriggers.includes(trigger));
+      rerender();
     }
     if (e.target.classList.contains('smac-pos-rm')) {
       const idx    = parseInt(e.target.dataset.idx, 10);
       const posKey = e.target.dataset.pos;
-      const scheme = getScheme();
+      const scheme = fork();
       if (isNaN(idx) || !scheme?.macros?.[idx]) return;
       const t = scheme.macros[idx].triggers || [];
       scheme.macros[idx].triggers = t.filter(x => x !== posKey);
@@ -4220,7 +4329,7 @@ function attachSchemesMacrosTab(containerId) {
     const n   = parseInt(e.target.value, 10);
     if (isNaN(idx) || isNaN(n) || n < 1) return;
     const posKey = `pos:${n}`;
-    const scheme = getScheme();
+    const scheme = fork();
     if (!scheme?.macros?.[idx]) return;
     const t = scheme.macros[idx].triggers || [];
     if (!t.includes(posKey)) { t.push(posKey); scheme.macros[idx].triggers = t; saveState(); }
@@ -4234,12 +4343,30 @@ function attachSchemesStageTab(containerId) {
   if (!el) return;
 
   const getScheme = () => state.styleSchemes.find(s => s.id === state.activeSchemeId) || state.styleSchemes[0];
+  // Read-only: what to DISPLAY — falls to Global while the scheme is null (inheriting).
+  const resolvedStageDisplays = () => getScheme()?.stageDisplays ?? ensureGlobalStageDisplays();
+  // Fork point: first edit on an inheriting scheme materializes a copy of
+  // Global's current stage displays, then detaches going forward.
+  function fork() {
+    const s = getScheme(); if (!s) return null;
+    if (s.stageDisplays == null) s.stageDisplays = deepClone(ensureGlobalStageDisplays());
+    return s;
+  }
+  function badgeHtml() {
+    const s = getScheme();
+    const inherit = !s || s.stageDisplays == null;
+    return `<div class="wf-row">
+      <span class="wf-badge ${inherit ? 'wf-inherit' : 'wf-custom'}">${inherit ? '● Using Global' : '● Custom'}</span>
+      ${inherit ? '' : `<button class="btn-sm wf-reset" type="button" id="sstage-wf-reset">↺ Reset to Global</button>`}
+      <button class="btn-sm wf-push" type="button" id="sstage-wf-push">↑ Push to Global</button>
+    </div>`;
+  }
 
   const BRUSH_ICON = `<svg style="width:10px;height:10px;vertical-align:middle;margin-right:3px" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M7 1.5L8.5 3 4 7.5 2 8l.5-2L7 1.5Z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/></svg>`;
 
   function rerender() {
-    const scheme = getScheme();
-    const entries = scheme?.stageDisplays || [];
+    const entries = resolvedStageDisplays();
+    el.querySelector('.sstage-badge-wrap').innerHTML = badgeHtml();
 
     el.querySelector('.sstage-list').innerHTML = entries.length ? entries.map((d, idx) => `
       <div class="smac-row custom-macro-row">
@@ -4267,6 +4394,7 @@ function attachSchemesStageTab(containerId) {
   }
 
   el.innerHTML = `
+    <div class="sstage-badge-wrap"></div>
     <div style="display:flex;justify-content:flex-end;margin-bottom:8px">
       <button class="btn-sm" id="sstage-add-btn">+ Add Stage Display</button>
     </div>
@@ -4277,9 +4405,8 @@ function attachSchemesStageTab(containerId) {
   // Add Stage Display button → multi-select picker
   el.querySelector('#sstage-add-btn').addEventListener('click', () => {
     showStageLayoutPicker(null, el.querySelector('#sstage-add-btn'), (results) => {
-      const scheme = getScheme();
+      const scheme = fork();
       if (!scheme || !results.length) return;
-      if (!scheme.stageDisplays) scheme.stageDisplays = [];
       for (const { name, uuid } of results)
         scheme.stageDisplays.push({ id: uid(), name, uuid, triggers: [] });
       saveState(); rerender();
@@ -4288,27 +4415,39 @@ function attachSchemesStageTab(containerId) {
 
   // Trigger chip toggle
   el.addEventListener('click', e => {
+    if (e.target.id === 'sstage-wf-reset') {
+      const s = getScheme(); if (!s) return;
+      s.stageDisplays = null;
+      saveState(); rerender();
+      return;
+    }
+    if (e.target.id === 'sstage-wf-push') {
+      state.globalStageDisplays = deepClone(resolvedStageDisplays());
+      saveState(); rerender();
+      toast('success', 'Pushed to Global', 'Every palette inheriting stage displays will now use this.');
+      return;
+    }
     if (e.target.classList.contains('cm-chip') && e.target.closest('.sstage-list')) {
       const idx     = parseInt(e.target.dataset.idx, 10);
       const trigger = e.target.dataset.trigger;
-      const scheme  = getScheme();
+      const scheme  = fork();
       if (isNaN(idx) || !scheme?.stageDisplays?.[idx]) return;
       const t  = scheme.stageDisplays[idx].triggers || [];
       const ti = t.indexOf(trigger);
       if (ti === -1) t.push(trigger); else t.splice(ti, 1);
       scheme.stageDisplays[idx].triggers = t;
       saveState();
-      e.target.classList.toggle('active', t.includes(trigger));
+      rerender();
     }
     if (e.target.classList.contains('sstage-del')) {
       const idx = parseInt(e.target.dataset.idx, 10);
-      const scheme = getScheme();
+      const scheme = fork();
       if (!isNaN(idx) && scheme?.stageDisplays) { scheme.stageDisplays.splice(idx, 1); saveState(); rerender(); }
     }
     if (e.target.classList.contains('sstage-pick')) {
       const idx = parseInt(e.target.dataset.idx, 10);
       showStageLayoutPicker(null, e.target, (name, uuid) => {
-        const scheme = getScheme();
+        const scheme = fork();
         if (!isNaN(idx) && scheme?.stageDisplays?.[idx]) {
           scheme.stageDisplays[idx].name = name;
           scheme.stageDisplays[idx].uuid = uuid;
@@ -4319,7 +4458,7 @@ function attachSchemesStageTab(containerId) {
     if (e.target.classList.contains('sstage-pos-rm')) {
       const idx    = parseInt(e.target.dataset.idx, 10);
       const posKey = e.target.dataset.pos;
-      const scheme = getScheme();
+      const scheme = fork();
       if (isNaN(idx) || !scheme?.stageDisplays?.[idx]) return;
       scheme.stageDisplays[idx].triggers = (scheme.stageDisplays[idx].triggers || []).filter(x => x !== posKey);
       saveState(); rerender();
@@ -4334,7 +4473,7 @@ function attachSchemesStageTab(containerId) {
     const n   = parseInt(e.target.value, 10);
     if (isNaN(idx) || isNaN(n) || n < 1) return;
     const posKey = `pos:${n}`;
-    const scheme = getScheme();
+    const scheme = fork();
     if (!scheme?.stageDisplays?.[idx]) return;
     const t = scheme.stageDisplays[idx].triggers || [];
     if (!t.includes(posKey)) { t.push(posKey); scheme.stageDisplays[idx].triggers = t; saveState(); }
@@ -4355,9 +4494,17 @@ function attachSchemesResponseCardTab(containerId) {
   const ROLE_LABEL = { title: 'Title', decision: 'Decision', r1: 'Response 1', r2: 'Response 2', r3: 'Response 3', custom: 'Custom' };
   const families = (typeof _fontFamilyMap === 'object' && _fontFamilyMap) ? Object.keys(_fontFamilyMap).sort((a, b) => a.localeCompare(b)) : [];
 
-  function ensure() {
+  // Read-only: what to DISPLAY. Does not mutate — s.rcElements stays null
+  // (inheriting Global) until an actual edit forks it via fork() below.
+  function resolvedElements() {
     const s = getScheme();
-    if (s && !Array.isArray(s.rcElements)) s.rcElements = DEFAULT_RC_ELEMENTS();
+    return s?.rcElements ?? ensureGlobalRcElements();
+  }
+  // Fork point: the first edit on an inheriting scheme materializes a copy of
+  // Global's current elements into the scheme, then detaches going forward.
+  function fork() {
+    const s = getScheme(); if (!s) return null;
+    if (s.rcElements == null) s.rcElements = deepClone(ensureGlobalRcElements());
     return s;
   }
 
@@ -4402,9 +4549,19 @@ function attachSchemesResponseCardTab(containerId) {
       </div>`;
   }
 
+  function badgeHtml() {
+    const s = getScheme();
+    const inherit = !s || s.rcElements == null;
+    return `<div class="wf-row">
+      <span class="wf-badge ${inherit ? 'wf-inherit' : 'wf-custom'}">${inherit ? '● Using Global' : '● Custom'}</span>
+      ${inherit ? '' : `<button class="btn-sm wf-reset" type="button" id="rc-wf-reset">↺ Reset to Global</button>`}
+      <button class="btn-sm wf-push" type="button" id="rc-wf-push">↑ Push to Global</button>
+    </div>`;
+  }
+
   function rerender() {
-    const s = ensure();
-    const els = s?.rcElements || [];
+    const els = resolvedElements();
+    el.querySelector('.rc-badge-wrap').innerHTML = badgeHtml();
     el.querySelector('.rc-list').innerHTML = els.map((e, i) => card(e, i)).join('');
   }
 
@@ -4412,6 +4569,7 @@ function attachSchemesResponseCardTab(containerId) {
     <p style="color:var(--muted);font-size:12px;margin:0 0 10px">
       Elements on the LED wall (display 2) response card. Decision and Response 1–3 text come from the Response Card item in your deck; everything else is set here. Empty font/size/colour inherit your scheme's prop fonts.
     </p>
+    <div class="rc-badge-wrap"></div>
     <div class="rc-list"></div>
     <div style="display:flex;justify-content:flex-end;margin-top:8px">
       <button class="btn-sm" id="rc-add-btn">+ Add Element</button>
@@ -4424,18 +4582,19 @@ function attachSchemesResponseCardTab(containerId) {
     const t = e.target;
     if (!t.classList.contains('rc-inp')) return;
     const idx = parseInt(t.dataset.idx, 10); const fld = t.dataset.fld;
-    const s = getScheme(); if (isNaN(idx) || !s?.rcElements?.[idx] || !fld) return;
+    const s = fork(); if (isNaN(idx) || !s?.rcElements?.[idx] || !fld) return;
     if (['x', 'y', 'w', 'h', 'size'].includes(fld)) s.rcElements[idx][fld] = parseInt(t.value, 10) || 0;
     else if (fld === 'color') s.rcElements[idx].color = t.value.trim() ? '#' + t.value.replace(/^#/, '') : '';
     else s.rcElements[idx][fld] = t.value;
     saveState();
+    el.querySelector('.rc-badge-wrap').innerHTML = badgeHtml();
   });
 
   // Font family/weight selects + align/add/remove — re-render
   el.addEventListener('change', e => {
     const t = e.target;
     if (!t.classList.contains('rc-sel')) return;
-    const idx = parseInt(t.dataset.idx, 10); const s = getScheme();
+    const idx = parseInt(t.dataset.idx, 10); const s = fork();
     if (isNaN(idx) || !s?.rcElements?.[idx]) return;
     if (t.dataset.fld === 'fontFamily') {
       const fam = t.value;
@@ -4449,19 +4608,32 @@ function attachSchemesResponseCardTab(containerId) {
   el.addEventListener('click', e => {
     const align = e.target.closest('.rc-align button');
     if (align) {
-      const idx = parseInt(align.dataset.idx, 10); const s = getScheme();
+      const idx = parseInt(align.dataset.idx, 10); const s = fork();
       if (!isNaN(idx) && s?.rcElements?.[idx]) { s.rcElements[idx].align = align.dataset.align; saveState(); rerender(); }
       return;
     }
     if (e.target.classList.contains('rc-el-del')) {
-      const idx = parseInt(e.target.dataset.idx, 10); const s = getScheme();
+      const idx = parseInt(e.target.dataset.idx, 10); const s = fork();
       if (!isNaN(idx) && s?.rcElements) { s.rcElements.splice(idx, 1); saveState(); rerender(); }
       return;
     }
     if (e.target.id === 'rc-add-btn') {
-      const s = ensure(); if (!s) return;
+      const s = fork(); if (!s) return;
       s.rcElements.push({ id: uid(), role: 'custom', name: `Custom ${s.rcElements.filter(x => x.role === 'custom').length + 1}`, text: '', x: 400, y: 1080, w: 2600, h: 150, font: '', size: 0, color: '', align: 'center' });
       saveState(); rerender();
+      return;
+    }
+    if (e.target.id === 'rc-wf-reset') {
+      const s = getScheme(); if (!s) return;
+      s.rcElements = null;
+      saveState(); rerender();
+      return;
+    }
+    if (e.target.id === 'rc-wf-push') {
+      const els = deepClone(resolvedElements());
+      state.globalRcElements = els;
+      saveState(); rerender();
+      toast('success', 'Pushed to Global', 'Every palette inheriting Response Card elements will now use this.');
     }
   });
 }
@@ -5926,14 +6098,19 @@ function renderGlobalPanel(panel, schemeOptionsHTML) {
   ensureGlobalTypography();
   ensureGlobalLayout();
   ensureGlobalFontAdv();
+  const gMotion = ensureGlobalMotion();
+  const gMacros = ensureGlobalMacros();
+  const gStage  = ensureGlobalStageDisplays();
+  const gRc     = ensureGlobalRcElements();
   const g = state.globalTypography;
 
-  // Build a fake scheme whose typography, layout and adv ARE the globals — so no overrides show
-  const gScheme = { ...DEFAULT_STYLE_SCHEME(), ...state.globalLayout, ...state.globalFontAdv, typography: { ...g } };
+  // Build a fake scheme whose typography, layout, adv AND motion ARE the globals —
+  // so no overrides show, and renderBuildTable/etc can be reused as-is (read-only).
+  const gScheme = { ...DEFAULT_STYLE_SCHEME(), ...state.globalLayout, ...state.globalFontAdv, ...gMotion, typography: { ...g } };
   const sv = applyTypographyToStyle(gScheme);
   const rs = { ...DEFAULT_STYLE_SCHEME(), ...state.globalFontAdv, typography: {} };
 
-  const _gTab = (_styleTab && ['text','layout'].includes(_styleTab)) ? _styleTab : 'text';
+  const _gTab = (_styleTab && ['text','layout','motion','macros','stage','responseCard'].includes(_styleTab)) ? _styleTab : 'text';
 
   panel.innerHTML = `<div class="slide-form">
     <h2>Palettes</h2>
@@ -5952,6 +6129,10 @@ function renderGlobalPanel(panel, schemeOptionsHTML) {
     <div class="style-tabs">
       <button class="style-tab${_gTab === 'text'   ? ' active' : ''}" data-gtab="text">Text</button>
       <button class="style-tab${_gTab === 'layout' ? ' active' : ''}" data-gtab="layout">Layout</button>
+      <button class="style-tab${_gTab === 'motion' ? ' active' : ''}" data-gtab="motion">Motion</button>
+      <button class="style-tab${_gTab === 'macros' ? ' active' : ''}" data-gtab="macros">Macros</button>
+      <button class="style-tab${_gTab === 'stage'  ? ' active' : ''}" data-gtab="stage">Stage</button>
+      <button class="style-tab${_gTab === 'responseCard' ? ' active' : ''}" data-gtab="responseCard">Response Card</button>
     </div>
 
     <fieldset class="scheme-fields scheme-locked" disabled>
@@ -5964,6 +6145,50 @@ function renderGlobalPanel(panel, schemeOptionsHTML) {
         <p class="style-group-hint">Default element bounds (read-only).</p>
         ${lyTable(lyRows(), gScheme, 'disabled')}
       </div>
+      <div class="style-tab-body" id="g-tab-motion" ${_gTab !== 'motion' ? 'style="display:none"' : ''}>
+        <div class="trans-cols">
+          <div class="trans-col">
+            <div class="trans-col-title">Slide</div>
+            <div class="segmented-control trans-seg">
+              ${['fade','dissolve','cut'].map(v => `<button class="${gMotion.transitionType === v ? 'active' : ''}" disabled>${v[0].toUpperCase()}${v.slice(1)}</button>`).join('')}
+            </div>
+            ${gMotion.transitionType !== 'cut' ? `<div class="trans-dur-wrap"><input type="number" value="${gMotion.transitionDuration}" disabled><span class="fav-unit">s</span></div>` : ''}
+          </div>
+          <div class="trans-col">
+            <div class="trans-col-title">Prop</div>
+            <div class="segmented-control trans-seg">
+              ${['fade','dissolve','cut'].map(v => `<button class="${gMotion.propTransitionType === v ? 'active' : ''}" disabled>${v[0].toUpperCase()}${v.slice(1)}</button>`).join('')}
+            </div>
+            ${gMotion.propTransitionType !== 'cut' ? `<div class="trans-dur-wrap"><input type="number" value="${gMotion.propTransitionDuration}" disabled><span class="fav-unit">s</span></div>` : ''}
+          </div>
+        </div>
+        <p class="style-group-hint" style="margin-top:16px">Build order (read-only) — ${_boActiveTab}</p>
+        <div class="bo-tabs" id="g-bo-tabs">
+          ${[['content','Scripture'],['point','Point'],['blank','Blank'],['startEnd','Utility']].map(([tab, lbl]) =>
+            `<button class="bo-tab${_boActiveTab === tab ? ' active' : ''}" data-gbotab="${tab}">${lbl}</button>`).join('')}
+        </div>
+        ${renderBuildTable(_boActiveTab, gScheme, true)}
+      </div>
+      <div class="style-tab-body" id="g-tab-macros" ${_gTab !== 'macros' ? 'style="display:none"' : ''}>
+        ${gMacros.length
+          ? gMacros.map(m => `<div class="smac-row custom-macro-row"><div class="custom-macro-fields">
+              <span class="cm-name-ro">${esc(m.name) || '(no macro picked)'}</span>
+              <code class="cm-uuid-ro">${esc(m.uuid || '')}</code>
+            </div><div class="smac-chips">${(m.triggers || []).map(t => `<span class="cm-chip active" style="pointer-events:none">${esc(t)}</span>`).join('') || '<span class="cm-empty" style="margin:0">no triggers</span>'}</div></div>`).join('')
+          : '<p class="cm-empty">No global macros yet — push one from a palette.</p>'}
+      </div>
+      <div class="style-tab-body" id="g-tab-stage" ${_gTab !== 'stage' ? 'style="display:none"' : ''}>
+        ${gStage.length
+          ? gStage.map(d => `<div class="smac-row custom-macro-row"><div class="custom-macro-fields">
+              <span class="cm-name-ro">${esc(d.name) || '(no layout picked)'}</span>
+              <code class="cm-uuid-ro">${esc(d.uuid || '')}</code>
+            </div><div class="smac-chips">${(d.triggers || []).map(t => `<span class="cm-chip active" style="pointer-events:none">${esc(t)}</span>`).join('') || '<span class="cm-empty" style="margin:0">no triggers</span>'}</div></div>`).join('')
+          : '<p class="cm-empty">No global stage displays yet — push one from a palette.</p>'}
+      </div>
+      <div class="style-tab-body" id="g-tab-responseCard" ${_gTab !== 'responseCard' ? 'style="display:none"' : ''}>
+        <table class="bo-table"><thead><tr><th>Name</th><th>Role</th><th>Text</th><th>X</th><th>Y</th><th>W</th><th>H</th></tr></thead>
+        <tbody>${gRc.map(el => `<tr><td>${esc(el.name)}</td><td>${esc(el.role)}</td><td>${esc(el.text || '—')}</td><td>${el.x}</td><td>${el.y}</td><td>${el.w}</td><td>${el.h}</td></tr>`).join('')}</tbody></table>
+      </div>
     </fieldset>
   </div>`;
 
@@ -5972,12 +6197,20 @@ function renderGlobalPanel(panel, schemeOptionsHTML) {
     renderStylePanel(panel);
   });
 
+  panel.querySelectorAll('[data-gbotab]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      _boActiveTab = btn.dataset.gbotab;
+      renderGlobalPanel(panel, schemeOptionsHTML);
+    });
+  });
+
   panel.querySelectorAll('[data-gtab]').forEach(btn => {
     btn.addEventListener('click', () => {
       _styleTab = btn.dataset.gtab;
       panel.querySelectorAll('[data-gtab]').forEach(b => b.classList.toggle('active', b.dataset.gtab === _styleTab));
-      document.getElementById('g-tab-text').style.display   = _styleTab === 'text'   ? '' : 'none';
-      document.getElementById('g-tab-layout').style.display = _styleTab === 'layout' ? '' : 'none';
+      panel.querySelectorAll('.style-tab-body').forEach(body => {
+        body.style.display = body.id === `g-tab-${_styleTab}` ? '' : 'none';
+      });
     });
   });
 }
@@ -6301,36 +6534,59 @@ function renderStylePanel(panel) {
         </div>
 
         <div class="motion-sub" id="motion-sub-transitions" ${_motionTab !== 'transitions' ? 'style="display:none"' : ''}>
+          ${(() => {
+            const glbMotion = ensureGlobalMotion();
+            const slideInherit = scheme.transitionType == null;
+            const curType = scheme.transitionType ?? glbMotion.transitionType ?? 'fade';
+            const curDur  = scheme.transitionDuration ?? glbMotion.transitionDuration ?? 0.6;
+            const propInherit = scheme.propTransitionType == null;
+            const curPropType = scheme.propTransitionType ?? glbMotion.propTransitionType ?? 'fade';
+            const curPropDur  = scheme.propTransitionDuration ?? glbMotion.propTransitionDuration ?? 0.6;
+            const wfBadge = (inherit, field) => `
+              <div class="wf-row">
+                <span class="wf-badge ${inherit ? 'wf-inherit' : 'wf-custom'}">${inherit ? '● Using Global' : '● Custom'}</span>
+                ${inherit ? '' : `<button class="btn-sm wf-reset" type="button" data-wf="${field}" ${dis}>↺ Reset to Global</button>`}
+                <button class="btn-sm wf-push" type="button" data-wf="${field}" ${dis}>↑ Push to Global</button>
+              </div>`;
+            return `
           <div class="trans-cols">
             <div class="trans-col">
               <div class="trans-col-title">Slide</div>
               <div class="segmented-control trans-seg" id="adv-trans-seg">
-                <button data-val="fade"     class="${(scheme.transitionType || 'fade') === 'fade'     ? 'active' : ''}" ${dis}>Fade</button>
-                <button data-val="dissolve" class="${(scheme.transitionType || 'fade') === 'dissolve' ? 'active' : ''}" ${dis}>Dissolve</button>
-                <button data-val="cut"      class="${(scheme.transitionType || 'fade') === 'cut'      ? 'active' : ''}" ${dis}>Cut</button>
+                <button data-val="fade"     class="${curType === 'fade'     ? 'active' : ''}" ${dis}>Fade</button>
+                <button data-val="dissolve" class="${curType === 'dissolve' ? 'active' : ''}" ${dis}>Dissolve</button>
+                <button data-val="cut"      class="${curType === 'cut'      ? 'active' : ''}" ${dis}>Cut</button>
               </div>
-              <div class="trans-dur-wrap" id="adv-dur-field" style="${(scheme.transitionType || 'fade') === 'cut' ? 'display:none' : ''}">
-                <input type="number" id="adv-trans-dur" value="${scheme.transitionDuration ?? 0.6}" min="0.1" max="5" step="0.1" class="trans-dur" ${dis}>
+              <div class="trans-dur-wrap" id="adv-dur-field" style="${curType === 'cut' ? 'display:none' : ''}">
+                <input type="number" id="adv-trans-dur" value="${curDur}" min="0.1" max="5" step="0.1" class="trans-dur" ${dis}>
                 <span class="fav-unit">s</span>
               </div>
+              ${wfBadge(slideInherit, 'transition')}
             </div>
             <div class="trans-col">
               <div class="trans-col-title">Prop</div>
               <div class="segmented-control trans-seg" id="adv-prop-trans-seg">
-                <button data-val="fade"     class="${(scheme.propTransitionType || 'fade') === 'fade'     ? 'active' : ''}" ${dis}>Fade</button>
-                <button data-val="dissolve" class="${(scheme.propTransitionType || 'fade') === 'dissolve' ? 'active' : ''}" ${dis}>Dissolve</button>
-                <button data-val="cut"      class="${(scheme.propTransitionType || 'fade') === 'cut'      ? 'active' : ''}" ${dis}>Cut</button>
+                <button data-val="fade"     class="${curPropType === 'fade'     ? 'active' : ''}" ${dis}>Fade</button>
+                <button data-val="dissolve" class="${curPropType === 'dissolve' ? 'active' : ''}" ${dis}>Dissolve</button>
+                <button data-val="cut"      class="${curPropType === 'cut'      ? 'active' : ''}" ${dis}>Cut</button>
               </div>
-              <div class="trans-dur-wrap" id="adv-prop-dur-field" style="${(scheme.propTransitionType || 'fade') === 'cut' ? 'display:none' : ''}">
-                <input type="number" id="adv-prop-trans-dur" value="${scheme.propTransitionDuration ?? 0.6}" min="0.1" max="5" step="0.1" class="trans-dur" ${dis}>
+              <div class="trans-dur-wrap" id="adv-prop-dur-field" style="${curPropType === 'cut' ? 'display:none' : ''}">
+                <input type="number" id="adv-prop-trans-dur" value="${curPropDur}" min="0.1" max="5" step="0.1" class="trans-dur" ${dis}>
                 <span class="fav-unit">s</span>
               </div>
+              ${wfBadge(propInherit, 'propTransition')}
             </div>
-          </div>
+          </div>`;
+          })()}
         </div>
 
         <div class="motion-sub" id="motion-sub-build" ${_motionTab !== 'build' ? 'style="display:none"' : ''}>
           <p class="style-group-hint">Advanced — controls how each element animates in and out, per slide type.</p>
+          <div class="wf-row">
+            <span class="wf-badge ${scheme.buildOrders == null ? 'wf-inherit' : 'wf-custom'}">${scheme.buildOrders == null ? '● Using Global' : '● Custom'}</span>
+            ${scheme.buildOrders == null ? '' : `<button class="btn-sm wf-reset" type="button" data-wf="buildOrders" ${dis}>↺ Reset to Global</button>`}
+            <button class="btn-sm wf-push" type="button" data-wf="buildOrders" ${dis}>↑ Push to Global</button>
+          </div>
           <div class="bo-tabs" id="bo-tabs">
             ${[['content','Scripture'],['point','Point'],['blank','Blank'],['startEnd','Utility']].map(([tab, lbl]) =>
               `<button class="bo-tab${_boActiveTab === tab ? ' active' : ''}" data-tab="${tab}">${lbl}</button>`
@@ -6439,6 +6695,8 @@ function renderStylePanel(panel) {
   document.getElementById('btn-scheme-new').addEventListener('click', () => {
     const p = { ...deepClone(DEFAULT_STYLE_SCHEME()), id: 'scheme_' + Date.now(), name: 'New Scheme', isLocked: false };
     for (const f of LAYOUT_FIELDS) p[f] = null;
+    for (const f of MOTION_SCALAR_FIELDS) p[f] = null;
+    p.buildOrders = null; p.macros = null; p.stageDisplays = null; p.rcElements = null;
     state.styleSchemes.push(p); state.activeSchemeId = p.id;
     saveState(); renderStylePanel(panel);
   });
@@ -6626,12 +6884,8 @@ function renderStylePanel(panel) {
   document.getElementById('adv-trans-seg')?.querySelectorAll('button').forEach(btn => {
     btn.addEventListener('click', () => {
       const s = getScheme(); if (!s) return;
-      document.getElementById('adv-trans-seg').querySelectorAll('button').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
       s.transitionType = btn.dataset.val;
-      const durField = document.getElementById('adv-dur-field');
-      if (durField) durField.style.display = btn.dataset.val === 'cut' ? 'none' : '';
-      saveState();
+      saveState(); renderStylePanel(panel);
     });
   });
   document.getElementById('adv-trans-dur')?.addEventListener('input', e => {
@@ -6643,17 +6897,39 @@ function renderStylePanel(panel) {
   document.getElementById('adv-prop-trans-seg')?.querySelectorAll('button').forEach(btn => {
     btn.addEventListener('click', () => {
       const s = getScheme(); if (!s) return;
-      document.getElementById('adv-prop-trans-seg').querySelectorAll('button').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
       s.propTransitionType = btn.dataset.val;
-      const durField = document.getElementById('adv-prop-dur-field');
-      if (durField) durField.style.display = btn.dataset.val === 'cut' ? 'none' : '';
-      saveState();
+      saveState(); renderStylePanel(panel);
     });
   });
   document.getElementById('adv-prop-trans-dur')?.addEventListener('input', e => {
     const s = getScheme();
     if (s) { s.propTransitionDuration = parseFloat(e.target.value) || 0.6; saveState(); }
+  });
+
+  // Motion transition: whole-field reset-to-global / push-to-global
+  panel.querySelectorAll('.wf-reset[data-wf="transition"], .wf-reset[data-wf="propTransition"]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const s = getScheme(); if (!s) return;
+      const isProp = btn.dataset.wf === 'propTransition';
+      s[isProp ? 'propTransitionType' : 'transitionType'] = null;
+      s[isProp ? 'propTransitionDuration' : 'transitionDuration'] = null;
+      saveState(); renderStylePanel(panel);
+    });
+  });
+  panel.querySelectorAll('.wf-push[data-wf="transition"], .wf-push[data-wf="propTransition"]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const s = getScheme(); if (!s) return;
+      const glbMotion = ensureGlobalMotion();
+      if (btn.dataset.wf === 'propTransition') {
+        glbMotion.propTransitionType = s.propTransitionType ?? glbMotion.propTransitionType;
+        glbMotion.propTransitionDuration = s.propTransitionDuration ?? glbMotion.propTransitionDuration;
+      } else {
+        glbMotion.transitionType = s.transitionType ?? glbMotion.transitionType;
+        glbMotion.transitionDuration = s.transitionDuration ?? glbMotion.transitionDuration;
+      }
+      saveState(); renderStylePanel(panel);
+      toast('success', 'Pushed to Global', 'Every palette inheriting this will now use it.');
+    });
   });
 
   // Font advanced: numeric inputs
@@ -8841,8 +9117,8 @@ function buildSpec() {
     responses:           Object.fromEntries(Object.entries(responses || { decisionText: '', r1: '', r2: '', r3: '' }).map(([k, v]) => [k, normalizeDeckQuotes(v)])),
     style,
     stageScreen:         schemeStageScreen(),
-    stageDisplays:       (activeStyleScheme().stageDisplays || []).filter(d => d.name && d.uuid && (d.triggers || []).length),
-    customMacros:        (activeStyleScheme().macros || []).filter(m => m.name && m.uuid && (m.triggers || []).length),
+    stageDisplays:       (activeStyleScheme().stageDisplays ?? ensureGlobalStageDisplays()).filter(d => d.name && d.uuid && (d.triggers || []).length),
+    customMacros:        (activeStyleScheme().macros ?? ensureGlobalMacros()).filter(m => m.name && m.uuid && (m.triggers || []).length),
     queueMode:           state.config.queueMode || 'ref',
     pro7RootFolder:      state.config.pro7RootFolder || '',
     pro7LibraryFolder:   state.config.pro7LibraryFolder || '',
@@ -10746,7 +11022,7 @@ async function lookupBibleVerse(slide, ref, overrideBibleId = '') {
 function showStageLayoutPicker(field, anchorEl, cb, singleSelect = true) {
   document.getElementById('stage-layout-picker-overlay')?.remove();
   const liveLayouts = pro7rt.liveStageLayouts || [];
-  const existing    = new Set((activeStyleScheme().stageDisplays || []).map(d => d.uuid));
+  const existing    = new Set((activeStyleScheme().stageDisplays ?? ensureGlobalStageDisplays()).map(d => d.uuid));
   const selected    = new Set();
 
   const overlay = document.createElement('div');
@@ -12292,6 +12568,10 @@ function SYNC_SECTIONS() {
     globalTypography: { get: () => state.globalTypography, set: v => { state.globalTypography = v; } },
     globalLayout:     { get: () => state.globalLayout,     set: v => { state.globalLayout = v; } },
     globalFontAdv:    { get: () => state.globalFontAdv,    set: v => { state.globalFontAdv = v; } },
+    globalMotion:     { get: () => state.globalMotion,     set: v => { state.globalMotion = v; } },
+    globalMacros:     { get: () => state.globalMacros,     set: v => { state.globalMacros = v || []; } },
+    globalStageDisplays: { get: () => state.globalStageDisplays, set: v => { state.globalStageDisplays = v || []; } },
+    globalRcElements: { get: () => state.globalRcElements, set: v => { state.globalRcElements = v || DEFAULT_RC_ELEMENTS(); } },
   };
 }
 
