@@ -1490,11 +1490,14 @@ function buildPointCues(spec, rs) {
     });
   }
 
-  // Single mode
-  const bodyRtf = rtf.rtfPointBody(spec.bodyText || '', rs);
+  // Single mode. The on-screen body uses bodyDisplayText when Fit Width chose
+  // hard line breaks (\n after punctuation); prop name, notes and queue below
+  // still use the unbroken spec.bodyText.
+  const bodyDisplay = spec.bodyDisplayText || spec.bodyText || '';
+  const bodyRtf = rtf.rtfPointBody(bodyDisplay, rs);
   const gradEl  = makeGradientElement(rs);
   const liveEl  = makeLiveElement(rs);
-  const bodyEl  = makePointBodyElement({ x: bx, y: by + boldYOff, w: bw, h: bh, rtfData: bodyRtf, text: spec.bodyText || '' }, rs);
+  const bodyEl  = makePointBodyElement({ x: bx, y: by + boldYOff, w: bw, h: bh, rtfData: bodyRtf, text: bodyDisplay }, rs);
 
   const slots = [
     makeSlot(bodyEl),

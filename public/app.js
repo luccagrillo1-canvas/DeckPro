@@ -2,9 +2,16 @@
 
 // ─── Version & Changelog ──────────────────────────────────────────────────────
 
-const APP_VERSION = '4.7.15';
+const APP_VERSION = '4.7.16';
 
 const CHANGELOG = [
+  {
+    version: '4.7.16',
+    date: '2026-07-09',
+    changes: [
+      'Point slides now split after punctuation. Fit Width can insert real line breaks into a point\'s on-screen text so it breaks cleanly after a comma, colon, or period instead of wherever the box edge happens to fall — e.g. "Create opportunities, build relationships, and share the good news." now lays out as three lines, one per comma. It only does this when the punctuation layout genuinely reads better; short points that fit on one line stay on one line, and it never forces a break just because a comma exists. The breaks apply to the main-screen point text only — the confidence-monitor notes, the queue sidebar, and the prop/LED-wall name keep the original unbroken wording.',
+    ],
+  },
   {
     version: '4.7.15',
     date: '2026-07-09',
@@ -3443,13 +3450,54 @@ function _fitScore(lines, words, boxW) {
   return cost;
 }
 
+// Measure one line's pixel width at no-wrap.
+function _fitLineWidth(inner, lineWords) {
+  inner.style.whiteSpace = 'nowrap';
+  inner.style.display    = 'inline-block';
+  inner.style.width      = 'auto';
+  inner.innerHTML = lineWords.map(wd => {
+    let h = esc(wd.text);
+    if (wd.underline) h = `<u>${h}</u>`;
+    if (wd.italic)    h = `<em>${h}</em>`;
+    if (wd.bold)      h = `<strong>${h}</strong>`;
+    return h;
+  }).join(' ');
+  return inner.scrollWidth;
+}
+
+// Enumerate line partitions that break ONLY after punctuation words (comma,
+// clause, or sentence end). These reach layouts that box-width alone can't —
+// e.g. a point split cleanly after every comma — and are the candidates that,
+// when they win, get emitted as hard line breaks. Points only.
+function _fitPunctPartitions(words) {
+  const breaks = [];
+  for (let i = 0; i < words.length - 1; i++) if (words[i].punctRank >= 1) breaks.push(i);
+  if (!breaks.length || breaks.length > 6) return [];   // cap: 2^6 subsets
+  const partitions = [];
+  const total = 1 << breaks.length;
+  for (let mask = 1; mask < total; mask++) {
+    const cuts = [];
+    for (let b = 0; b < breaks.length; b++) if (mask & (1 << b)) cuts.push(breaks[b]);
+    if (cuts.length + 1 > FIT_WEIGHTS.maxLines) continue;
+    const lines = [];
+    let start = 0;
+    for (const c of cuts) { lines.push(words.slice(start, c + 1)); start = c + 1; }
+    lines.push(words.slice(start));
+    partitions.push(lines);
+  }
+  return partitions;
+}
+
 /**
  * Measure text spans in a hidden div and find the optimal body width.
  * Poetry mode (has \n): tightest width that fits each explicit line no-wrap.
  * Balance mode (no \n): sweep candidate widths, score the induced line break,
  *   pick the lowest-cost layout (see FIT_WEIGHTS).
- * `type` selects the render size/weight ('point' → pointSize + bold).
- * Returns { bodyW, bodyX } in Pro7 canvas coordinates.
+ * `type` selects the render size/weight ('point' → pointSize + bold). For
+ *   points, the search also proposes explicit punctuation-break layouts; when
+ *   one wins and box-width can't reproduce it, `brokenText` carries the text
+ *   with hard line breaks (\n) for the caller to export.
+ * Returns { bodyW, bodyX, brokenText } in Pro7 canvas coordinates.
  */
 function computeOptimalBodyWidth(spans, rs, type = 'body') {
   // Resolve the scheme so inherited body width / sizes are real numbers, not
@@ -3465,7 +3513,7 @@ function computeOptimalBodyWidth(spans, rs, type = 'body') {
   const padding = 80; // breathing room for the poetry branch
 
   const hasExplicit = (spans || []).some(s => s.text?.includes('\n'));
-  const centered = (w) => ({ bodyW: w, bodyX: Math.round((canvasW - w) / 2) });
+  const centered = (w, brokenText = null) => ({ bodyW: w, bodyX: Math.round((canvasW - w) / 2), brokenText });
 
   // Hidden measurement container — 1:1 canvas coordinate space.
   const msr   = document.createElement('div');
@@ -3529,30 +3577,44 @@ function computeOptimalBodyWidth(spans, rs, type = 'body') {
     // a runt "and" down a line), so a coarse sweep would skip right over them.
     const STEP = 12;
     const seen = new Set();
-    let best = null;
+    let best = null;   // { cost, width, broken:string[]|null }
+    const consider = (lines, boxW, broken) => {
+      const cost = _fitScore(lines, words, boxW);
+      if (cost === Infinity) return;
+      const tight = Math.min(Math.max(...lines.map(l => l.width)) + FIT_WEIGHTS.pad, boxW, maxW);
+      if (!best || cost < best.cost - 0.01) best = { cost, width: Math.ceil(tight), broken };
+    };
     for (let w = floorW; w <= maxW; w += STEP) {
       const lines = _fitLinesAtWidth(inner, words, w);
       const sig = lines.map(l => l.words.length).join(',');
       if (seen.has(sig)) continue;
       seen.add(sig);
-      const cost = _fitScore(lines, words, w);
-      if (cost === Infinity) continue;
-      // Tightest box that reproduces this layout: widest line + a little pad,
-      // clamped so it can't spill past the candidate width (which would re-wrap).
-      const tight = Math.min(Math.max(...lines.map(l => l.width)) + FIT_WEIGHTS.pad, w, maxW);
-      if (!best || cost < best.cost - 0.01) best = { cost, width: Math.ceil(tight), lines: lines.length };
+      consider(lines, w, null);
     }
     // Always consider the full-width layout too (covers the single-line case).
-    {
-      const lines = _fitLinesAtWidth(inner, words, maxW);
-      const cost  = _fitScore(lines, words, maxW);
-      const tight = Math.min(Math.max(...lines.map(l => l.width)) + FIT_WEIGHTS.pad, maxW);
-      if (cost !== Infinity && (!best || cost < best.cost - 0.01)) {
-        best = { cost, width: Math.ceil(tight), lines: lines.length };
+    consider(_fitLinesAtWidth(inner, words, maxW), maxW, null);
+
+    // Points also get explicit punctuation-break candidates — layouts that break
+    // only after . ! ? … : ; , and can beat anything box-width alone produces.
+    if (type === 'point') {
+      for (const part of _fitPunctPartitions(words)) {
+        const lines = part.map(lw => ({ words: lw, width: _fitLineWidth(inner, lw) }));
+        consider(lines, maxW, lines.map(l => l.words.map(w => w.text).join(' ')));
       }
     }
 
-    return centered(best ? Math.min(best.width, maxW) : maxW);
+    if (!best) return centered(maxW);
+    const width = Math.min(best.width, maxW);
+    // Emit hard breaks only when the winning layout can't be reproduced by the
+    // natural wrap at this width — otherwise box-width alone already gives it.
+    let brokenText = null;
+    if (best.broken) {
+      const nat = _fitLinesAtWidth(inner, words, width)
+        .map(l => l.words.map(w => w.text).join(' ')).join('\n');
+      const brk = best.broken.join('\n');
+      if (nat !== brk) brokenText = brk;
+    }
+    return centered(width, brokenText);
   } finally {
     document.body.removeChild(msr);
   }
@@ -9245,6 +9307,12 @@ function buildSpec() {
         mode:          'single',
         label:         normalizeDeckQuotes(slide.label || slide.bodyText || 'Point'),
         bodyText:      normalizeDeckQuotes(slide.bodyText || ''),
+        // Main-screen body only: same text with Fit Width's chosen hard breaks.
+        // Prop name, notes and queue keep the unbroken bodyText. Guarded against
+        // a stale cache: only used if collapsing the breaks reproduces the text.
+        bodyDisplayText: (slide.fitWidth && slide._fitBrokenText &&
+          slide._fitBrokenText.replace(/\n/g, ' ').trim() === (slide.bodyText || '').trim())
+          ? normalizeDeckQuotes(slide._fitBrokenText) : null,
         propName:      normalizeDeckQuotes(slide.propName || slide.bodyText || 'point'),
         customProp:    !!slide.customProp,
         blankBefore:   !!slide.blankBefore,
@@ -9533,6 +9601,8 @@ async function generate() {
       if (spans && spans.some(s => s.text)) {
         const r = computeOptimalBodyWidth(spans, scheme, slide.type);
         slide.bodyW = r.bodyW; slide.bodyX = r.bodyX;
+        // Hard punctuation breaks apply to single-mode point body text only.
+        slide._fitBrokenText = (slide.type === 'point' && slide.mode !== 'revealing') ? (r.brokenText || null) : null;
       }
     }
   } catch (_) { /* non-fatal — export continues without fit-width pre-computation */ }
