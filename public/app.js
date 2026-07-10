@@ -2,9 +2,16 @@
 
 // ─── Version & Changelog ──────────────────────────────────────────────────────
 
-const APP_VERSION = '4.8.1';
+const APP_VERSION = '4.8.2';
 
 const CHANGELOG = [
+  {
+    version: '4.8.2',
+    date: '2026-07-10',
+    changes: [
+      'Internal cleanup (no output change): the slide-builder\'s element-bounds fallbacks were scattered magic numbers (e.g. body y defaulted to 729.98 in three places). Consolidated the real defaults into one place (builder DEFAULT_STYLE, now including the live badge and queue sidebar) and made the make-functions\' inline fallbacks uniform neutral placeholders (x/y=0, w/h=100) that are never reached in a normal export. Verified byte-for-byte via the golden-master suite and a real encode — every element still lands at exactly the same position.',
+    ],
+  },
   {
     version: '4.8.1',
     date: '2026-07-10',
@@ -13149,7 +13156,7 @@ function helpSections() {
       </ol>
 
       <h4>Default element bounds (1920×1080)</h4>
-      <p class="help-muted">These are the <em>default palette's</em> values, editable per-palette in the Layout tab — not fixed constants. Builder reads them from the resolved scheme (<code>rs.bodyY ?? 729.98</code>; the literal is only a fallback).</p>
+      <p class="help-muted">These are the <em>default palette's</em> values, editable per-palette in the Layout tab — not fixed constants. Builder reads them from the resolved scheme; the real defaults live in builder's <code>DEFAULT_STYLE</code>, and the make-functions' inline fallbacks are neutral <code>0/0/100/100</code> placeholders that are never reached in normal exports.</p>
       <ul>
         <li>Body: y=729.98, h=350.02 (bottom third). Fit Width varies x/w within the palette Body width.</li>
         <li>Title (scripture ref): full-width bar; Auto&nbsp;Y places it just above the body.</li>

@@ -124,6 +124,10 @@ const DEFAULT_STYLE = {
   rcTitleX: -0.18, rcTitleY: 880, rcTitleW: 1920.18, rcTitleH: 50.51,
   rcAutoTitleY: true, rcTitleAutoGap: 16,
   propPointX: 0, propPointY: 853, propPointW: 3200, propPointH: 427,
+  // live badge + queue sidebar — the real defaults live here so the make-fns
+  // don't carry magic numbers; their inline fallbacks are neutral placeholders.
+  liveX: 1736.73, liveY: 1096.71, liveW: 183.27, liveH: 71.56,
+  queueX: 0, queueY: 0, queueW: 400, queueH: 1080,
 };
 
 function hexToColor(hex) {
@@ -479,7 +483,7 @@ function makeBodyElement({ name = 'body', x, y, w, h, rtfData, charCount, spans 
 }
 
 function makePointBodyElement({ x, y, w, h, rtfData, text }, rs = {}) {
-  x = x ?? 0; y = y ?? 729.98; w = w ?? 1920; h = h ?? 350.02;
+  x = x ?? 0; y = y ?? 0; w = w ?? 1920; h = h ?? 100;
   const id = uuid();
   const charCount = text.length;
   const adv = rs.pointFontAdv || rs.boldFontAdv || {};
@@ -528,9 +532,9 @@ function makeStartEndElement({ text }, rs = {}) {
   const id = uuid();
   const charCount = text.length;
   const x = rs.startEndX ?? 0;
-  const y = rs.startEndY ?? 900.14;
+  const y = rs.startEndY ?? 0;
   const w = rs.startEndW ?? rs.canvasW ?? 1920;
-  const h = rs.startEndH ?? 179.86;
+  const h = rs.startEndH ?? 100;
   return {
     uuid: id,
     name: 'body',
@@ -576,7 +580,7 @@ function makeStartEndTitleEl({ text }, rs = {}) {
   return {
     uuid: id,
     name: 'title',
-    bounds: bounds(rs.liveX ?? 1736.73, rs.liveY ?? 1096.71, rs.liveW ?? 183.27, rs.liveH ?? 71.56),
+    bounds: bounds(rs.liveX ?? 0, rs.liveY ?? 0, rs.liveW ?? 100, rs.liveH ?? 100),
     opacity: 1,
     path: RECT_PATH,
     fill: { color: rs.cFill || hexToColor('#2196f2') },
@@ -610,7 +614,7 @@ function makeLiveElement(rs = {}) {
   return {
     uuid: id,
     name: 'live',
-    bounds: bounds(rs.liveX ?? 1736.73, rs.liveY ?? 1096.71, rs.liveW ?? 183.27, rs.liveH ?? 71.56),
+    bounds: bounds(rs.liveX ?? 0, rs.liveY ?? 0, rs.liveW ?? 100, rs.liveH ?? 100),
     opacity: 1,
     path: RECT_PATH,
     fill: { color: rs.cFill || hexToColor('#2196f2') },
@@ -648,9 +652,9 @@ function estimateTitleY(displayBody, bw, rs) {
   const bodySize     = rs.bodySize ?? 44;
   const lineH        = bodySize * 1.3;
   const gap          = rs.titleAutoGap ?? 16;
-  const by           = rs.bodyY ?? 729.98;
-  const bh           = rs.bodyH ?? 350.02;
-  const th           = rs.titleH ?? 50.51;
+  const by           = rs.bodyY ?? 0;
+  const bh           = rs.bodyH ?? 100;
+  const th           = rs.titleH ?? 100;
 
   // Flatten text; split into paragraphs on explicit newlines
   const fullText     = (displayBody || []).map(s => s.text || '').join('');
@@ -689,10 +693,10 @@ function estimateTitleY(displayBody, bw, rs) {
 function makeTitleElement({ reference, titleY }, rs = {}) {
   const id = uuid();
   const charCount = reference.length;
-  if (titleY === undefined) titleY = rs.titleY ?? 880;
-  const tx = rs.titleX ?? -0.18;
+  if (titleY === undefined) titleY = rs.titleY ?? 0;
+  const tx = rs.titleX ?? 0;
   const tw = rs.titleW ?? (rs.canvasW ?? 1920) + 0.18;
-  const th = rs.titleH ?? 50.51;
+  const th = rs.titleH ?? 100;
   const adv = rs.titleFontAdv || {};
   return {
     uuid: id,
@@ -1016,9 +1020,9 @@ function makeRCSlide1(label, bodyText, rs = {}) {
   };
 
   const bx = rs.rcBodyX ?? rs.bodyX ?? 0;
-  const by = rs.rcBodyY ?? rs.bodyY ?? 729.98;
+  const by = rs.rcBodyY ?? rs.bodyY ?? 0;
   const bw = rs.rcBodyW ?? rs.bodyW ?? rs.canvasW ?? 1920;
-  const bh = rs.rcBodyH ?? rs.bodyH ?? 350.02;
+  const bh = rs.rcBodyH ?? rs.bodyH ?? 100;
   const bodyYOff = bodyAdv.yOffset ?? 0;
   const spans = bodyText ? [{ text: bodyText }] : [];
   const bodyRtf = rtf.rtfBody(spans, bodyStyle);
@@ -1032,7 +1036,7 @@ function makeRCSlide1(label, bodyText, rs = {}) {
         titleH: titleStyle.titleH,
         titleAutoGap: rs.rcTitleAutoGap ?? rs.titleAutoGap,
       })
-    : (rs.rcTitleY ?? rs.titleY ?? 880);
+    : (rs.rcTitleY ?? rs.titleY ?? 0);
   return [
     makeSlot(makeLiveElement(rs), { info: 2 }),
     makeSlot(makeTitleElement({ reference: label, titleY }, titleStyle)),
@@ -1126,7 +1130,7 @@ function makeQueueElement(labels, rs = {}) {
   return {
     uuid: id,
     name: 'queue',
-    bounds: bounds(rs.queueX ?? 0, rs.queueY ?? 0, rs.queueW ?? 400, rs.queueH ?? 1080),
+    bounds: bounds(rs.queueX ?? 0, rs.queueY ?? 0, rs.queueW ?? 100, rs.queueH ?? 100),
     opacity: 1,
     path: RECT_PATH,
     fill: { color: rs.cFill70 || { ...hexToColor('#2196f2'), alpha: 0.7 } },
@@ -1368,9 +1372,9 @@ function buildBlankCue(spec, rs) {
 function buildScriptureCues(spec, rs) {
   // Per-slide body bounds override spec values take precedence over scheme defaults
   const bx = spec.bodyX ?? rs.bodyX ?? 0;
-  const by = rs.bodyY ?? 729.98;
+  const by = rs.bodyY ?? 0;
   const bw = spec.bodyW ?? rs.bodyW ?? rs.canvasW ?? 1920;
-  const bh = rs.bodyH ?? 350.02;
+  const bh = rs.bodyH ?? 100;
   const bodyYOff = rs.bodyFontAdv?.yOffset ?? 0;
 
   // Build combined span array across all bodies for slide notes (full verse)
@@ -1394,7 +1398,7 @@ function buildScriptureCues(spec, rs) {
     // Auto Title Y: estimate from line count if enabled; otherwise use scheme titleY directly
     const computedTitleY = rs.autoTitleY
       ? estimateTitleY(displayBody, bw, rs)
-      : (rs.titleY ?? 880);
+      : (rs.titleY ?? 0);
     const titleEl = makeTitleElement({ reference: spec.reference, titleY: computedTitleY }, rs);
     const bodyEl  = makeBodyElement({ x: bx, y: by + bodyYOff, w: bw, h: bh, rtfData: bodyRtf, charCount: plainBody.length, spans: displayBody }, rs);
     const gradEl  = makeGradientElement(rs);
@@ -1441,9 +1445,9 @@ function buildScriptureCues(spec, rs) {
  */
 function buildPointCues(spec, rs) {
   const bx = spec.bodyX ?? rs.pointX ?? rs.bodyX ?? 0;
-  const by = rs.pointY ?? rs.bodyY ?? 729.98;
+  const by = rs.pointY ?? rs.bodyY ?? 0;
   const bw = spec.bodyW ?? rs.pointW ?? rs.bodyW ?? rs.canvasW ?? 1920;
-  const bh = rs.pointH ?? rs.bodyH ?? 350.02;
+  const bh = rs.pointH ?? rs.bodyH ?? 100;
   const boldYOff = rs.pointFontAdv?.yOffset ?? rs.boldFontAdv?.yOffset ?? 0;
 
   if (spec.mode === 'revealing') {
