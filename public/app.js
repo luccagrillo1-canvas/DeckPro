@@ -2,11 +2,11 @@
 
 // ─── Version & Changelog ──────────────────────────────────────────────────────
 
-const APP_VERSION = '4.7.19';
+const APP_VERSION = '4.8.0';
 
 const CHANGELOG = [
   {
-    version: '4.7.19',
+    version: '4.8.0',
     date: '2026-07-09',
     changes: [
       'The Help guide is now a full user manual. Rewrote it end to end into 22 sections covering everything: getting started, a map of the whole interface, every slide type and its options, scripture & Bible lookup, points and automatic line-breaking, blank/image/custom slides, slide notes & blank-before, per-slide overrides, the response card, the entire palette system (Global → Palette → Custom, Text/Layout/Motion/Macros/Stage/Response-Card tabs, LED-wall inheritance), Fit Width, the deck library, the export flow, Pro7 & machine setup, preferences, and troubleshooting — plus a full keyboard-shortcut list and a technical reference appendix (file format, RTF, the build pipeline, style resolution, Fit Width internals, tests) for developers. Added a search box that finds any term across the whole guide, tip/warning callouts, numbered walkthroughs, and cleaner formatting throughout. Open it from ··· → DeckPro Guide.',
