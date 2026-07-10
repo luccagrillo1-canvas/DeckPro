@@ -722,6 +722,78 @@ header h1:hover { opacity: .8; }
 .help-shortcuts-group td { padding-top: 14px; padding-bottom: 4px; font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); border-top: none !important; }
 .help-shortcuts-group:first-child td { padding-top: 0; }
 
+/* Guide search box in the header */
+.help-modal-hdr { gap: 12px; }
+.help-search {
+  flex: 1;
+  max-width: 260px;
+  margin-left: auto;
+  padding: 5px 10px;
+  font-size: 12.5px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+}
+.help-search:focus { outline: none; border-color: var(--blue); }
+.help-no-results {
+  padding: 22px 24px;
+  font-size: 13px;
+  color: var(--muted);
+}
+/* When searching, matching sections are shown stacked via inline display:block */
+.help-body.help-searching .help-section { border-bottom: 1px solid var(--border); padding-bottom: 16px; margin-bottom: 16px; }
+.help-body.help-searching .help-section:last-child { border-bottom: none; }
+
+/* Manual content blocks */
+.help-lead { font-size: 13.5px !important; color: var(--text) !important; }
+.help-muted { color: var(--muted) !important; font-size: 12px !important; }
+.help-section ol.help-steps {
+  margin: 0 0 10px; padding-left: 20px;
+  display: flex; flex-direction: column; gap: 6px;
+}
+.help-section ol.help-steps li {
+  font-size: 13px; color: var(--text); line-height: 1.5; padding-left: 2px;
+}
+/* Info callout uses the palette's "inheriting" sky-blue so it reads as info and
+   stays distinct from the orange app accent; warn callout uses orange. */
+.help-callout {
+  background: rgba(14,165,233,.10);
+  border: 1px solid rgba(14,165,233,.32);
+  border-radius: 8px;
+  padding: 11px 14px;
+  margin: 14px 0;
+  font-size: 12.5px; color: var(--text); line-height: 1.55;
+}
+.help-callout strong { color: var(--text); }
+.help-callout ul { margin: 8px 0 0; }
+.help-callout-warn {
+  background: rgba(234,88,12,.12);
+  border-color: rgba(234,88,12,.42);
+}
+.help-pill {
+  display: inline-block; padding: 0 7px; border-radius: 9px;
+  font-size: 11px; font-weight: 700; line-height: 1.7;
+}
+.help-pill-blue   { background: rgba(14,165,233,.16); color: #38bdf8; }
+.help-pill-orange { background: rgba(234,88,12,.16);  color: #fb923c; }
+.help-section p.help-pre, .help-pre {
+  font-family: 'SF Mono', Menlo, monospace;
+  font-size: 12px; color: var(--text);
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: 6px; padding: 8px 10px; margin: 6px 0 10px;
+  white-space: pre-wrap; word-break: break-word;
+}
+.help-section code {
+  font-family: 'SF Mono', Menlo, monospace;
+  font-size: 11.5px;
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: 4px; padding: 1px 5px;
+  color: var(--text);
+}
+.help-section h3 { margin-top: 4px; }
+.help-section ul li strong, .help-section ol li strong { color: var(--text); }
+
 .btn-changelog {
   background: rgba(255,255,255,.18);
   border: 1px solid rgba(255,255,255,.3);

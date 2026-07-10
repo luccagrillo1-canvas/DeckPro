@@ -2,9 +2,16 @@
 
 // ─── Version & Changelog ──────────────────────────────────────────────────────
 
-const APP_VERSION = '4.7.18';
+const APP_VERSION = '4.7.19';
 
 const CHANGELOG = [
+  {
+    version: '4.7.19',
+    date: '2026-07-09',
+    changes: [
+      'The Help guide is now a full user manual. Rewrote it end to end into 22 sections covering everything: getting started, a map of the whole interface, every slide type and its options, scripture & Bible lookup, points and automatic line-breaking, blank/image/custom slides, slide notes & blank-before, per-slide overrides, the response card, the entire palette system (Global → Palette → Custom, Text/Layout/Motion/Macros/Stage/Response-Card tabs, LED-wall inheritance), Fit Width, the deck library, the export flow, Pro7 & machine setup, preferences, and troubleshooting — plus a full keyboard-shortcut list and a technical reference appendix (file format, RTF, the build pipeline, style resolution, Fit Width internals, tests) for developers. Added a search box that finds any term across the whole guide, tip/warning callouts, numbered walkthroughs, and cleaner formatting throughout. Open it from ··· → DeckPro Guide.',
+    ],
+  },
   {
     version: '4.7.18',
     date: '2026-07-09',
@@ -12602,80 +12609,355 @@ async function installUpdate() {
 
 // ─── Help ─────────────────────────────────────────────────────────────────────
 
-function helpSections() { return [
+function helpSections() {
+  const D1 = dn('mainScreen'), D2 = dn('ledWall'), D3 = dn('monitor');
+  return [
   {
-    id: 'overview',
-    label: 'Overview',
+    id: 'start',
+    label: 'Getting Started',
     html: `
-      <h3>What is DeckPro?</h3>
-      <p>DeckPro builds ProPresenter 7 slide decks for Canvas Church messages. Fill in your slides, hit <strong>Export</strong>, and a ready-to-use <code>.pro</code> file drops directly into ProPresenter — props included, ${dn('monitor').toLowerCase()} ready.</p>
-      <h4>Workflow</h4>
-      <ul>
-        <li>Set the <strong>Series</strong>, <strong>Title</strong>, and <strong>Date</strong> in the header</li>
-        <li>Add slides using the sidebar buttons (Scripture, Point, Blank, Image)</li>
-        <li>Fill in content — body text, reference, bullets</li>
-        <li>Close ProPresenter, hit <strong>Export</strong>, then reopen Pro7</li>
-      </ul>
-      <p style="color:var(--muted);font-size:12px">See the <strong>Shortcuts</strong> tab for all keyboard shortcuts.</p>
+      <h3>What DeckPro is</h3>
+      <p class="help-lead">DeckPro builds ready-to-run ProPresenter&nbsp;7 message decks for Canvas Church. You fill in slides in a simple form, press <strong>Export</strong>, and a complete <code>.pro</code> file — with all its props, macros, stage-layout triggers and ${D3.toLowerCase()} notes — drops straight into ProPresenter. The goal is that anyone on the team can build the weekly deck, not just the one person who knows Pro7 inside out.</p>
+
+      <h4>The core loop</h4>
+      <ol class="help-steps">
+        <li>Set the <strong>Series</strong>, <strong>Title</strong> and <strong>Date</strong> in the header bar.</li>
+        <li>Add slides from the left sidebar — Scripture, Point, Blank, Image, Custom.</li>
+        <li>Fill in each slide: body text, reference, bullets. Use Bible Lookup to auto-fill verses.</li>
+        <li>Pick a <strong>Palette</strong> (visual style) if you want something other than the default.</li>
+        <li>Press <strong>Export</strong> (<span class="help-kbd">⌘E</span>). DeckPro writes the deck and props into ProPresenter.</li>
+        <li>Open ProPresenter — your deck is there, ready to present.</li>
+      </ol>
+
+      <div class="help-callout">
+        <strong>First time on a new computer?</strong> Open <strong>···&nbsp;→&nbsp;Machine Setup</strong> and walk through the cards: connect to Pro7, point at your Pro7 folder, add a Bible key, and import your macros / stage layouts. You only do this once per machine. See <em>Pro7 &amp; Machine Setup</em>.
+      </div>
+
+      <h4>Your work is always saved</h4>
+      <p>The deck you're editing autosaves continuously — the header shows <strong>“saved.”</strong> Every deck also lives in the <strong>Deck Library</strong> (the <strong>Decks</strong> button) in a local database with daily backups. Nothing lives only in the browser.</p>
+
+      <p class="help-muted">New to a specific area? Jump to a section above, or use the search box to find any term across the whole guide.</p>
     `,
   },
   {
-    id: 'slides',
-    label: 'Slide Types',
+    id: 'interface',
+    label: 'The Interface',
     html: `
-      <h4>Scripture</h4>
-      <p>Verse or passage slide. Enter the reference and body text, or use Bible Lookup to auto-fill. Split long passages across two slides with <strong>+ Split into another slide</strong>. Each scripture creates a matching prop for the ${dn('ledWall')}.</p>
-      <p>Slide Notes embed the full verse text (even across splits) — feeds the ${dn('monitor')} in Pro7 without needing off-screen elements.</p>
-      <h4>Point</h4>
-      <p>Message point slide. Two modes:</p>
+      <h3>A map of the window</h3>
+      <p>DeckPro has four zones: the header bar, the left sidebar, the center editor, and the right reference panel.</p>
+
+      <h4>Header bar (top)</h4>
       <ul>
-        <li><strong>Single</strong> — one static prop shown throughout</li>
-        <li><strong>Revealing</strong> — one prop per bullet, each revealing progressively; supports <span class="help-kbd">⌘B</span> bold within bullets</li>
+        <li><strong>Series / Title / Date / Speaker</strong> — deck identity; drives the export filename.</li>
+        <li><strong>saved</strong> indicator — confirms the current deck is written to the library.</li>
+        <li><strong>Connection dot</strong> — green when DeckPro is talking to a running ProPresenter.</li>
+        <li><strong>Undo / Redo</strong> — <span class="help-kbd">⌘Z</span> / <span class="help-kbd">⌘⇧Z</span>.</li>
+        <li><strong>Decks</strong> — opens the Deck Library.</li>
+        <li><strong>Export</strong> — builds and delivers the deck to Pro7 (<span class="help-kbd">⌘E</span>).</li>
+        <li><strong>···</strong> — the more menu (see below).</li>
       </ul>
-      <h4>Blank</h4>
-      <p>Black/empty slide. Toggle <strong>Blank Before</strong> on scripture or point slides to auto-insert a blank before them — the blank's slide notes auto-populate from the upcoming slide content.</p>
-      <h4>Image</h4>
-      <p>Slide with a background image referenced from your Pro7 media library.</p>
-      <h4>Response Card</h4>
-      <p>Auto-appended 6-slide package when enabled: Blank → RC → R1 → R2 → R3 → Hold. Triggers stage layout changes automatically on the Blank and RC slides.</p>
+
+      <h4>Left sidebar</h4>
+      <ul>
+        <li><strong>Add Item</strong> — Scripture, Point, Blank, Image, Custom buttons (<span class="help-kbd">⌘1</span>–<span class="help-kbd">⌘5</span>).</li>
+        <li><strong>Deck</strong> — the ordered list of slides. <strong>Start of Notes</strong> and <strong>End of Notes</strong> are fixed bookends; everything between them you can drag to reorder. The <strong>Blanks</strong> control manages blank slides. Click a slide to edit it.</li>
+      </ul>
+
+      <h4>Center editor</h4>
+      <p>The form for the selected slide. Its fields change with the slide type. This is where you type body text, references, bullets, and open the per-slide Overrides.</p>
+
+      <h4>Right panel — Outline &amp; ${D3}</h4>
+      <p>Toggle it with the <strong>Outline</strong> button. Two tabs: a live <strong>Outline</strong> of the whole message, and <strong>${D3}</strong> where you can drop a PDF or paste a Google Docs link to keep your script alongside while you build. Drag its left edge to resize.</p>
+
+      <h4>The ··· more menu</h4>
+      <ul>
+        <li><strong>DeckPro Guide</strong> — this manual.</li>
+        <li><strong>What's New</strong> — the changelog.</li>
+        <li><strong>Palettes</strong> — the visual-style editor (also “Schemes”).</li>
+        <li><strong>Preferences</strong> — app settings.</li>
+        <li><strong>Machine Setup</strong> — one-time per-computer setup.</li>
+        <li><strong>Export History</strong> — recent exports, with reveal-in-Finder.</li>
+        <li><strong>Export Diagnostic Bundle</strong> — a troubleshooting snapshot.</li>
+        <li><strong>Check for Updates / Rollback</strong> — update or revert the app.</li>
+        <li><strong>Theme</strong> — light / dark (<span class="help-kbd">⌘⇧D</span>).</li>
+      </ul>
     `,
   },
   {
-    id: 'bible',
-    label: 'Bible Lookup',
+    id: 'deck',
+    label: 'Building a Deck',
     html: `
-      <h3>Bible Lookup</h3>
-      <p>Scripture slides include a lookup tool powered by API.Bible. Enter your API key once in <strong>Preferences</strong> — saved and hidden like a password.</p>
-      <h4>Using It</h4>
+      <h3>Deck identity &amp; the filename</h3>
+      <p>The header fields become the export filename:</p>
+      <p class="help-pre">Message_YY.MM.DD_Series_Title</p>
       <ul>
-        <li>Type a reference like <strong>Sirach 38:4</strong> or <strong>Tobit 6:2-4</strong></li>
-        <li>Press <span class="help-kbd">Enter</span> or click <strong>Lookup</strong></li>
-        <li>Body text and title auto-fill from the API</li>
+        <li><strong>Date</strong> → <code>YY.MM.DD</code> (2-digit year).</li>
+        <li><strong>Series</strong> and <strong>Title</strong> → PascalCase tokens (spaces and punctuation stripped).</li>
+        <li><strong>QR / Saturday</strong> toggle → appends <code>_SAT</code> and drops the QR image onto blank slides.</li>
       </ul>
+
+      <h4>Adding &amp; ordering slides</h4>
+      <ul>
+        <li>Add from the sidebar or with <span class="help-kbd">⌘1</span>–<span class="help-kbd">⌘5</span>.</li>
+        <li><strong>Drag</strong> slides in the Deck list to reorder. <strong>Start</strong> and <strong>End</strong> stay pinned.</li>
+        <li>Click any slide to open its editor; the queue and props recompute automatically on export.</li>
+      </ul>
+
+      <h4>Start &amp; End</h4>
+      <p>Every deck automatically begins with a <strong>Start</strong> banner and closes with an <strong>End</strong> banner — they carry the Message-Start / logo macros and don't need editing.</p>
+
+      <h4>Speakers</h4>
+      <p>The New Deck dialog offers a speaker dropdown. Add recurring names in <strong>Preferences → Speakers</strong>, or type a new one on the spot.</p>
+
+      <div class="help-callout">
+        <strong>Quotes are auto-tidied.</strong> Curly quotes from Bible sites or Word are normalized to straight quotes as you type <em>and</em> at export, so what you see matches what ships. DeckPro also warns before export if it spots mismatched or unclosed quotes.
+      </div>
+    `,
+  },
+  {
+    id: 'scripture',
+    label: 'Scripture Slides',
+    html: `
+      <h3>Scripture</h3>
+      <p>A verse or passage slide. Enter the reference and body text by hand, or use <strong>Bible Lookup</strong> to fetch it. Each scripture slide also generates a matching prop for the ${D2}, and embeds the full verse text into its <strong>Slide Notes</strong> so it appears on the ${D3} in Pro7.</p>
+
+      <h4>Bible Lookup</h4>
+      <ol class="help-steps">
+        <li>Add a free API key in <strong>Preferences → Bible Lookup</strong> (get one at <strong>api.bible</strong>) and click <strong>Fetch</strong> to load your translations.</li>
+        <li>Type a reference — <code>John 13:35</code>, <code>2 Corinthians 3:18</code>, <code>Tobit 6:2-4</code>.</li>
+        <li>Press <span class="help-kbd">Enter</span> or click <strong>Lookup</strong>. Body and reference fill in automatically.</li>
+      </ol>
+
       <h4>Translations</h4>
       <ul>
-        <li>Set a <strong>Default Translation</strong> in Preferences (NLT recommended for Canvas)</li>
-        <li>Override per-slide using the translation picker next to the reference field</li>
+        <li>Set a <strong>Default Translation</strong> in Preferences (NLT is the Canvas default).</li>
+        <li>Override per slide with the translation picker beside the reference field.</li>
       </ul>
-      <h4>Quote Warnings</h4>
-      <p>DeckPro checks for mismatched curly quotes and unclosed quote marks before exporting — it'll warn you so you can fix them before the deck goes live.</p>
+
+      <h4>Splitting long passages</h4>
+      <p>Use <strong>+ Split into another slide</strong> to break a long passage across two (or more) slides. Each part is its own on-screen slide, but the Slide Notes still carry the <em>full</em> passage so the speaker sees everything on the ${D3}.</p>
+
+      <h4>The reference bar</h4>
+      <p>The reference (e.g. “John 13:35”) renders as the gold title bar above the verse. Its vertical position auto-adjusts to sit just above the body text.</p>
+
+      <h4>Verses (Bible formatting)</h4>
+      <p>The <strong>Verses</strong> button adds verse-number formatting — superscript numbers within the passage. Toggle its visibility in <strong>Preferences → Feature Visibility</strong>.</p>
+
+      <h4>Book-name style</h4>
+      <p>In <strong>Preferences → Book Names</strong>, choose how ambiguous names render — <code>1 Corinthians</code> vs <code>First Corinthians</code>, <code>Psalm</code> vs <code>Psalms</code>, <code>Song of Solomon</code> vs <code>Song of Songs</code>. Applied at export and retroactive to all slides.</p>
     `,
   },
   {
-    id: 'outline',
-    label: 'Outline Panel',
+    id: 'points',
+    label: 'Point Slides',
     html: `
-      <h3>Outline &amp; Speaker Notes Panel</h3>
-      <p>The panel on the right has two tabs:</p>
-      <h4>Outline Tab</h4>
-      <p>Live list of all slides with content — bird's-eye view of the full message flow while editing.</p>
-      <h4>Speaker Notes Tab</h4>
-      <p>Attach your message script as a reference while building. Two ways to load:</p>
+      <h3>Point</h3>
+      <p>A message-point slide. Two modes, chosen with the segmented control:</p>
+
+      <h4>Single</h4>
+      <p>One static point shown throughout — one prop on the ${D2}. Type the point text; use <span class="help-kbd">⌘B</span> to bold an emphasis phrase.</p>
+
+      <h4>Revealing</h4>
+      <p>A building list: one prop per bullet, each revealing the next line progressively while previously-revealed lines stack above (dimmer). Add bullets in the list; bold within any bullet with <span class="help-kbd">⌘B</span>. Set an optional <strong>title</strong> (a dimmed header above the bullets) and a <strong>prop base name</strong> that names the generated prop series.</p>
+
+      <h4>Automatic line breaks</h4>
+      <p>Point text is auto-fit: DeckPro sizes the text box to the content and, for multi-line points, breaks the lines intelligently — preferring to split after punctuation (a comma, colon or period) and never stranding a lone short word or a runt like “and” at the end of a line. A point that fits on one line stays on one line. See <em>Fit Width</em> for the full picture.</p>
+    `,
+  },
+  {
+    id: 'other-slides',
+    label: 'Blank · Image · Custom',
+    html: `
+      <h3>Blank</h3>
+      <p>A black / empty slide. Optionally give it ${D3} text (bold supported). Blanks are also inserted automatically by the <strong>Blank Before</strong> toggle on scripture and point slides — see <em>Slide Notes &amp; Blank Before</em>.</p>
+
+      <h3>Image</h3>
+      <p>A slide with a background image pulled from your Pro7 media library. Give it a label; reference the media by name.</p>
+
+      <h3>Custom</h3>
+      <p>An escape hatch. A Custom slide exports as a <strong>blank slot carrying your label</strong> — a placeholder you finish by hand in ProPresenter (a video, a special graphic, anything DeckPro doesn't model). It still holds its place in the deck order, queue, and any macro/stage triggers you attach.</p>
+    `,
+  },
+  {
+    id: 'notes',
+    label: 'Notes & Blank Before',
+    html: `
+      <h3>Slide Notes → the ${D3}</h3>
+      <p>DeckPro writes each slide's content into its ProPresenter <strong>Slide Notes</strong>, which drive the ${D3}. Scripture slides embed the full passage (even across splits) so the speaker always sees the whole verse — no fragile off-screen elements required.</p>
+
+      <h3>Blank Before</h3>
+      <p>Toggle <strong>Blank Before</strong> on a scripture or point slide to auto-insert a black slide immediately ahead of it. The inserted blank's notes <strong>auto-populate from the upcoming slide</strong>, so the ${D3} previews what's coming while the screen is dark.</p>
       <ul>
-        <li><strong>Drop a PDF</strong> — drag any PDF onto the drop zone</li>
-        <li><strong>Google Drive link</strong> — paste a share link from Google Docs or Drive (must be shared "Anyone with the link can view" — Google Docs auto-converts to PDF)</li>
+        <li>Optionally type your own text to show <em>during</em> the blank.</li>
+        <li>Toggle <strong>Show prop during blank</strong> to keep the ${D2} prop up while the main screen is black.</li>
       </ul>
-      <p>Use zoom controls to scale. Drag the left edge to resize the panel. Toggle with the <strong>Outline</strong> button in the top-right.</p>
+      <p class="help-muted">Hide the Blank Before or ${D3} fields in <strong>Preferences → Feature Visibility</strong> for a simpler editor.</p>
+    `,
+  },
+  {
+    id: 'overrides',
+    label: 'Per-Slide Overrides',
+    html: `
+      <h3>Overrides</h3>
+      <p>Each content slide has an <strong>Overrides</strong> disclosure for one-off tweaks that don't belong to the whole palette:</p>
+      <ul>
+        <li><strong>Prop Name</strong> — rename the generated prop / its ${D2} match name.</li>
+        <li><strong>Transition Override</strong> — a specific transition for this slide's main-screen change, instead of the palette default.</li>
+        <li><strong>Prop Transition Override</strong> — same, for the ${D2} prop.</li>
+        <li><strong>Macro Override</strong> — fire a specific configured macro on this slide.</li>
+        <li><strong>Stage Layout</strong> — trigger a specific stage-display layout when this slide comes up.</li>
+      </ul>
+      <p class="help-muted">Any override row can be hidden via <strong>Preferences → Feature Visibility → Overrides</strong>. Palette-wide macros and stage layouts (which fire by slide <em>type</em>) live in the Palette editor instead — see <em>Macros &amp; Stage</em>.</p>
+    `,
+  },
+  {
+    id: 'responsecard',
+    label: 'Response Card',
+    html: `
+      <h3>Response Card</h3>
+      <p>Enable <strong>Response Card</strong> for a deck and DeckPro appends the full response-card package before the End slide — the hold slide, the decision prompt, and Response 1 / 2 / 3, each linked to the <strong>Response Card</strong> prop on the ${D2}.</p>
+      <ul>
+        <li>The hold and card slides automatically trigger the <strong>Response Card stage layout</strong> and the Message-Blank macro, so your stage display and lighting switch on cue.</li>
+        <li>The three response lines come from the deck's Response Card fields; everything else (positions, fonts) is defined in the palette's <strong>Response Card</strong> tab — see <em>LED Wall &amp; Inheritance</em>.</li>
+      </ul>
+    `,
+  },
+  {
+    id: 'palettes',
+    label: 'Palettes: Overview',
+    html: `
+      <h3>Palettes &amp; the three tiers</h3>
+      <p>A <strong>palette</strong> defines every visual aspect of the generated slides — fonts, sizes, colours, positions, animations, macros, stage layouts. Open the editor from <strong>···&nbsp;→&nbsp;Palettes</strong>. Styling cascades through three tiers, broad to specific:</p>
+      <ul>
+        <li><strong>Global</strong> — the house-style baseline, shared by every palette. Read-only here (shown as <strong>◈&nbsp;Global</strong> in the palette picker); you change it by pushing a value up from a palette.</li>
+        <li><strong>Palette</strong> — base fonts and colours for this palette, cascading to all its fields.</li>
+        <li><strong>Custom</strong> — per-field overrides on top (a specific size, colour, position, transition…).</li>
+      </ul>
+
+      <h4>Reading the colours</h4>
+      <p>Throughout the editor, <span class="help-pill help-pill-blue">blue</span> means a value is <strong>inheriting</strong> (from Global, or from Display&nbsp;1), and <span class="help-pill help-pill-orange">orange</span> means it's a <strong>custom override</strong>. Untouched fields inherit; the moment you change one it turns orange.</p>
+
+      <h4>Managing values (right-click a cell)</h4>
+      <ul>
+        <li><strong>Reset to Global</strong> — drop a custom override and inherit again.</li>
+        <li><strong>Push to Global</strong> — send this value up so every inheriting palette adopts it.</li>
+        <li><strong>Reset to Display 1</strong> — hand an ${D2} row back to inheriting the main screen (see <em>LED Wall</em>).</li>
+      </ul>
+
+      <h4>Palette toolbar</h4>
+      <ul>
+        <li><strong>New</strong> — a fresh palette that inherits everything from Global.</li>
+        <li><strong>Duplicate</strong> — copy the current palette's exact values.</li>
+        <li><strong>Delete</strong>, <strong>Lock</strong> (🔓/🔒 — protect a palette from edits).</li>
+        <li><strong>Import from Pro7</strong> — read styling out of an existing Pro7 file.</li>
+        <li><strong>Test Palette</strong> — export a sample deck to see the palette on real slides.</li>
+      </ul>
+
+      <h4>Tabs</h4>
+      <p><strong>Palette</strong> (base fonts/colours) · <strong>Text</strong> · <strong>Layout</strong> · <strong>Motion</strong> · <strong>Macros</strong> · <strong>Stage</strong> · <strong>Response Card</strong>. Each is covered in the next sections.</p>
+    `,
+  },
+  {
+    id: 'text-layout',
+    label: 'Text & Layout',
+    html: `
+      <h3>Text tab</h3>
+      <p>A grid of every text element, grouped by output. Each row sets font family &amp; style, colour, size, <strong>B</strong>/<strong>I</strong>/<strong>U</strong>/strikethrough, capitalization, scale behaviour, horizontal &amp; vertical alignment, plus advanced styling (character spacing, line height, paragraph spacing, margins, stroke, shadow).</p>
+      <ul>
+        <li><strong>${D1} (main screen):</strong> Body, Bold (emphasis), Title, Point, RC Body, RC Title.</li>
+        <li><strong>${D2} (LED wall props):</strong> Body, Bold, Title, Point, Point Stacked.</li>
+        <li><strong>${D3}:</strong> Slide Notes, Notes Alt.</li>
+        <li><strong>Utility:</strong> Start/End banner, Live badge, Queue sidebar.</li>
+      </ul>
+      <p class="help-muted">Right-click any cell for Reset / Push / Reset-to-Display-1. Blue cells inherit, orange cells override.</p>
+
+      <h3>Layout tab</h3>
+      <p>The X / Y / W / H bounds of every element, on both canvases — the main <strong>1920×1080</strong> screen and the <strong>${D2}</strong> prop canvas (3200×1280).</p>
+      <ul>
+        <li><strong>Alignment buttons</strong> — six per row (left/center/right, top/middle/bottom). Click one to snap X or Y to that canvas position; the active one lights orange. Full-width elements show “center” active.</li>
+        <li><strong>Auto&nbsp;Y</strong> — on the Title and Prop Title rows, calculates Y automatically to sit just above the body box (body&nbsp;Y − title&nbsp;H − gap). Uncheck for a fixed Y.</li>
+      </ul>
+      <div class="help-callout">
+        <strong>Fit Width interacts with Layout.</strong> On scripture and point slides, DeckPro can shrink the body box to fit the text — but never wider than the Body width you set here. That width is the ceiling. See <em>Fit Width</em>.
+      </div>
+    `,
+  },
+  {
+    id: 'motion',
+    label: 'Motion',
+    html: `
+      <h3>Motion tab</h3>
+      <p>Two sub-tabs control animation.</p>
+      <h4>Transitions</h4>
+      <p>The default transition <strong>type</strong> and <strong>duration</strong> for the main screen and, separately, for the ${D2} prop. Individual slides can override these in their Overrides section.</p>
+      <h4>Build Order</h4>
+      <p>Per slide type (Content, Point, Blank, Start/End), the order and animation in which a slide's elements build in or out — e.g. scripture's title, body and gradient fading together after a delay. Each build tab holds its own ordered rows.</p>
+      <p class="help-muted">Like everything else, Motion values inherit Global by default (blue) until you override them (orange), with Reset / Push on each.</p>
+    `,
+  },
+  {
+    id: 'macros-stage',
+    label: 'Macros & Stage',
+    html: `
+      <h3>Macros tab</h3>
+      <p>Per-palette Pro7 macro triggers. Click <strong>+ Add Macro</strong> to import macros live from ProPresenter, then give each one <strong>triggers</strong>:</p>
+      <ul>
+        <li><strong>Slide-type chips</strong> — fire the macro on every Scripture / Point / Blank / Image / Custom slide.</li>
+        <li><strong>Slide&nbsp;#</strong> position triggers — fire on specific slide positions (type a number, press Enter).</li>
+      </ul>
+
+      <h3>Stage tab</h3>
+      <p>Per-palette stage-display layouts, same model as Macros. <strong>+ Add Stage Display</strong> picks any Pro7 stage layout; assign it slide-type and/or Slide&nbsp;# triggers. The <strong>Stage Screen</strong> row at the top identifies the physical display these layouts target.</p>
+
+      <div class="help-callout">
+        <strong>Whole-list inheritance.</strong> A palette's Macros / Stage lists inherit Global's list live until you edit them — the first change forks a private copy (an orange “Custom” badge appears). <strong>Reset to Global</strong> returns to inheriting; <strong>Push to Global</strong> shares your list with every inheriting palette.
+      </div>
+      <p class="help-muted">Import your machine's macros and layouts once via <strong>···&nbsp;→&nbsp;Machine Setup</strong>.</p>
+    `,
+  },
+  {
+    id: 'ledwall',
+    label: 'LED Wall & Inheritance',
+    html: `
+      <h3>${D2} inherits ${D1}</h3>
+      <p>By default the ${D2} (Display&nbsp;2) follows the main screen. Every ${D2} text style — Body, Bold, Title, Point — plus the <strong>Response Card</strong> text (RC Body → Body, RC Title → Title) starts out <strong>inheriting its main-screen counterpart, live</strong>. Style the main screen and the LED wall follows automatically.</p>
+      <ul>
+        <li>Change any ${D2} cell and it becomes its own <strong>override</strong> (orange) — keeping whatever it was inheriting as the starting point, so nothing jumps.</li>
+        <li>Right-click an overridden ${D2} row → <strong>Reset to Display 1</strong> to hand it back to inheriting.</li>
+        <li>Fonts and sizes already inherited when left blank; this covers the advanced styling too (colour, italic/underline, alignment, margins, stroke, shadow).</li>
+      </ul>
+
+      <h3>Response Card tab</h3>
+      <p>Defines the elements on the ${D2} response card (Display&nbsp;2): a Title, the Decision prompt, and Response 1–3, plus any custom elements. Each has an editable name (its Pro7 object name), text, position (X/Y/W/H) and style. The Decision and Response 1–3 <em>text</em> comes from the deck's Response Card item; everything else is set here.</p>
+      <p class="help-muted">Existing palettes keep their current ${D2} look untouched — only new palettes start out inheriting. Point Stacked (the dimmed revealed bullets) has no main-screen twin, so it stays independent.</p>
+    `,
+  },
+  {
+    id: 'fitwidth',
+    label: 'Fit Width',
+    html: `
+      <h3>What Fit Width does</h3>
+      <p>Long body text stretched edge-to-edge is hard to read. <strong>Fit Width</strong> shrinks the text box to fit the content and chooses the best place to break each line — so short lines aren't stretched and words don't wrap awkwardly.</p>
+
+      <h4>How it decides</h4>
+      <p>Rather than one rigid rule, DeckPro tries many box widths, reads how each one breaks the text into lines, and scores every option. Lower score wins. It prefers:</p>
+      <ul>
+        <li>Fewer lines.</li>
+        <li>No <strong>orphan</strong> — a lone short word stranded on the last line.</li>
+        <li>Not splitting a <strong>bold/emphasis phrase</strong> across two lines.</li>
+        <li>Even line widths.</li>
+        <li>For points: breaking <strong>after punctuation</strong> (. ! ? … : ;&nbsp;,) rather than mid-clause, and not ending a line on a runt word (“and”, “the”, “through”).</li>
+      </ul>
+
+      <h4>Scripture vs. Point</h4>
+      <ul>
+        <li><strong>Scripture</strong> — toggle the <strong>Fit Width</strong> button on the slide. <strong>Strip</strong> (remove newlines) is the mutually-exclusive alternative.</li>
+        <li><strong>Point</strong> — always fit automatically; for points, DeckPro can insert real line breaks to split cleanly after punctuation (e.g. one line per comma). A point that fits on one line stays on one line — breaks are never forced just because punctuation exists.</li>
+      </ul>
+
+      <div class="help-callout">
+        <strong>The width cap.</strong> Fit Width can only ever <em>shrink</em> the box — never grow it past the Body width set in the palette's Layout tab. Widen the ceiling there if you need more room.
+      </div>
     `,
   },
   {
@@ -12683,84 +12965,120 @@ function helpSections() { return [
     label: 'Deck Library',
     html: `
       <h3>Deck Library</h3>
-      <p>The <strong>Decks</strong> button in the header opens your library — every deck you save lives in a local database with daily automatic backups (no more browser storage).</p>
-      <h4>Organizing</h4>
+      <p>The <strong>Decks</strong> button opens your library. Every deck lives in a local database with automatic daily backups.</p>
+      <h4>Finding decks</h4>
       <ul>
-        <li><strong>Search</strong> by series, title, speaker, or date</li>
-        <li><strong>Filters</strong> — Decks, Templates, Archived, Trash</li>
-        <li><strong>Sort</strong> by date, series (grouped), or last updated</li>
+        <li><strong>Search</strong> by series, title, speaker or date.</li>
+        <li><strong>Filters</strong> — Decks, Templates, Archived, Trash.</li>
+        <li><strong>Sort</strong> by date, series (grouped) or last updated.</li>
       </ul>
-      <h4>Deck Actions (⋯ menu)</h4>
+      <h4>Deck actions (⋯ on a deck)</h4>
       <ul>
-        <li><strong>Edit Info</strong> — series, title, speaker, date, QR toggle</li>
-        <li><strong>Duplicate</strong> — copy a deck as a starting point</li>
-        <li><strong>Save as Template</strong> — reuse a deck structure; pick it under "Start from" when creating a new deck</li>
-        <li><strong>Archive</strong> — tuck away old decks without deleting</li>
-        <li><strong>Delete</strong> — moves to Trash; restore or delete forever from there</li>
+        <li><strong>Edit Info</strong> — series, title, speaker, date, QR toggle.</li>
+        <li><strong>Duplicate</strong> — start a new deck from a copy.</li>
+        <li><strong>Save as Template</strong> — reuse a structure; pick it under “Start from” when creating a deck.</li>
+        <li><strong>Archive</strong> — tuck away without deleting.</li>
+        <li><strong>Delete</strong> — moves to Trash; restore or delete forever from there.</li>
       </ul>
-      <h4>Status at a Glance</h4>
-      <p>Each deck shows when it was last exported and whether it has been edited since — so you always know what is current in Pro7.</p>
-      <h4>Sharing Across Computers</h4>
-      <p>In <strong>Preferences → Deck Library</strong>, point the library location at an iCloud Drive, Dropbox, or shared folder. Another computer pointing at the same folder joins the same library. If the same deck is edited in two places, DeckPro detects the conflict and asks which version to keep.</p>
+      <h4>Status at a glance</h4>
+      <p>Each deck shows when it was last exported and whether it's been edited since — so you always know what's actually live in Pro7.</p>
+      <h4>Sharing across computers</h4>
+      <p>In <strong>Preferences → Deck Library</strong>, point the library at an iCloud Drive, Dropbox or shared folder. Another Mac pointing at the same folder joins the same library. If the same deck is edited in two places, DeckPro detects the conflict and asks which version to keep.</p>
     `,
   },
   {
-    id: 'generate',
+    id: 'export',
     label: 'Exporting',
     html: `
-      <h3>Exporting the Deck</h3>
-      <p>Click <strong>Export</strong> in the top-right (or <span class="help-kbd">⌘E</span>). DeckPro always exports directly to Pro7 — writes the deck to your ProPresenter library and updates your Props panel in one step.</p>
-      <h4>Before You Export</h4>
+      <h3>Exporting to Pro7</h3>
+      <p>Press <strong>Export</strong> (<span class="help-kbd">⌘E</span>). DeckPro always writes directly into ProPresenter — the deck into your library and all its props into Pro7's props configuration, in one step.</p>
+
+      <div class="help-callout help-callout-warn">
+        <strong>ProPresenter must not overwrite the export.</strong> Pro7 rewrites its props config when it quits, which would undo DeckPro's write. Two ways to stay safe:
+        <ul>
+          <li><strong>Auto-manage</strong> (recommended) — in Preferences, turn on “Auto-manage ProPresenter on export.” DeckPro quits Pro7, writes everything, and relaunches it for you.</li>
+          <li><strong>Manual</strong> — close ProPresenter yourself first; DeckPro warns you if it's still open, then reopen it after.</li>
+        </ul>
+      </div>
+
+      <h4>What gets written</h4>
       <ul>
-        <li><strong>Close ProPresenter first</strong> — Pro7 must not be running; it overwrites the props config on quit and would undo the export</li>
-        <li>DeckPro will warn you if Pro7 is still open</li>
-        <li>After exporting, open ProPresenter — your deck and props will be there</li>
+        <li>A <code>Message_YY.MM.DD_Series_Title.pro</code> presentation in your chosen Pro7 library.</li>
+        <li>All prop slots in Pro7's Configuration/Props — active slides get real content, unused slots get empty placeholders.</li>
+        <li>A <strong>DeckPro</strong> collection folder in the Props panel, kept in sync. Your other prop collections are preserved byte-for-byte.</li>
       </ul>
-      <h4>What Gets Exported</h4>
-      <ul>
-        <li>A <code>Message_YY.MM.DD_Series_Title.pro</code> presentation file in your Pro7 library</li>
-        <li>All 50 prop slots written to Pro7's Configuration/Props — active slides get real content, unused slots get empty placeholders</li>
-        <li>A <strong>DeckPro</strong> collection folder in Pro7's Props panel, kept in sync automatically</li>
-        <li>Your other prop collections (folders) are preserved byte-for-byte</li>
-      </ul>
-      <h4>Export History</h4>
-      <p>Recent exports are logged in the <strong>···</strong> menu. Click the folder icon next to any entry to reveal it in Finder.</p>
-    `,
-  },
-  {
-    id: 'schemes',
-    label: 'Palettes',
-    html: `
-      <h3>Palettes</h3>
-      <p>A palette defines every visual aspect of the generated slides. Three levels cascade from broad to specific: <strong>Global</strong> (house style baseline) → <strong>Palette</strong> (base colors &amp; fonts) → <strong>Custom</strong> (per-field overrides). Create multiple palettes for different looks or screen configurations.</p>
-      <h4>Tabs</h4>
-      <ul>
-        <li><strong>Palette</strong> — base font slots and palette colors that cascade down to all fields</li>
-        <li><strong>Custom: Text</strong> — per-field font, size, and advanced styling (color, stroke, shadow, alignment, spacing)</li>
-        <li><strong>Custom: Layout</strong> — X/Y/W/H bounds for every element on both the main canvas (1920×1080) and prop canvas</li>
-        <li><strong>Custom: Motion</strong> — build orders and default transitions per slide type</li>
-      </ul>
-      <h4>Layout Alignment Buttons</h4>
-      <p>Each layout row has 6 alignment buttons — 3 horizontal (left/center/right) and 3 vertical (top/middle/bottom). Click one to snap X or Y to the canvas-relative position. The active alignment lights up orange. When an element fills the full canvas width, center is shown as active.</p>
-      <h4>Auto Y</h4>
-      <p>The Title and Prop title rows have an <strong>Auto Y</strong> toggle. When checked, Y is calculated automatically to sit just above the body text box (body Y − title H − gap). Uncheck to set a fixed Y.</p>
+
+      <h4>After exporting</h4>
+      <p>Open ProPresenter — the deck and its props are there. Recent exports are logged under <strong>···&nbsp;→&nbsp;Export History</strong>; click the folder icon to reveal a file in Finder.</p>
     `,
   },
   {
     id: 'pro7',
-    label: 'Pro7 Connection',
+    label: 'Pro7 & Machine Setup',
     html: `
-      <h3>ProPresenter 7 Connection</h3>
-      <p>DeckPro can connect to a running Pro7 instance on your local network to read live macro and prop data.</p>
-      <h4>Setup</h4>
+      <h3>Connecting to ProPresenter</h3>
+      <p>DeckPro talks to a running Pro7 on your network to read live macros, stage layouts and prop data.</p>
+      <ol class="help-steps">
+        <li>In ProPresenter: <strong>Preferences → Network → Enable Network API</strong>. Note the port (default <strong>1025</strong>) and any password.</li>
+        <li>In DeckPro <strong>Preferences → Pro7 Connection</strong>: enter the same port and password, click <strong>Check</strong>.</li>
+        <li>The header dot turns green when connected.</li>
+      </ol>
+
+      <h4>Pro7 Folder &amp; Export Library</h4>
       <ul>
-        <li>Enable the Network API in ProPresenter: <strong>Preferences → Network → Enable Network API</strong></li>
-        <li>Set the port (default 1025) and optionally a password</li>
-        <li>Enter the same port and password in DeckPro's <strong>Preferences</strong></li>
+        <li><strong>Pro7 Folder</strong> — the folder containing <code>Configuration</code> and <code>Libraries</code> (often <code>Documents/ProPresenter</code>).</li>
+        <li><strong>Export Library</strong> — which library new <code>.pro</code> files land in. Auto-select follows Pro7's active library.</li>
       </ul>
-      <p>The status dot in the header shows green when connected.</p>
-      <h4>Stage Display</h4>
-      <p>Configure stage screen and layout UUIDs in <strong>Preferences → Stage Display</strong> to enable stage layout actions on blank, image, scripture, and point slides.</p>
+
+      <h3>Machine Setup</h3>
+      <p>Open <strong>···&nbsp;→&nbsp;Machine Setup</strong> for a one-time, per-computer checklist:</p>
+      <ul>
+        <li><strong>Pro7 Connection</strong> — port &amp; password.</li>
+        <li><strong>Pro7 Folder</strong> — pick or auto-detect.</li>
+        <li><strong>Bible Lookup</strong> — paste your API.Bible key.</li>
+        <li><strong>Macros &amp; Stage Displays</strong> — import from the connected Pro7.</li>
+        <li><strong>Path scan</strong> — confirms everything resolves.</li>
+      </ul>
+      <p class="help-muted">Machine-specific settings (Pro7 paths, password, export folder, API keys, theme) stay on this computer; palettes and shared preferences can sync via iCloud.</p>
+    `,
+  },
+  {
+    id: 'preferences',
+    label: 'Preferences',
+    html: `
+      <h3>Preferences</h3>
+      <p>Open with <strong>···&nbsp;→&nbsp;Preferences</strong>.</p>
+      <ul>
+        <li><strong>Deck Library</strong> — where decks are stored; point at a shared folder to sync across Macs.</li>
+        <li><strong>iCloud Sync</strong> — keep palettes and portable preferences in step across your Macs.</li>
+        <li><strong>Display Names</strong> — rename Display 1 / 2 / 3 (e.g. “${D1}”, “${D2}”, “${D3}”). Your names appear everywhere in the app.</li>
+        <li><strong>Speakers</strong> — recurring names for the New Deck dropdown.</li>
+        <li><strong>Queue</strong> — the upcoming-slide format on the queue sidebar: Next Reference Only · Next Reference + First Phrase · Full List.</li>
+        <li><strong>Pro7 Connection</strong> — port, password, folder, library, auto-manage.</li>
+        <li><strong>Feature Visibility</strong> — hide advanced fields (Blank Before, ${D3} text, Prop Name, Overrides, Fit Width/Strip, Verses) for simpler handoffs. Hiding never changes what's exported.</li>
+        <li><strong>Bible Lookup</strong> — API key &amp; default translation.</li>
+        <li><strong>Book Names</strong> — ambiguous book-name styling.</li>
+      </ul>
+    `,
+  },
+  {
+    id: 'troubleshooting',
+    label: 'Troubleshooting',
+    html: `
+      <h3>Common issues</h3>
+      <ul>
+        <li><strong>Export didn't show up in Pro7</strong> — Pro7 was open and overwrote it on quit. Turn on Auto-manage, or close Pro7 before exporting.</li>
+        <li><strong>Bible Lookup fails</strong> — check the API key in Preferences and that the translation is available on your account (click Fetch).</li>
+        <li><strong>Not connected (dot is red)</strong> — confirm Pro7 is running with Network API enabled, and the port/password match.</li>
+        <li><strong>Macros / stage layouts empty</strong> — connect to Pro7, then import via Machine Setup.</li>
+        <li><strong>Quote-mismatch warning</strong> — DeckPro found straight/curly quote inconsistency or an unclosed quote. Fix the flagged slide before exporting.</li>
+      </ul>
+
+      <h4>Diagnostic bundle</h4>
+      <p><strong>···&nbsp;→&nbsp;Export Diagnostic Bundle</strong> saves a JSON snapshot for troubleshooting — app version, platform, settings (with your API key and Pro7 password <em>excluded</em>; only a yes/no that they're set), a deck &amp; palette summary, macro setup, Pro7/library status, recent export history and the last captured errors. Hand this over when reporting a problem instead of screenshots.</p>
+
+      <h4>Updates &amp; rollback</h4>
+      <p><strong>Check for Updates…</strong> pulls the latest release. If an update misbehaves, <strong>Rollback</strong> reverts to the previous version.</p>
     `,
   },
   {
@@ -12788,18 +13106,77 @@ function helpSections() { return [
           <tr><td><span class="help-kbd">⌘⇧D</span></td><td>Toggle dark mode</td></tr>
           <tr class="help-shortcuts-group"><td colspan="2">Text Editing</td></tr>
           <tr><td><span class="help-kbd">⌘B</span></td><td>Bold (in rich-text body fields)</td></tr>
+          <tr><td><span class="help-kbd">⌘I</span></td><td>Italic</td></tr>
+          <tr><td><span class="help-kbd">⌘U</span></td><td>Underline</td></tr>
           <tr><td><span class="help-kbd">Enter</span></td><td>Bible Lookup — fetch verse</td></tr>
         </tbody>
       </table>
     `,
   },
+  {
+    id: 'tech',
+    label: 'Technical Reference',
+    html: `
+      <h3>Technical Reference</h3>
+      <p class="help-muted">For developers and maintainers. How DeckPro turns a form into a valid Pro7 file.</p>
+
+      <h4>Architecture</h4>
+      <ul>
+        <li><strong>Electron + Express.</strong> <code>node server.js</code> serves the UI; Electron wraps it (<code>main.js</code> holds the native menu &amp; accelerators).</li>
+        <li><strong>Client:</strong> <code>public/app.js</code> — the whole editor, palette engine, Fit Width, and spec builder (<code>buildSpec()</code>).</li>
+        <li><strong>Server build chain:</strong> <code>builder.js</code> (presentation) + <code>buildProp.js</code> (props) + <code>rtf.js</code> (text) + <code>encode.js</code> (protobuf) → <code>.pro</code> files.</li>
+      </ul>
+
+      <h4>File format</h4>
+      <ul>
+        <li><code>.pro</code> files are <strong>protobuf binary</strong> — presentations are <code>rv.data.Presentation</code>, props are <code>rv.data.PropDocument</code> (schema under <code>ProPresenter7-Proto/</code>).</li>
+        <li>All props for a deck go in one <code>{name}_Props.pro</code>; each prop is a <strong>cue</strong>, matched to the presentation by <code>parameterName</code> = <code>cue.name</code> (not by UUID).</li>
+        <li>Text is <strong>base64-encoded RTF</strong> in <code>element.text.rtfData</code>. Bold = font switch (Montserrat-Medium ↔ Montserrat-Black). A <code>\\n</code> becomes an RTF hard line break — how point punctuation-splitting is emitted.</li>
+      </ul>
+
+      <h4>Build pipeline (buildPresentation)</h4>
+      <ol class="help-steps">
+        <li>Expand slides → raw cues (blank-before injection, multi-body scripture, revealing bullets).</li>
+        <li>Append Response Card cues before End (if enabled).</li>
+        <li>Inject the Message-Content macro; inject the QR element (if Saturday); inject the queue element into every cue.</li>
+      </ol>
+
+      <h4>Key element bounds (1920×1080)</h4>
+      <ul>
+        <li>Body: y=729.98, h=350.02 (bottom third). Fit Width varies x/w within the palette Body width.</li>
+        <li>Title (scripture ref): full-width bar, y auto-placed just above the body.</li>
+        <li>live: x≈1737, y≈1097 (below the canvas — the ${D3} badge). Gradient: y=351.77, full width.</li>
+        <li>Queue sidebar: x=0, w≈400, full height. QR: x=0, y≈655, ~424².</li>
+      </ul>
+
+      <h4>Style resolution &amp; inheritance</h4>
+      <ul>
+        <li><strong>Global → Palette → Custom.</strong> A field of <code>null</code> means “inherit”; a concrete value means “override.” Editing a null field <em>forks</em> it (materializes the inherited value first) so nothing jumps.</li>
+        <li><code>styleForExport(scheme)</code> is the single resolution point: fills null layout/motion/RC-element fields from Global, then resolves ${D2} advanced styling from its Display&nbsp;1 counterpart via the <code>D2_ADV_INHERIT</code> map (propBody→body, propPoint→point, propTitle→title, propBold→bold, rcBody→body, rcTitle→title).</li>
+        <li>Macros / stage displays / build orders / RC elements use <strong>whole-list inherit</strong> (null = inherit Global's list live; any edit forks a private copy).</li>
+      </ul>
+
+      <h4>Fit Width internals</h4>
+      <ul>
+        <li><code>computeOptimalBodyWidth(spans, scheme, type)</code> measures in a hidden DOM node at the resolved font/size (Point uses pointSize + weight 900), sweeps candidate widths (12px steps), and scores each layout with the tunable <code>FIT_WEIGHTS</code> block.</li>
+        <li>For points it also proposes punctuation-only break layouts; if one wins and box-width alone can't reproduce it, it emits hard breaks as <code>bodyDisplayText</code> (main-screen body only — notes/queue/prop keep the unbroken text).</li>
+      </ul>
+
+      <h4>Tests</h4>
+      <p><code>npm test</code> runs the RTF, builder, prop, verse-chain, encode, golden-master and fuzz suites plus a scheme-field audit — every build is gated by them.</p>
+
+      <p class="help-muted">Deeper notes live in <code>CLAUDE.md</code> at the repo root (element styles, macro UUIDs, RTF specifics, the full spec shape).</p>
+    `,
+  },
 ]; }
 
 function initHelp() {
-  const modal = document.getElementById('help-modal');
-  const nav   = document.getElementById('help-nav');
-  const body  = document.getElementById('help-body');
-  const close = document.getElementById('help-modal-close');
+  const modal  = document.getElementById('help-modal');
+  const nav    = document.getElementById('help-nav');
+  const body   = document.getElementById('help-body');
+  const close  = document.getElementById('help-modal-close');
+  const search = document.getElementById('help-search');
+  const noRes  = document.getElementById('help-no-results');
   if (!modal) return;
 
   nav.innerHTML = helpSections().map((s, i) =>
@@ -12817,10 +13194,39 @@ function initHelp() {
     body.querySelectorAll('.help-section').forEach(s => s.classList.remove('active'));
     btn2.classList.add('active');
     document.getElementById(`help-sec-${btn2.dataset.section}`)?.classList.add('active');
+    body.scrollTop = 0;
   });
 
-  close?.addEventListener('click', () => modal.classList.remove('open'));
-  modal.addEventListener('click', e => { if (e.target === modal) modal.classList.remove('open'); });
+  // Full-text search across all sections. Empty query → tabbed mode.
+  function runSearch() {
+    const q = (search?.value || '').trim().toLowerCase();
+    const secs = body.querySelectorAll('.help-section');
+    if (!q) {
+      body.classList.remove('help-searching');
+      if (nav) nav.style.display = '';
+      secs.forEach(s => { s.style.display = ''; });   // revert to .active CSS
+      if (noRes) noRes.style.display = 'none';
+      return;
+    }
+    body.classList.add('help-searching');
+    if (nav) nav.style.display = 'none';
+    let any = false;
+    secs.forEach(s => {
+      const hit = s.textContent.toLowerCase().includes(q);
+      s.style.display = hit ? 'block' : 'none';
+      if (hit) any = true;
+    });
+    if (noRes) noRes.style.display = any ? 'none' : 'block';
+    body.scrollTop = 0;
+  }
+  search?.addEventListener('input', runSearch);
+
+  const closeModal = () => {
+    modal.classList.remove('open');
+    if (search) { search.value = ''; runSearch(); }
+  };
+  close?.addEventListener('click', closeModal);
+  modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
 }
 
 // ─── Changelog ───────────────────────────────────────────────────────────────
