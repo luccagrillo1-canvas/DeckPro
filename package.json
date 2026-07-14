@@ -9,6 +9,7 @@
     "electron": "electron .",
     "test": "node rtf.test.js && node builder.test.js && node buildProp.test.js && node verse.test.js && node encode.test.js && node golden.test.js && node fuzz.test.js && node audit-scheme-fields.js",
     "preflight": "node scripts/preflight.js",
+    "plumbing-audit": "node scripts/plumbing-audit.js",
     "prebuild": "node scripts/preflight.js",
     "build": "electron-builder --mac",
     "install-app": "rm -rf /Applications/DeckPro.app && cp -R dist/mac-arm64/DeckPro.app /Applications/",
