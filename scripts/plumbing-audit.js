@@ -49,6 +49,8 @@ const S = {
   macroUuid:     'AAAAAAAA-1111-2222-3333-444444444444',
   stageName:     'PLUMBING_STAGE_ECHO',
   stageUuid:     'BBBBBBBB-5555-6666-7777-888888888888',
+  stageScreenName: 'PLUMBING_SCREEN_HOTEL',
+  stageScreenUuid: 'EEEEEEEE-1212-3434-5656-787878787878',
   rcResponse1:   'PLUMBING_RC_RESPONSE_ONE',
   // per-slide overrides (historically silent-drop-prone) + blank-before + qr
   ovrMacroName:  'PLUMBING_OVR_MACRO_FOXTROT',
@@ -187,6 +189,10 @@ function buildSpec() {
     // palette-level macros + stage displays, triggered on scripture slides
     customMacros: [{ name: S.macroName, uuid: S.macroUuid, triggers: ['scripture'] }],
     stageDisplays: [{ name: S.stageName, uuid: S.stageUuid, triggers: ['scripture'] }],
+    // the physical stage screen — a stage-layout action is a no-op in Pro7
+    // without it, so the audit must confirm it lands (this is what a stub
+    // schemeStageScreen() silently broke).
+    stageScreen: { screenName: S.stageScreenName, screenUuid: S.stageScreenUuid },
     slides: [
       { type: 'start' },
       // blankBefore → a blank cue is injected ahead of this one; its Smart
@@ -282,25 +288,34 @@ async function main() {
   // ---- Live badge ----
   check('P1', 'structure', 'Live badge element present', !!(scrCue && findElInCue(scrCue, 'live')), '');
 
-  // ---- Macro + stage-display actions (fire on scripture) ----
-  let macroHit = false, stageHit = false, propHit = false;
+  // ---- Macro + stage-display + prop actions (fire on scripture) ----
+  let macroHit = false, propHit = false;
+  let stageLayoutHit = false, stageScreenHit = false;
   for (const cue of pres.cues || []) {
     for (const a of cue.actions || []) {
       const nm = (a.macro && a.macro.identification && a.macro.identification.parameterName) ||
                  (a.macro && a.macro.name);
       if (nm === S.macroName) macroHit = true;
-      if (a.stageLayout || a.clearLayout || (a.type && String(a.type).includes('STAGE'))) {
-        const s = JSON.stringify(a);
-        if (s.includes(S.stageUuid) || s.includes(S.stageName)) stageHit = true;
+      // A real stage-layout action: read the screen + layout assignment. Both
+      // UUIDs must be present — an empty screen UUID makes Pro7 ignore the cue.
+      const asg = a.stage && a.stage.stageScreenAssignments && a.stage.stageScreenAssignments[0];
+      if (asg) {
+        const layoutUuid = asg.layout && asg.layout.parameterUuid && (asg.layout.parameterUuid.string || asg.layout.parameterUuid);
+        const screenUuid = asg.screen && asg.screen.parameterUuid && (asg.screen.parameterUuid.string || asg.screen.parameterUuid);
+        if (String(layoutUuid) === S.stageUuid) {
+          stageLayoutHit = true;
+          if (String(screenUuid) === S.stageScreenUuid) stageScreenHit = true;
+        }
       }
       const pn = a.prop && a.prop.identification && a.prop.identification.parameterName;
       if (pn === S.propName) propHit = true;
     }
   }
-  // stage layout may be encoded elsewhere in the cue — fall back to a deep scan
-  if (!stageHit) stageHit = JSON.stringify(pres).includes(S.stageUuid);
   check('P1', 'macros', `Palette macro "${S.macroName}" fires on scripture`, macroHit, '');
-  check('P1', 'stage', `Stage layout "${S.stageName}" triggers on scripture`, stageHit, '');
+  check('P1', 'stage', `Stage layout "${S.stageName}" action present on scripture`, stageLayoutHit, '');
+  // The bug that shipped in <=4.8.3: layout present but screen UUID empty → no-op.
+  check('P0', 'stage', `Stage action carries the physical screen UUID (not empty)`,
+    stageScreenHit, stageScreenHit ? 'screen + layout both set' : 'screen UUID missing/empty — Pro7 will ignore the cue');
   check('P0', 'props', `Scripture prop action names "${S.propName}"`, propHit, '');
 
   // ---- Props file ----
