@@ -98,8 +98,12 @@ environment need their own checks. Do these when the change touches them:
 A thorough audit touches: persistence · scheme text/size/colour/font/margin ·
 Display-1 and Display-2 (LED wall) · response card (main screen + LED-wall prop)
 · props (scripture / point / revealing / response card) with names matching the
-prop actions · queue · macros · stage displays · slide notes (Smart Notes) ·
-Pro7 folders/libraries · smart-quote normalization · Custom slides surviving.
+prop actions · queue · macros · stage displays · **per-slide overrides
+(transition / macro / stage layout)** · **blank-before injection + Smart Notes
+preview** · **QR injection** · slide notes · Pro7 folders/libraries · smart-quote
+normalization · Custom slides surviving. (The script covers all of these on the
+spec→.pro side today; the per-slide overrides in particular were historically
+silent-drop-prone — worth keeping green.)
 
 ## Report format
 

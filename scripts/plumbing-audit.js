@@ -50,6 +50,14 @@ const S = {
   stageName:     'PLUMBING_STAGE_ECHO',
   stageUuid:     'BBBBBBBB-5555-6666-7777-888888888888',
   rcResponse1:   'PLUMBING_RC_RESPONSE_ONE',
+  // per-slide overrides (historically silent-drop-prone) + blank-before + qr
+  ovrMacroName:  'PLUMBING_OVR_MACRO_FOXTROT',
+  ovrMacroUuid:  'CCCCCCCC-9999-8888-7777-666666666666',
+  slideStageName:'PLUMBING_SLIDE_STAGE_GOLF',
+  slideStageUuid:'DDDDDDDD-1010-2020-3030-404040404040',
+  transType:     'dissolve',
+  transDur:      3.7,   // weird per-slide transition duration (main screen)
+  revealBase:    'PLUMBING_REVEAL',
 };
 
 // ── Findings ─────────────────────────────────────────────────────────────────
@@ -101,15 +109,32 @@ function findElInCue(cue, name) {
   for (const el of cueElements(cue)) if (el.name === name) return el;
   return null;
 }
-// The scripture cue = the one whose body element carries our body sentinel.
-function findScriptureCue(pres) {
-  for (const cue of pres.cues || []) {
-    for (const el of cueElements(cue)) {
+// First element with this name anywhere in the presentation.
+function findEl(pres, name) {
+  for (const { el } of presentationElements(pres)) if (el.name === name) return el;
+  return null;
+}
+// Find the cue whose body element carries a given sentinel (index too).
+function findCueByBody(pres, text) {
+  const cues = pres.cues || [];
+  for (let i = 0; i < cues.length; i++) {
+    for (const el of cueElements(cues[i])) {
       if (el.name === 'body' && el.text && el.text.rtfData &&
-          b64ToRtf(el.text.rtfData).includes(S.scriptureText)) return cue;
+          b64ToRtf(el.text.rtfData).includes(text)) return { cue: cues[i], index: i };
     }
   }
-  return null;
+  return { cue: null, index: -1 };
+}
+const findScriptureCue = (pres) => findCueByBody(pres, S.scriptureText).cue;
+// Every macro-action name/uuid on a cue.
+function cueMacroUuids(cue) {
+  const out = [];
+  for (const a of cue.actions || []) {
+    const id = a.macro && a.macro.identification;
+    if (id && id.parameterUuid) out.push(id.parameterUuid.string || id.parameterUuid);
+    if (a.macro && a.macro.uuid) out.push(a.macro.uuid.string || a.macro.uuid);
+  }
+  return out.map(String);
 }
 // Decode every rtfData anywhere in an object tree (elements, notes, props).
 function collectAllRtf(obj, out = []) {
@@ -156,7 +181,7 @@ function buildSpec() {
     name: 'PLUMBING_AUDIT_DECK',
     downloadMode: true,          // return buffers, no disk writes
     includeResponseCard: true,
-    qrEnabled: false,
+    qrEnabled: true,             // QR element injected into content cues
     responses: { r1: S.rcResponse1, r2: 'RC two', r3: 'RC three' },
     style,
     // palette-level macros + stage displays, triggered on scripture slides
@@ -164,15 +189,22 @@ function buildSpec() {
     stageDisplays: [{ name: S.stageName, uuid: S.stageUuid, triggers: ['scripture'] }],
     slides: [
       { type: 'start' },
+      // blankBefore → a blank cue is injected ahead of this one; its Smart
+      // Notes should preview the upcoming scripture text.
       { type: 'scripture', label: S.reference, reference: S.reference,
-        bodies: [scriptureSpans], propName: S.propName, blankBefore: false },
+        bodies: [scriptureSpans], propName: S.propName, blankBefore: true },
+      // per-slide overrides on the point slide: transition + macro override.
       { type: 'point', mode: 'single', label: 'Pt', bodyText: S.pointText,
-        propName: 'PLUMBING_POINT_PROP', blankBefore: false },
+        propName: 'PLUMBING_POINT_PROP', blankBefore: false,
+        transition: { type: S.transType, duration: S.transDur },
+        macroOverride: { name: S.ovrMacroName, uuid: S.ovrMacroUuid } },
       { type: 'point', mode: 'revealing', label: 'Rev', title: 'Reveal Title',
         bullets: [[{ text: 'Reveal bullet one' }], [{ text: 'Reveal bullet two' }]],
-        propBaseName: 'PLUMBING_REVEAL', blankBefore: false },
+        propBaseName: S.revealBase, blankBefore: false },
       { type: 'blank', label: 'Blank', spans: [{ text: S.smartQuote }] },
-      { type: 'image', label: 'Image slide' },
+      // per-slide stage-layout override on the image slide.
+      { type: 'image', label: 'Image slide',
+        stageLayout: { layoutName: S.slideStageName, layoutUuid: S.slideStageUuid } },
       { type: 'custom', label: 'PLUMBING_CUSTOM_SLIDE' },
       { type: 'end' },
     ],
@@ -326,6 +358,57 @@ async function main() {
   // ---- Custom slide survives (exports as a labelled slot) ----
   check('P1', 'structure', 'Custom slide survives export',
     JSON.stringify(pres).includes('PLUMBING_CUSTOM_SLIDE'), '');
+
+  // ---- Per-slide overrides (historically dropped silently) ----
+  const { cue: pointCue, index: pointIdx } = findCueByBody(pres, S.pointText);
+  if (pointCue) {
+    // main-screen transition override on the slide action
+    let transDur = null;
+    for (const a of pointCue.actions || []) {
+      const t = a.slide && a.slide.presentation && a.slide.presentation.transition;
+      if (t && (t.duration != null)) transDur = t.duration;
+    }
+    check('P1', 'motion', `Per-slide transition duration = ${S.transDur}`,
+      Math.abs(Number(transDur) - S.transDur) < 1e-6, `slide transition → ${transDur}`);
+    // macro override fires on this exact slide
+    check('P1', 'macros', `Per-slide macro override "${S.ovrMacroName}"`,
+      cueMacroUuids(pointCue).includes(S.ovrMacroUuid), cueMacroUuids(pointCue).join(', '));
+  } else {
+    check('P1', 'motion', 'Point cue located for override checks', false, '');
+  }
+
+  // ---- Per-slide stage-layout override (on the image slide) ----
+  check('P1', 'stage', `Per-slide stage layout "${S.slideStageName}" reaches export`,
+    JSON.stringify(pres).includes(S.slideStageUuid), '');
+
+  // ---- Blank-before: a blank cue is injected ahead, Smart Notes preview it ----
+  if (pointIdx >= 0 && scrCue) {
+    const scrIdx = (pres.cues || []).indexOf(scrCue);
+    const before = scrIdx > 0 ? pres.cues[scrIdx - 1] : null;
+    // A blank is a real slide cue (decoded action carries a `slide` field) but
+    // shows black — no scripture body sentinel of its own. (Enums decode as
+    // numbers, so detect the slide action by its `slide` payload, not a.type.)
+    const beforeIsSlide = before && (before.actions || []).some(a => a.slide);
+    const beforeIsBlank = beforeIsSlide && ![...cueElements(before)].some(
+      e => e.name === 'body' && e.text && e.text.rtfData && b64ToRtf(e.text.rtfData).includes(S.scriptureText));
+    const beforeNotes = before ? collectAllRtf(before).join('\n') : '';
+    check('P1', 'blank-before', 'Blank cue injected before scripture',
+      !!(before && beforeIsBlank), before ? `cue #${scrIdx - 1}` : 'no preceding cue');
+    check('P1', 'notes', 'Blank-before Smart Notes preview the upcoming scripture',
+      beforeNotes.includes(S.scriptureText), beforeNotes.includes(S.scriptureText) ? 'preview present' : 'sentinel not in blank notes');
+  }
+
+  // ---- QR element injected (qrEnabled) ----
+  check('P2', 'structure', 'QR element injected on content cues', !!findEl(pres, 'qr'), '');
+
+  // ---- Revealing point: one prop per bullet, progressive ----
+  if (propDoc) {
+    const names = (propDoc.cues || []).map(c => c.name);
+    const rev1 = names.includes(`${S.revealBase}_1`);
+    const rev2 = names.includes(`${S.revealBase}_2`);
+    check('P1', 'props', 'Revealing point makes one prop per bullet',
+      rev1 && rev2, names.filter(n => n.startsWith(S.revealBase)).join(', '));
+  }
 
   // ── Report ──────────────────────────────────────────────────────────────────
   report();
