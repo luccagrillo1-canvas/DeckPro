@@ -2,9 +2,16 @@
 
 // ─── Version & Changelog ──────────────────────────────────────────────────────
 
-const APP_VERSION = '4.8.2';
+const APP_VERSION = '4.8.3';
 
 const CHANGELOG = [
+  {
+    version: '4.8.3',
+    date: '2026-07-10',
+    changes: [
+      'Fit Width for point slides no longer gets trapped in a tall, narrow stack. Point text was capped to the palette\'s body-box width, so a longer point in a narrow box couldn\'t widen enough to break at its natural punctuation and collapsed into a stack of short lines (sometimes stranding a single word on its own line). Points may now use the full screen width, so e.g. "Being filled isn\'t about your effort; it\'s about your availability." now lays out as two lines split at the semicolon instead of five. Short points still stay on one line, and scripture is unchanged (it keeps its palette body width, which you position deliberately).',
+    ],
+  },
   {
     version: '4.8.2',
     date: '2026-07-10',
@@ -3577,8 +3584,13 @@ function computeOptimalBodyWidth(spans, rs, type = 'body') {
   const size    = type === 'point'
     ? (st.pointSize ?? st.bodySize ?? 44)
     : (st.bodySize ?? 44);
-  // Hard wall: Fit Width may only ever shrink the box, never exceed the scheme.
-  const maxW    = Math.max(1, Math.min(st.bodyW || canvasW, canvasW));
+  // Width ceiling. Scripture/body stays within the palette's body width (the
+  // user positions that box deliberately). Points are short and read best with
+  // room to breathe — a narrow palette body width would trap a point in a tall
+  // stack and block clean punctuation breaks (e.g. splitting at a semicolon),
+  // so points may use the full canvas width.
+  const cap     = type === 'point' ? canvasW : (st.bodyW || canvasW);
+  const maxW    = Math.max(1, Math.min(cap, canvasW));
   const padding = 80; // breathing room for the poetry branch
 
   const hasExplicit = (spans || []).some(s => s.text?.includes('\n'));
