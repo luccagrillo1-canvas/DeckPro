@@ -2,9 +2,16 @@
 
 // ─── Version & Changelog ──────────────────────────────────────────────────────
 
-const APP_VERSION = '4.8.3';
+const APP_VERSION = '4.8.4';
 
 const CHANGELOG = [
+  {
+    version: '4.8.4',
+    date: '2026-07-10',
+    changes: [
+      'Fixed: stage-display layouts weren\'t taking effect in ProPresenter. The stage-layout cues were being written, but with an empty reference to the physical stage screen — so ProPresenter had no screen to apply the layout to and silently ignored them. DeckPro now includes the configured stage screen (name + UUID) on every stage-layout action, so scripture/point/blank/response-card stage layouts actually switch on export again. If your stage layouts stopped working at some point, this is why.',
+    ],
+  },
   {
     version: '4.8.3',
     date: '2026-07-10',
@@ -9327,9 +9334,13 @@ function applyBookNames(ref, bookNames) {
   return s;
 }
 
-// Build the stageScreen object the builder expects from the active scheme's stageDisplays.
+// Build the stageScreen object the builder expects. Stage-layout actions need
+// the physical screen's name + UUID or ProPresenter can't apply the layout —
+// this must return the configured screen, not an empty stub (the empty stub
+// silently made every stage-display cue a no-op on export).
 function schemeStageScreen() {
-  return { screenName: '', screenUuid: '' };
+  const ss = (state.config && state.config.stageScreen) || DEFAULT_STAGESCREEN();
+  return { screenName: ss.screenName || '', screenUuid: ss.screenUuid || '' };
 }
 
 function buildSpec() {
