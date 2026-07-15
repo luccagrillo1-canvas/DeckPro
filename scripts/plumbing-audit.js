@@ -62,6 +62,18 @@ const S = {
   transType:     'dissolve',
   transDur:      3.7,   // weird per-slide transition duration (main screen)
   revealBase:    'PLUMBING_REVEAL',
+  // Strip: a SINGLE span with an embedded newline — mirrors what extractSpans()
+  // actually produces for plain multi-line text (adjacent same-format spans get
+  // merged, so the break usually isn't its own standalone {text:'\n'} span). An
+  // exact `s.text !== '\n'` filter never catches this — only a real fix does.
+  stripLine2:    'PLUMBING_STRIP_LINE_TWO',
+  // Fit Width: deliberately different values for Display 1 vs Display 2 so a
+  // passing check proves Display 2 is independently computed, not just copying
+  // Display 1's box (which is what "Fit Width did nothing on Display 2" was).
+  fitBodyW:      900,
+  fitBodyX:      500,
+  fitPropBodyW:  2400,
+  fitPropBodyX:  400,
 };
 
 // ── Findings ─────────────────────────────────────────────────────────────────
@@ -111,6 +123,20 @@ function* cueElements(cue) {
 }
 function findElInCue(cue, name) {
   for (const el of cueElements(cue)) if (el.name === name) return el;
+  return null;
+}
+// Same as cueElements/findElInCue but for a PROP-file cue (action.slide.prop,
+// not action.slide.presentation — different branch of the same oneof).
+function* propCueElements(cue) {
+  for (const action of cue.actions || []) {
+    const base = action.slide && action.slide.prop && action.slide.prop.baseSlide;
+    for (const slot of (base && base.elements) || []) {
+      if (slot.element) yield slot.element;
+    }
+  }
+}
+function findElInPropCue(cue, name) {
+  for (const el of propCueElements(cue)) if (el.name === name) return el;
   return null;
 }
 // First element with this name anywhere in the presentation.
@@ -180,7 +206,9 @@ function buildSpec() {
     ],
   };
 
-  const scriptureSpans = [{ text: S.scriptureText }];
+  // Embedded newline in a single span — the merged-span shape extractSpans()
+  // actually produces, not two separate spans with a standalone \n between them.
+  const scriptureSpans = [{ text: `${S.scriptureText}\n${S.stripLine2}` }];
   return {
     name: 'PLUMBING_AUDIT_DECK',
     downloadMode: true,          // return buffers, no disk writes
@@ -200,7 +228,10 @@ function buildSpec() {
       // blankBefore → a blank cue is injected ahead of this one; its Smart
       // Notes should preview the upcoming scripture text.
       { type: 'scripture', label: S.reference, reference: S.reference,
-        bodies: [scriptureSpans], propName: S.propName, blankBefore: true },
+        bodies: [scriptureSpans], propName: S.propName, blankBefore: true,
+        stripNewlines: true,
+        bodyW: S.fitBodyW, bodyX: S.fitBodyX,
+        propBodyW: S.fitPropBodyW, propBodyX: S.fitPropBodyX },
       // per-slide overrides on the point slide: transition + macro override.
       { type: 'point', mode: 'single', label: 'Pt', bodyText: S.pointText,
         propName: 'PLUMBING_POINT_PROP', blankBefore: false,
@@ -258,6 +289,16 @@ async function main() {
       rtfHasColor(rtf, S.bodyColor), 'expandedcolortbl cssrgb');
     check('P0', 'text', 'Scripture body text present',
       rtf.includes(S.scriptureText), S.scriptureText);
+    // Strip: source body is ONE span with an embedded \n (the shape extractSpans()
+    // actually produces for plain text) — an exact `s.text !== '\n'` filter can't
+    // catch that, so this regressed silently until stripNewlineSpans() replaced it.
+    check('P0', 'text', 'Strip removes an embedded (not just standalone) newline',
+      !/\\\n/.test(rtf) && rtf.includes(S.scriptureText) && rtf.includes(S.stripLine2),
+      /\\\n/.test(rtf) ? 'RTF still contains a line break' : 'flattened, both fragments present');
+    // Fit Width, Display 1 — main-screen body box width.
+    const bw = bodyEl.bounds && bodyEl.bounds.size && bodyEl.bounds.size.width;
+    check('P0', 'layout', `Fit Width (Display 1) body width = ${S.fitBodyW}`,
+      Number(bw) === S.fitBodyW, `bounds.size.width → ${bw}`);
   } else {
     check('P0', 'text', 'Scripture body element found', false, "no 'body' element on scripture cue");
   }
@@ -327,6 +368,17 @@ async function main() {
     check('P0', 'props', 'Props file decodes with cues', cues.length > 0, `${cues.length} prop cues`);
     check('P0', 'props', `Scripture prop cue "${S.propName}" exists`,
       propNames.includes(S.propName), propNames.slice(0, 8).join(', '));
+
+    // Fit Width, Display 2 (LED wall) — must be independently computed from
+    // Display 1, not left on the palette's static prop width. fitPropBodyW is
+    // deliberately != fitBodyW so a pass here can't be Display 1's value leaking
+    // through by coincidence (the bug that shipped: Display 2 never received a
+    // Fit Width value at all and always used the palette default).
+    const scrPropCue = cues.find(c => c.name === S.propName);
+    const propBodyEl = scrPropCue && findElInPropCue(scrPropCue, 'body');
+    const pbw = propBodyEl && propBodyEl.bounds && propBodyEl.bounds.size && propBodyEl.bounds.size.width;
+    check('P0', 'layout', `Fit Width (Display 2) prop body width = ${S.fitPropBodyW}`,
+      Number(pbw) === S.fitPropBodyW, `bounds.size.width → ${pbw}`);
     check('P1', 'props', 'Response Card prop cue exists',
       propNames.some(n => /response card/i.test(n)), propNames.join(', '));
 

@@ -1368,6 +1368,24 @@ function buildBlankCue(spec, rs) {
   };
 }
 
+// Strip removes line breaks so the main-screen body flows as one block. Line
+// breaks aren't always their own span: extractSpans() (public/app.js) merges a
+// <br>'s span into the surrounding text whenever the formatting matches on both
+// sides — the common case for plain, unformatted scripture — so the break ends
+// up embedded inside a longer span's text ("line one\nline two") rather than
+// sitting alone as its own {text:'\n'} entry. An exact `s.text !== '\n'` filter
+// only ever catches the standalone case, so it silently did nothing for plain
+// text. Replace every run of newlines with a single space instead (works for
+// both embedded and standalone), then trim the ends.
+function stripNewlineSpans(spans) {
+  const replaced = (spans || []).map(s => ({ ...s, text: (s.text || '').replace(/\n+/g, ' ') }));
+  if (replaced.length) {
+    replaced[0] = { ...replaced[0], text: replaced[0].text.replace(/^ +/, '') };
+    replaced[replaced.length - 1] = { ...replaced[replaced.length - 1], text: replaced[replaced.length - 1].text.replace(/ +$/, '') };
+  }
+  return replaced.filter(s => s.text !== '');
+}
+
 /** Returns an ARRAY of cues — one per body in spec.bodies. */
 function buildScriptureCues(spec, rs) {
   // Per-slide body bounds override spec values take precedence over scheme defaults
@@ -1389,7 +1407,7 @@ function buildScriptureCues(spec, rs) {
     // Strip newlines for main slide if requested (prop always keeps them).
     // Verse numbers (if any) live as { verseNum, super } spans in the body content already.
     const displayBody = spec.stripNewlines
-      ? (body || []).filter(s => s.text !== '\n')
+      ? stripNewlineSpans(body || [])
       : (body || []);
     const bodyRtf   = rtf.rtfBody(displayBody, rs);
     const plainBody = displayBody.map(s => s.text).join('');

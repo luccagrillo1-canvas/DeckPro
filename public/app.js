@@ -2,9 +2,17 @@
 
 // ─── Version & Changelog ──────────────────────────────────────────────────────
 
-const APP_VERSION = '4.9.2';
+const APP_VERSION = '4.9.3';
 
 const CHANGELOG = [
+  {
+    version: '4.9.3',
+    date: '2026-07-15',
+    changes: [
+      "Fixed: Strip did nothing on export for plain (unformatted) scripture text — which is most scripture. The rich-text editor merges a line break into the surrounding text whenever the formatting matches on both sides, so the break usually isn't its own standalone entry the way Strip's old exact-match check expected; it's embedded inside a longer run of text instead. Strip now flattens embedded line breaks too, not just standalone ones.",
+      "Fixed: Fit Width never reached Display 2 (the LED wall behind the stage) at all — it only ever sized the main screen's box, while the LED wall always fell back to the palette's static prop width regardless of what Fit Width computed. Since Display 2 renders at its own font size and box width, this could produce orphaned words and uneven lines there even when Display 1 looked perfect. Fit Width now runs its own search for Display 2 using Display 2's own metrics (font size, canvas, body width), for scripture, single points, and revealing points alike.",
+    ],
+  },
   {
     version: '4.9.2',
     date: '2026-07-15',
@@ -3624,27 +3632,32 @@ function _fitPunctPartitions(words) {
  * Poetry mode (has \n): tightest width that fits each explicit line no-wrap.
  * Balance mode (no \n): sweep candidate widths, score the induced line break,
  *   pick the lowest-cost layout (see FIT_WEIGHTS).
- * `type` selects the render size/weight ('point' → pointSize + bold). For
- *   points, the search also proposes explicit punctuation-break layouts; when
- *   one wins and box-width can't reproduce it, `brokenText` carries the text
- *   with hard line breaks (\n) for the caller to export.
+ * `type` selects the render size/weight ('point' → pointSize + bold).
+ * `display` selects which screen's metrics to measure at: 'main' (Display 1)
+ *   or 'prop' (Display 2 / LED wall) — these have independent canvas size,
+ *   font size, and body-width ceiling, so a box fit for one is not fit for
+ *   the other and each needs its own search.
+ * For points, the search also proposes explicit punctuation-break layouts;
+ *   when one wins and box-width can't reproduce it, `brokenText` carries the
+ *   text with hard line breaks (\n) for the caller to export.
  * Returns { bodyW, bodyX, brokenText } in Pro7 canvas coordinates.
  */
-function computeOptimalBodyWidth(spans, rs, type = 'body') {
+function computeOptimalBodyWidth(spans, rs, type = 'body', display = 'main') {
   // Resolve the scheme so inherited body width / sizes are real numbers, not
   // nulls — otherwise the cap silently falls back to the full canvas and the
   // measurement font size is wrong (the two long-standing Fit Width bugs).
   const st = styleForExport(rs || activeStyleScheme()) || {};
-  const canvasW = st.canvasW ?? 1920;
-  const size    = type === 'point'
-    ? (st.pointSize ?? st.bodySize ?? 44)
-    : (st.bodySize ?? 44);
+  const isProp  = display === 'prop';
+  const canvasW = isProp ? (st.propCanvasW ?? 3200) : (st.canvasW ?? 1920);
+  const size    = isProp
+    ? (type === 'point' ? (st.propPointSize ?? st.propBodySize ?? 80) : (st.propBodySize ?? 80))
+    : (type === 'point' ? (st.pointSize ?? st.bodySize ?? 44) : (st.bodySize ?? 44));
   // Width ceiling. Scripture/body stays within the palette's body width (the
   // user positions that box deliberately). Points are short and read best with
   // room to breathe — a narrow palette body width would trap a point in a tall
   // stack and block clean punctuation breaks (e.g. splitting at a semicolon),
   // so points may use the full canvas width.
-  const cap     = type === 'point' ? canvasW : (st.bodyW || canvasW);
+  const cap     = type === 'point' ? canvasW : ((isProp ? st.propBodyW : st.bodyW) || canvasW);
   const maxW    = Math.max(1, Math.min(cap, canvasW));
   const padding = 80; // breathing room for the poetry branch
 
@@ -3756,41 +3769,78 @@ function computeOptimalBodyWidth(spans, rs, type = 'body') {
   }
 }
 
+// Strip removes line breaks so the main-screen body flows as one block. Line
+// breaks aren't always their own span: extractSpans() merges a <br>'s span into
+// the surrounding text whenever the formatting matches on both sides — the
+// common case for plain, unformatted scripture — so the break ends up embedded
+// inside a longer span's text ("line one\nline two") rather than sitting alone
+// as its own {text:'\n'} entry. An exact `s.text !== '\n'` filter only ever
+// catches the standalone case, so it silently did nothing for plain text.
+// Mirrors builder.js's stripNewlineSpans — keep both in sync.
+function stripNewlineSpans(spans) {
+  const replaced = (spans || []).map(s => ({ ...s, text: (s.text || '').replace(/\n+/g, ' ') }));
+  if (replaced.length) {
+    replaced[0] = { ...replaced[0], text: replaced[0].text.replace(/^ +/, '') };
+    replaced[replaced.length - 1] = { ...replaced[replaced.length - 1], text: replaced[replaced.length - 1].text.replace(/ +$/, '') };
+  }
+  return replaced.filter(s => s.text !== '');
+}
+
 // Compute Fit Width for one slide's current text. Single source of truth for
 // both the per-slide toggle (attachFormHandlers) and the pre-export batch
 // recompute — keeps the two from drifting apart.
 //
 // Scripture: measures the stripped (newline-free) text when Strip is also on,
 // since Strip flattens display 1 into one flowing paragraph — the box should
-// fit that paragraph, not the original poetry line lengths.
+// fit that paragraph, not the original poetry line lengths. Display 2 (LED
+// wall) always keeps the original line breaks regardless of Strip — Strip is
+// display-1-only — so its box is measured against the unstripped text.
 //
-// Revealing points: every cue in the sequence shares one box (spec.bodyW/bodyX
-// in builder.js), so it's sized off the WIDEST individual bullet rather than
-// just the first — otherwise a later, longer bullet could overflow a box sized
-// for a short one. That keeps the box static across the whole reveal sequence.
+// Display 1 and Display 2 have independent canvas size, font size, and body
+// width, so a box fit for one is not fit for the other — each gets its own
+// computeOptimalBodyWidth() search (see the `display` param there). Before
+// this, Display 2's box never received a Fit Width value at all and always
+// fell back to the palette's static prop width — undersized/oversized boxes
+// there produced orphans and uneven lines independent of what Display 1 did.
 //
-// Returns { bodyW, bodyX, brokenText } or null if there's no text to measure.
+// Revealing points: every cue in the sequence shares one box per display
+// (spec.bodyW/bodyX and spec.propBodyW/propBodyX in builder.js/buildProp.js),
+// so each display is sized off its OWN widest individual bullet rather than
+// just the first — otherwise a later, longer bullet could overflow a box
+// sized for a short one. That keeps each box static across the whole reveal
+// sequence.
+//
+// Returns { bodyW, bodyX, brokenText, propBodyW, propBodyX, propBrokenText }
+// (prop fields null if not applicable) or null if there's no text to measure.
 function computeSlideFitWidth(slide, scheme) {
   if (slide.type === 'scripture') {
-    let spans = (slide.bodies || [[]])[0] || [];
-    if (slide.stripNewlines) spans = spans.filter(s => s.text !== '\n');
-    if (!spans.length || spans.every(s => !s.text)) return null;
-    return computeOptimalBodyWidth(spans, scheme, 'scripture');
+    const rawSpans = (slide.bodies || [[]])[0] || [];
+    if (!rawSpans.length || rawSpans.every(s => !s.text)) return null;
+    const mainSpans = slide.stripNewlines ? stripNewlineSpans(rawSpans) : rawSpans;
+    const main = computeOptimalBodyWidth(mainSpans, scheme, 'scripture', 'main');
+    const prop = computeOptimalBodyWidth(rawSpans, scheme, 'scripture', 'prop');
+    return { ...main, propBodyW: prop.bodyW, propBodyX: prop.bodyX };
   }
   if (slide.type === 'point') {
     if (slide.mode === 'revealing') {
-      let best = null;
+      let best = null, bestProp = null;
       for (const bullet of (slide.bullets || [])) {
         const spans = Array.isArray(bullet) ? bullet : [{ text: bullet || '', bold: true }];
         if (!spans.length || spans.every(s => !s.text)) continue;
-        const r = computeOptimalBodyWidth(spans, scheme, 'point');
+        const r = computeOptimalBodyWidth(spans, scheme, 'point', 'main');
         if (!best || r.bodyW > best.bodyW) best = r;
+        const rp = computeOptimalBodyWidth(spans, scheme, 'point', 'prop');
+        if (!bestProp || rp.bodyW > bestProp.bodyW) bestProp = rp;
       }
-      return best;
+      if (!best) return null;
+      return { ...best, propBodyW: bestProp ? bestProp.bodyW : null, propBodyX: bestProp ? bestProp.bodyX : null };
     }
     const text = slide.bodyText || '';
     if (!text) return null;
-    return computeOptimalBodyWidth([{ text, bold: true }], scheme, 'point');
+    const spans = [{ text, bold: true }];
+    const main = computeOptimalBodyWidth(spans, scheme, 'point', 'main');
+    const prop = computeOptimalBodyWidth(spans, scheme, 'point', 'prop');
+    return { ...main, propBodyW: prop.bodyW, propBodyX: prop.bodyX, propBrokenText: prop.brokenText || null };
   }
   return null;
 }
@@ -9012,13 +9062,16 @@ function attachFormHandlers(slide) {
 
   // ── Body width / preview tools ──
 
-  // Helper: compute and store fit-width for the current slide
+  // Helper: compute and store fit-width for the current slide (both displays)
   function applyFitWidth() {
     const result = computeSlideFitWidth(slide, activeStyleScheme());
     if (!result) return;
     slide.bodyW = result.bodyW;
     slide.bodyX = result.bodyX;
+    slide.propBodyW = result.propBodyW ?? null;
+    slide.propBodyX = result.propBodyX ?? null;
     slide._fitBrokenText = (slide.type === 'point' && slide.mode !== 'revealing') ? (result.brokenText || null) : null;
+    slide._fitPropBrokenText = (slide.type === 'point' && slide.mode !== 'revealing') ? (result.propBrokenText || null) : null;
   }
 
   const fitBtn   = get('btn-fit-width');
@@ -9033,7 +9086,10 @@ function attachFormHandlers(slide) {
       } else {
         slide.bodyW = null;
         slide.bodyX = null;
+        slide.propBodyW = null;
+        slide.propBodyX = null;
         slide._fitBrokenText = null;
+        slide._fitPropBrokenText = null;
       }
       saveState();
     });
@@ -9467,6 +9523,8 @@ function buildSpec() {
         followReveal:  slide.followReveal || 'single',
         bodyW:         slide.fitWidth ? (slide.bodyW || null) : null,
         bodyX:         slide.fitWidth ? (slide.bodyX || null) : null,
+        propBodyW:     slide.fitWidth ? (slide.propBodyW || null) : null,
+        propBodyX:     slide.fitWidth ? (slide.propBodyX || null) : null,
       };
     }
 
@@ -9489,6 +9547,8 @@ function buildSpec() {
           propRevealTransition:  slide.propRevealTransition || null,
           bodyW:                slide.fitWidth ? (slide.bodyW || null) : null,
           bodyX:                slide.fitWidth ? (slide.bodyX || null) : null,
+          propBodyW:            slide.fitWidth ? (slide.propBodyW || null) : null,
+          propBodyX:            slide.fitWidth ? (slide.propBodyX || null) : null,
         };
       }
       return {
@@ -9502,6 +9562,11 @@ function buildSpec() {
         bodyDisplayText: (slide.fitWidth && slide._fitBrokenText &&
           slide._fitBrokenText.replace(/\n/g, ' ').trim() === (slide.bodyText || '').trim())
           ? normalizeDeckQuotes(slide._fitBrokenText) : null,
+        // Same idea for Display 2 (LED wall) — its own hard breaks, independent
+        // of Display 1's, since it wraps at its own box width.
+        propBodyDisplayText: (slide.fitWidth && slide._fitPropBrokenText &&
+          slide._fitPropBrokenText.replace(/\n/g, ' ').trim() === (slide.bodyText || '').trim())
+          ? normalizeDeckQuotes(slide._fitPropBrokenText) : null,
         propName:      normalizeDeckQuotes(slide.propName || slide.bodyText || 'point'),
         customProp:    !!slide.customProp,
         blankBefore:   !!slide.blankBefore,
@@ -9512,6 +9577,8 @@ function buildSpec() {
         propTransition: slide.propTransition || null,
         bodyW:         slide.fitWidth ? (slide.bodyW || null) : null,
         bodyX:         slide.fitWidth ? (slide.bodyX || null) : null,
+        propBodyW:     slide.fitWidth ? (slide.propBodyW || null) : null,
+        propBodyX:     slide.fitWidth ? (slide.propBodyX || null) : null,
       };
     }
 
@@ -9801,8 +9868,10 @@ async function generate() {
       const r = computeSlideFitWidth(slide, scheme);
       if (r) {
         slide.bodyW = r.bodyW; slide.bodyX = r.bodyX;
+        slide.propBodyW = r.propBodyW ?? null; slide.propBodyX = r.propBodyX ?? null;
         // Hard punctuation breaks apply to single-mode point body text only.
         slide._fitBrokenText = (slide.type === 'point' && slide.mode !== 'revealing') ? (r.brokenText || null) : null;
+        slide._fitPropBrokenText = (slide.type === 'point' && slide.mode !== 'revealing') ? (r.propBrokenText || null) : null;
       }
     }
   } catch (_) { /* non-fatal — export continues without fit-width pre-computation */ }
