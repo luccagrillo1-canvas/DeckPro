@@ -20,21 +20,42 @@ let serverInstance = null;
 
 // ─── Server ───────────────────────────────────────────────────────────────────
 
+// Fixed, dedicated port for the packaged app's internal server. The renderer's
+// entire local state (config, preferences, Pro7 connection settings, palettes —
+// everything in localStorage) is scoped to this origin including the port, so
+// binding to a random port each launch (as this used to) silently reset all of
+// it back to defaults whenever the OS happened to assign a different ephemeral
+// port than last time. A fixed port keeps the origin — and localStorage — stable
+// across launches. Falls back to an ephemeral port only if this one is already
+// taken (e.g. a second DeckPro instance already running).
+const PREFERRED_PORT = 47821;
+
 function startServer() {
   return new Promise((resolve, reject) => {
     if (serverStarted && serverUrl) return resolve(serverUrl);
     // Library storage lives under Electron's userData (Application Support/DeckPro)
     process.env.DECKPRO_DATA_DIR = app.getPath('userData');
     const expressApp = require('./server');
-    const server = expressApp.listen(0, '127.0.0.1');
-    server.once('listening', () => {
-      serverStarted = true;
-      serverInstance = server;
-      const { port } = server.address();
-      serverUrl = `http://127.0.0.1:${port}`;
-      resolve(serverUrl);
-    });
-    server.once('error', reject);
+
+    function tryListen(port) {
+      const server = expressApp.listen(port, '127.0.0.1');
+      server.once('listening', () => {
+        serverStarted = true;
+        serverInstance = server;
+        const { port: boundPort } = server.address();
+        serverUrl = `http://127.0.0.1:${boundPort}`;
+        resolve(serverUrl);
+      });
+      server.once('error', (err) => {
+        if (err.code === 'EADDRINUSE' && port !== 0) {
+          tryListen(0); // preferred port taken — fall back to a random one
+        } else {
+          reject(err);
+        }
+      });
+    }
+
+    tryListen(PREFERRED_PORT);
   });
 }
 

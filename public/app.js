@@ -2,9 +2,17 @@
 
 // ─── Version & Changelog ──────────────────────────────────────────────────────
 
-const APP_VERSION = '4.9.1';
+const APP_VERSION = '4.9.2';
 
 const CHANGELOG = [
+  {
+    version: '4.9.2',
+    date: '2026-07-15',
+    changes: [
+      "Fixed: settings (auto-manage ProPresenter on export, Machine Setup completion, Pro7 folder/library, palettes — everything saved locally) sometimes reset back to defaults on app launch. The packaged app's internal server bound to a random port each launch, and since the app window's local storage is tied to that exact port, a different random port than last time meant a completely empty, fresh storage. It now binds to a fixed, dedicated port so settings stay put across launches (falling back to a random port only if that one's somehow already taken, e.g. a second DeckPro instance already running).",
+      'Stage display icon (sidebar dot, main-panel chip, and the Palette editor\'s Stage tab) changed from a paintbrush to a small monitor-on-a-stand glyph — reads more clearly as "stage display" at a glance.',
+    ],
+  },
   {
     version: '4.9.1',
     date: '2026-07-15',
@@ -3830,19 +3838,19 @@ function getSlideStageDisplays(...triggerKeys) {
   );
 }
 
-// Sidebar: paintbrush dot badges for stage displays firing on these triggers.
+// Sidebar: monitor-on-stand dot badges for stage displays firing on these triggers.
 function stageDisplayBadgesHTML(...triggerKeys) {
-  const BRUSH = `<svg class="sd-brush-icon" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M7 1.5L8.5 3 4 7.5 2 8l.5-2L7 1.5Z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/></svg>`;
+  const STAGE_ICON = `<svg class="sd-brush-icon" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="2" y="1.3" width="6" height="4.2" rx="0.6" stroke="currentColor" stroke-width="1.1"/><path d="M5 5.5v1.6M3.3 7.9h3.4" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/></svg>`;
   return getSlideStageDisplays(...triggerKeys)
-    .map(d => `<span class="si-badge si-badge-stage" title="Stage: ${esc(d.name || d.uuid)}">${BRUSH}</span>`)
+    .map(d => `<span class="si-badge si-badge-stage" title="Stage: ${esc(d.name || d.uuid)}">${STAGE_ICON}</span>`)
     .join('');
 }
 
-// Main panel: paintbrush + name chips for stage displays firing on these triggers.
+// Main panel: monitor-on-stand + name chips for stage displays firing on these triggers.
 function stageDisplayChipsHTML(...triggerKeys) {
-  const BRUSH = `<svg class="slide-chip-icon" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M7 1.5L8.5 3 4 7.5 2 8l.5-2L7 1.5Z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/></svg>`;
+  const STAGE_ICON = `<svg class="slide-chip-icon" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="2" y="1.3" width="6" height="4.2" rx="0.6" stroke="currentColor" stroke-width="1.1"/><path d="M5 5.5v1.6M3.3 7.9h3.4" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/></svg>`;
   return getSlideStageDisplays(...triggerKeys)
-    .map(d => `<span class="slide-macro-chip slide-stage-chip" title="Stage: ${esc(d.name || d.uuid)}">${BRUSH}${esc(d.name || d.uuid)}</span>`)
+    .map(d => `<span class="slide-macro-chip slide-stage-chip" title="Stage: ${esc(d.name || d.uuid)}">${STAGE_ICON}${esc(d.name || d.uuid)}</span>`)
     .join('');
 }
 
@@ -4779,7 +4787,7 @@ function attachSchemesStageTab(containerId) {
     </div>`;
   }
 
-  const BRUSH_ICON = `<svg style="width:10px;height:10px;vertical-align:middle;margin-right:3px" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M7 1.5L8.5 3 4 7.5 2 8l.5-2L7 1.5Z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/></svg>`;
+  const STAGE_ICON = `<svg style="width:10px;height:10px;vertical-align:middle;margin-right:3px" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="2" y="1.3" width="6" height="4.2" rx="0.6" stroke="currentColor" stroke-width="1.1"/><path d="M5 5.5v1.6M3.3 7.9h3.4" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/></svg>`;
 
   function rerender() {
     const entries = resolvedStageDisplays();
@@ -4788,7 +4796,7 @@ function attachSchemesStageTab(containerId) {
     el.querySelector('.sstage-list').innerHTML = entries.length ? entries.map((d, idx) => `
       <div class="smac-row custom-macro-row">
         <div class="custom-macro-fields">
-          <span class="cm-dot" style="background:var(--orange);opacity:.7">${BRUSH_ICON}</span>
+          <span class="cm-dot" style="background:var(--orange);opacity:.7">${STAGE_ICON}</span>
           <span class="cm-name-ro">${esc(d.name) || '<span style="color:var(--muted);font-style:italic;font-weight:400">no layout picked</span>'}</span>
           <code class="cm-uuid-ro">${esc(d.uuid || '')}</code>
           <button class="btn-sm sstage-pick" data-idx="${idx}">Pick</button>
@@ -11509,7 +11517,7 @@ function showStageLayoutPicker(field, anchorEl, cb, singleSelect = true) {
     addBtn.textContent = selected.size === 0 ? 'Add 0' : `Add ${selected.size}`;
   }
 
-  const BRUSH = `<svg style="width:10px;height:10px;flex-shrink:0" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M7 1.5L8.5 3 4 7.5 2 8l.5-2L7 1.5Z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/></svg>`;
+  const STAGE_ICON = `<svg style="width:10px;height:10px;flex-shrink:0" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="2" y="1.3" width="6" height="4.2" rx="0.6" stroke="currentColor" stroke-width="1.1"/><path d="M5 5.5v1.6M3.3 7.9h3.4" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/></svg>`;
 
   function renderRows(filter = '') {
     const f = filter.trim().toLowerCase();
@@ -11527,7 +11535,7 @@ function showStageLayoutPicker(field, anchorEl, cb, singleSelect = true) {
       const isSel      = selected.has(l.uuid);
       return `<div class="macro-picker-row${isSel ? ' selected' : ''}${isExisting ? ' existing' : ''}" data-name="${esc(l.name)}" data-uuid="${esc(l.uuid)}">
         ${singleSelect ? '' : `<span class="mpi-check">${isSel ? '✓' : ''}</span>`}
-        <span class="mpi-dot mpi-dot-default" style="display:flex;align-items:center;justify-content:center;color:var(--muted)">${BRUSH}</span>
+        <span class="mpi-dot mpi-dot-default" style="display:flex;align-items:center;justify-content:center;color:var(--muted)">${STAGE_ICON}</span>
         <span class="macro-picker-row-name">${esc(l.name)}</span>
         <code class="macro-picker-row-uuid">${esc(l.uuid)}</code>
         ${isExisting ? '<span class="mpi-existing">added</span>' : ''}
