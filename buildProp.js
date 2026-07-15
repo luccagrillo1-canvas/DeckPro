@@ -382,31 +382,43 @@ function resolveTextShadow(adv, defaultShadow) {
 
 // ─── Auto prop title Y estimation ────────────────────────────────────────
 
-function estimatePropTitleY(spans, bw, prs) {
-  const bodySize = (prs.propBodySize ?? 80) * 2; // RTF doubles pt for Pro7
+// `knownLines`: see estimateTitleY's doc comment in builder.js — same idea,
+// for Display 2 (LED wall).
+function estimatePropTitleY(spans, bw, prs, knownLines) {
+  // Real canvas pixels throughout this function (by/bh/th are all pixel
+  // coordinates) — NOT RTF half-points, so bodySize must NOT be doubled here.
+  // The old `* 2` made every line-height estimate 2x too tall, pushing the
+  // reference bar far too high above the body on any multi-line verse.
+  const bodySize = prs.propBodySize ?? 80;
   const lineH = bodySize * 1.3;
   const gap = prs.propTitleAutoGap ?? 16;
   const by = prs.propBodyY ?? 729.98;
   const bh = prs.propBodyH ?? 350.02;
   const th = prs.propTitleH ?? 50.51;
-  const fullText = (spans || []).map(s => s.text || '').join('');
-  const paragraphs = fullText.split('\n');
-  const avgCharW = bodySize * 0.52;
-  const charsPerLine = Math.max(1, bw / avgCharW);
-  let totalLines = 0;
-  for (const para of paragraphs) {
-    const trimmed = para.trim();
-    if (!trimmed) continue;
-    const words = trimmed.split(/\s+/);
-    let lineLen = 0, lines = 1;
-    for (const word of words) {
-      const wLen = word.length;
-      if (lineLen > 0 && lineLen + 1 + wLen > charsPerLine) { lines++; lineLen = wLen; }
-      else lineLen += (lineLen > 0 ? 1 : 0) + wLen;
+
+  let totalLines = Number.isFinite(knownLines) && knownLines > 0 ? knownLines : null;
+
+  if (totalLines === null) {
+    const fullText = (spans || []).map(s => s.text || '').join('');
+    const paragraphs = fullText.split('\n');
+    const avgCharW = bodySize * 0.52;
+    const charsPerLine = Math.max(1, bw / avgCharW);
+    totalLines = 0;
+    for (const para of paragraphs) {
+      const trimmed = para.trim();
+      if (!trimmed) continue;
+      const words = trimmed.split(/\s+/);
+      let lineLen = 0, lines = 1;
+      for (const word of words) {
+        const wLen = word.length;
+        if (lineLen > 0 && lineLen + 1 + wLen > charsPerLine) { lines++; lineLen = wLen; }
+        else lineLen += (lineLen > 0 ? 1 : 0) + wLen;
+      }
+      totalLines += lines;
     }
-    totalLines += lines;
+    if (totalLines === 0) totalLines = 1;
   }
-  if (totalLines === 0) totalLines = 1;
+
   const marginBottom = prs.propBodyFontAdv?.marginBottom ?? prs.bodyMarginBottom ?? 60;
   const estimatedTextH = totalLines * lineH;
   const textTop = by + bh - marginBottom - estimatedTextH;
@@ -462,7 +474,7 @@ function buildScripturePropCue(spec, rs = {}) {
   const titleYOff = prs.titleFontAdv?.yOffset ?? 0;
   let titleY;
   if (prs.propAutoTitleY) {
-    titleY = estimatePropTitleY(allSpans, bw, prs);
+    titleY = estimatePropTitleY(allSpans, bw, prs, spec.bodyLines);
   } else {
     titleY = prs.propTitleY ?? (by + (prs.propTitleGapShort ?? 0));
   }

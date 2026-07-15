@@ -644,11 +644,19 @@ function makeLiveElement(rs = {}) {
 }
 
 /**
- * Estimate title Y when autoTitleY is enabled.
- * Counts wrapped lines in displayBody using character-width estimation,
- * then positions the title bar `titleAutoGap` px above the body text top edge.
+ * Estimate title Y when autoTitleY is enabled, then position the title bar
+ * `titleAutoGap` px above the body text's top edge.
+ *
+ * `knownLines`, when given, is the REAL line count Fit Width already measured
+ * in the browser (DOM-accurate, aware of the exact wrap Fit Width chose,
+ * bold-width, punctuation breaks, etc.) — used as-is instead of re-deriving
+ * it here. Without it (Fit Width off, or a caller that doesn't have a
+ * browser) falls back to counting wrapped lines via a char-width estimate,
+ * which routinely disagreed with Fit Width's real wrap and threw the title
+ * bar's gap off — sometimes a lot, since a one-line miscount shifts textTop
+ * by a full line height.
  */
-function estimateTitleY(displayBody, bw, rs) {
+function estimateTitleY(displayBody, bw, rs, knownLines) {
   const bodySize     = rs.bodySize ?? 44;
   const lineH        = bodySize * 1.3;
   const gap          = rs.titleAutoGap ?? 16;
@@ -656,33 +664,37 @@ function estimateTitleY(displayBody, bw, rs) {
   const bh           = rs.bodyH ?? 100;
   const th           = rs.titleH ?? 100;
 
-  // Flatten text; split into paragraphs on explicit newlines
-  const fullText     = (displayBody || []).map(s => s.text || '').join('');
-  const paragraphs   = fullText.split('\n');
+  let totalLines = Number.isFinite(knownLines) && knownLines > 0 ? knownLines : null;
 
-  // Avg char width for Montserrat-Medium ≈ 0.52 × font size
-  const avgCharW     = bodySize * 0.52;
-  const charsPerLine = Math.max(1, bw / avgCharW);
+  if (totalLines === null) {
+    // Flatten text; split into paragraphs on explicit newlines
+    const fullText     = (displayBody || []).map(s => s.text || '').join('');
+    const paragraphs   = fullText.split('\n');
 
-  let totalLines = 0;
-  for (const para of paragraphs) {
-    const trimmed = para.trim();
-    if (!trimmed) continue;
-    const words = trimmed.split(/\s+/);
-    let lineLen = 0;
-    let lines   = 1;
-    for (const word of words) {
-      const wLen = word.length;
-      if (lineLen > 0 && lineLen + 1 + wLen > charsPerLine) {
-        lines++;
-        lineLen = wLen;
-      } else {
-        lineLen += (lineLen > 0 ? 1 : 0) + wLen;
+    // Avg char width for Montserrat-Medium ≈ 0.52 × font size
+    const avgCharW     = bodySize * 0.52;
+    const charsPerLine = Math.max(1, bw / avgCharW);
+
+    totalLines = 0;
+    for (const para of paragraphs) {
+      const trimmed = para.trim();
+      if (!trimmed) continue;
+      const words = trimmed.split(/\s+/);
+      let lineLen = 0;
+      let lines   = 1;
+      for (const word of words) {
+        const wLen = word.length;
+        if (lineLen > 0 && lineLen + 1 + wLen > charsPerLine) {
+          lines++;
+          lineLen = wLen;
+        } else {
+          lineLen += (lineLen > 0 ? 1 : 0) + wLen;
+        }
       }
+      totalLines += lines;
     }
-    totalLines += lines;
+    if (totalLines === 0) totalLines = 1;
   }
-  if (totalLines === 0) totalLines = 1;
 
   const marginBottom   = rs.bodyFontAdv?.marginBottom ?? rs.bodyMarginBottom ?? 60;
   const estimatedTextH = totalLines * lineH;
@@ -1415,7 +1427,7 @@ function buildScriptureCues(spec, rs) {
     const liveEl  = makeLiveElement(rs);
     // Auto Title Y: estimate from line count if enabled; otherwise use scheme titleY directly
     const computedTitleY = rs.autoTitleY
-      ? estimateTitleY(displayBody, bw, rs)
+      ? estimateTitleY(displayBody, bw, rs, spec.bodyLines)
       : (rs.titleY ?? 0);
     const titleEl = makeTitleElement({ reference: spec.reference, titleY: computedTitleY }, rs);
     const bodyEl  = makeBodyElement({ x: bx, y: by + bodyYOff, w: bw, h: bh, rtfData: bodyRtf, charCount: plainBody.length, spans: displayBody }, rs);

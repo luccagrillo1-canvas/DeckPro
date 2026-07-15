@@ -74,6 +74,13 @@ const S = {
   fitBodyX:      500,
   fitPropBodyW:  2400,
   fitPropBodyX:  400,
+  // Auto Title Y: a line count no char-width heuristic would ever produce for
+  // this short sentinel string at this box width (which naturally wraps to
+  // ~1 line) — so a match can only mean the known value reached the formula,
+  // not a heuristic re-guess. Different per display so Display 1's count
+  // can't leak into Display 2 or vice versa and still pass.
+  fitBodyLines:     6,
+  fitPropBodyLines: 9,
 };
 
 // ── Findings ─────────────────────────────────────────────────────────────────
@@ -184,6 +191,8 @@ function buildSpec() {
     queueSize: S.queueSize, liveSize: S.liveSize,
     propBodySize: S.propBodySize, propPointSize: S.propBodySize,
     rcTitleSize: S.titleSize, rcBodySize: S.bodySize,
+    // Auto Title Y — both displays, so estimateTitleY/estimatePropTitleY run.
+    autoTitleY: true, propAutoTitleY: true,
     // fonts
     propPointFont: S.propPointFont,
     // advanced styling (colour lives on the adv objects)
@@ -230,8 +239,8 @@ function buildSpec() {
       { type: 'scripture', label: S.reference, reference: S.reference,
         bodies: [scriptureSpans], propName: S.propName, blankBefore: true,
         stripNewlines: true,
-        bodyW: S.fitBodyW, bodyX: S.fitBodyX,
-        propBodyW: S.fitPropBodyW, propBodyX: S.fitPropBodyX },
+        bodyW: S.fitBodyW, bodyX: S.fitBodyX, bodyLines: S.fitBodyLines,
+        propBodyW: S.fitPropBodyW, propBodyX: S.fitPropBodyX, propBodyLines: S.fitPropBodyLines },
       // per-slide overrides on the point slide: transition + macro override.
       { type: 'point', mode: 'single', label: 'Pt', bodyText: S.pointText,
         propName: 'PLUMBING_POINT_PROP', blankBefore: false,
@@ -310,6 +319,18 @@ async function main() {
     check('P1', 'text', `Title font size = ${S.titleSize}`,
       rtfFontSize(rtf) === S.titleSize, `RTF \\fs → ${rtfFontSize(rtf)}`);
     check('P1', 'text', 'Reference text in title', rtf.includes(S.reference), S.reference);
+
+    // Auto Title Y (Display 1): must use the REAL known line count from Fit
+    // Width (S.fitBodyLines), not re-derive it via a char-width heuristic that
+    // routinely disagreed with what Fit Width actually rendered. Mirrors
+    // estimateTitleY's formula (builder.js) with its fallback constants —
+    // gap=16, marginBottom=60 — and DEFAULT_STYLE's bodyY=729.98/bodyH=350.02/
+    // titleH=50.51 (unset by the sentinel style, so those fallbacks apply).
+    const lineH = S.bodySize * 1.3;
+    const expectedTitleY = Math.round(729.98 + 350.02 - 60 - S.fitBodyLines * lineH - 16 - 50.51);
+    const titleY = titleEl.bounds && titleEl.bounds.origin && titleEl.bounds.origin.y;
+    check('P0', 'layout', `Auto Title Y (Display 1) uses the known line count (${S.fitBodyLines})`,
+      Number(titleY) === expectedTitleY, `bounds.origin.y → ${titleY} (expected ${expectedTitleY})`);
   } else {
     check('P1', 'text', 'Title element found', false, "no 'title' element on scripture cue");
   }
@@ -379,6 +400,23 @@ async function main() {
     const pbw = propBodyEl && propBodyEl.bounds && propBodyEl.bounds.size && propBodyEl.bounds.size.width;
     check('P0', 'layout', `Fit Width (Display 2) prop body width = ${S.fitPropBodyW}`,
       Number(pbw) === S.fitPropBodyW, `bounds.size.width → ${pbw}`);
+
+    // Auto Title Y (Display 2): same idea as Display 1's check above, but also
+    // regression coverage for a real bug found alongside this — the old code
+    // doubled propBodySize before computing line height ("RTF doubles pt for
+    // Pro7"), conflating the RTF \fs half-point wire convention (already
+    // handled inside rtf.js) with this function's own real-pixel canvas math,
+    // making every line-height estimate 2x too tall and pushing the reference
+    // bar hundreds of pixels too high above the body on any multi-line verse.
+    const propTitleEl = scrPropCue && findElInPropCue(scrPropCue, 'reference');
+    const propLineH = S.propBodySize * 1.3; // NOT doubled — real canvas pixels
+    // buildProp.js has its own default bounds (853/427/60), distinct from the
+    // main-screen ones (729.98/350.02/50.51) — see DEFAULT_STYLE in buildProp.js.
+    const expectedPropTitleY = Math.round(853 + 427 - 60 - S.fitPropBodyLines * propLineH - 16 - 60);
+    const propTitleY = propTitleEl && propTitleEl.bounds && propTitleEl.bounds.origin && propTitleEl.bounds.origin.y;
+    check('P0', 'layout', `Auto Title Y (Display 2) uses the known line count (${S.fitPropBodyLines}), not doubled`,
+      Number(propTitleY) === expectedPropTitleY, `bounds.origin.y → ${propTitleY} (expected ${expectedPropTitleY})`);
+
     check('P1', 'props', 'Response Card prop cue exists',
       propNames.some(n => /response card/i.test(n)), propNames.join(', '));
 

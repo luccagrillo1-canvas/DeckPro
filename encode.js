@@ -657,6 +657,7 @@ function collectPropSpecs(slides, responses = {}, includeResponseCard = false) {
         propTransition: slide.propTransition || null,
         bodyW: slide.propBodyW || null,
         bodyX: slide.propBodyX || null,
+        bodyLines: slide.propBodyLines || null,
       });
     } else if (slide.type === 'point') {
       if (slide.mode === 'revealing') {
