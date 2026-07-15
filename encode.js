@@ -376,8 +376,10 @@ function encodeUuidMsgBytes(uuidStr) {
 /**
  * Build a field-4 collection entry (0x22 + varint(len) + collection message).
  * memberUuids: string[] of prop cue UUIDs that belong to this collection.
+ * singlePropEnabled: PropCollection.single_prop_enabled (proto field 4, bool) —
+ * proto3 default is false, so it's only written when true.
  */
-function buildCollectionField4(collectionUuid, name, memberUuids) {
+function buildCollectionField4(collectionUuid, name, memberUuids, singlePropEnabled = false) {
   const parts = [];
   // f1: collection UUID
   const uuidInner = Buffer.concat([Buffer.from([0x0a, 36]), Buffer.from(collectionUuid, 'utf8')]);
@@ -390,8 +392,29 @@ function buildCollectionField4(collectionUuid, name, memberUuids) {
     const uuidMsg = encodeUuidMsgBytes(uuid);
     parts.push(Buffer.concat([Buffer.from([0x1a]), encodeVarint(uuidMsg.length), uuidMsg]));
   }
+  // f4: single_prop_enabled (varint bool) — tag = (4 << 3) | 0 = 0x20
+  if (singlePropEnabled) parts.push(Buffer.from([0x20, 0x01]));
   const msgBytes = Buffer.concat(parts);
   return Buffer.concat([Buffer.from([0x22]), encodeVarint(msgBytes.length), msgBytes]);
+}
+
+/**
+ * Extract field 4 (single_prop_enabled, varint bool) from a field-4 collection data bytes.
+ */
+function getCollectionSingleFlag(buf, start, end) {
+  let pos = start;
+  while (pos < end) {
+    const tv = readVarint(buf, pos); pos = tv.nextPos;
+    const fn = tv.value >>> 3, wt = tv.value & 7;
+    if (wt === 0) {
+      const v = readVarint(buf, pos); pos = v.nextPos;
+      if (fn === 4) return v.value !== 0;
+    } else if (wt === 2) {
+      const lv = readVarint(buf, pos); pos = lv.nextPos;
+      pos += lv.value;
+    } else if (wt === 1) { pos += 8; } else if (wt === 5) { pos += 4; } else break;
+  }
+  return false;
 }
 
 /**
@@ -553,17 +576,22 @@ async function updateConfigProps(newCues, pro7RootFolder = '') {
         const collName = getCollectionName(raw, f.dataStart, f.dataEnd);
 
         if (collUuid === collectionUuid || collName === 'DeckPro') {
-          // This IS the DeckPro collection — replace with updated member list
-          chunks.push(buildCollectionField4(collectionUuid, 'DeckPro', deckproCollectionMembers));
+          // This IS the DeckPro collection — replace with updated member list.
+          // Single Prop Mode is always forced on for the DeckPro collection —
+          // otherwise every export would silently revert a user's manual toggle
+          // back off, since this rebuild replaces the whole field-4 entry.
+          chunks.push(buildCollectionField4(collectionUuid, 'DeckPro', deckproCollectionMembers, true));
           deckproCollectionWritten = true;
         } else {
           // Another collection — remove any DeckPro slot UUIDs from its member list
           const members = getCollectionMembers(raw, f.dataStart, f.dataEnd);
           const filteredMembers = members.filter(u => !DECKPRO_SLOT_UUID_SET.has(u));
           if (filteredMembers.length !== members.length) {
-            // Rebuild this collection without the DeckPro UUIDs
+            // Rebuild this collection without the DeckPro UUIDs — preserve its
+            // own Single Prop Mode setting rather than silently dropping it.
             const name = collName;
-            chunks.push(buildCollectionField4(collUuid, name, filteredMembers));
+            const singleFlag = getCollectionSingleFlag(raw, f.dataStart, f.dataEnd);
+            chunks.push(buildCollectionField4(collUuid, name, filteredMembers, singleFlag));
           } else {
             chunks.push(raw.slice(tagStart, fieldEnd)); // nothing to change
           }
@@ -585,7 +613,7 @@ async function updateConfigProps(newCues, pro7RootFolder = '') {
 
     // Append DeckPro collection if it wasn't in the file at all
     if (!deckproCollectionWritten) {
-      chunks.push(buildCollectionField4(collectionUuid, 'DeckPro', deckproCollectionMembers));
+      chunks.push(buildCollectionField4(collectionUuid, 'DeckPro', deckproCollectionMembers, true));
     }
 
     const patched = Buffer.concat(chunks);

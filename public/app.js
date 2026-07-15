@@ -2,9 +2,26 @@
 
 // ─── Version & Changelog ──────────────────────────────────────────────────────
 
-const APP_VERSION = '4.8.5';
+const APP_VERSION = '4.9.1';
 
 const CHANGELOG = [
+  {
+    version: '4.9.1',
+    date: '2026-07-15',
+    changes: [
+      'Fixed: Single Prop Mode reverted back to off on every export. The real export path patches Pro7\'s Configuration/Props file directly at the byte level (rather than writing a fresh props file), and that binary patcher never wrote the Single Prop Mode bit at all — so re-exporting silently stripped it back to off even right after you\'d manually turned it on in ProPresenter. It\'s now written correctly on every export, and other prop groups\' own Single Prop Mode setting is preserved when DeckPro has to touch them (e.g. to remove a stale DeckPro slot reference).',
+    ],
+  },
+  {
+    version: '4.9.0',
+    date: '2026-07-15',
+    changes: [
+      'Fixed: highlighted/emphasis text in scripture bodies was silently rendered with non-breaking spaces between every word, so ProPresenter could never wrap a line inside a highlighted phrase no matter what Fit Width computed. Long highlighted phrases now wrap normally like any other text.',
+      'Fit Width and Strip are no longer mutually exclusive on scripture slides — turn both on to keep the LED wall\'s poetry line breaks while the main screen flows the stripped text as one block, sized to fit that flattened text.',
+      'Fit Width scoring: scripture/body no longer penalizes uneven line widths across the whole block — it now only penalizes the last line landing under a third of the average width of the lines above it. Points keep the full evenness scoring (every line, including the last, close to the same length).',
+      'Point slides get a Fit Width toggle again (above Point Text / Bullets), on by default. Revealing points now size their shared box off the widest bullet in the list — rather than just the first — so the box stays a static size across the whole reveal sequence instead of risking overflow on a later, longer bullet.',
+    ],
+  },
   {
     version: '4.8.5',
     date: '2026-07-10',
@@ -2207,8 +2224,8 @@ const TOOLTIPS = {
   'blank-before':             'Blank Before\nInserts an empty slide before this one so the previous content clears before this slide appears.',
   // Scripture
   'reference':                'Reference\nBook, chapter and verse — e.g. John 3:16 or Tobit 6:2-4. Press Enter to look it up.',
-  'fit-width':                'Fit Width\nAuto-sizes the text box to the content so short lines aren\'t stretched across the screen. Mutually exclusive with Strip.',
-  'strip':                    'Strip\nRemoves hard line breaks on the main screen so the verse flows as one block. The prop / LED wall keeps its line breaks.',
+  'fit-width':                'Fit Width\nAuto-sizes the text box to the content so short lines aren\'t stretched across the screen. Can be combined with Strip — when both are on, the box is sized to fit the flattened (stripped) text.',
+  'strip':                    'Strip\nRemoves hard line breaks on the main screen so the verse flows as one block. The prop / LED wall keeps its line breaks. Combine with Fit Width to size the box to the flattened text.',
   'bible-formatting':         'Bible Formatting\nAdd the verse number in front of each verse, and choose superscript or inline.',
   'split':                    'Split\nBreaks this scripture into a second slide so a long passage is shown across two slides instead of one crowded one.',
   // Point
@@ -2225,7 +2242,7 @@ const DEFAULT_FEATURES = () => ({
   transitionOverride:   true,  // per-slide main presentation transition override
   propTransitionOverride: true, // per-slide prop transition override
   overrides:            true,  // the Overrides disclosure on each slide
-  bodyTools:            true,  // Fit Width / Strip buttons on scripture
+  bodyTools:            true,  // Fit Width / Strip buttons on scripture, Fit Width on points
   verseFormatting:      true,  // Verses (Bible formatting) button
 });
 
@@ -3399,20 +3416,24 @@ function activeStyleScheme() {
 // lines): each line adds `perLine`; an internal break adds 0..breakMidClause
 // depending on the punctuation it follows; a lone short word on the last line
 // adds `orphan`; splitting an emphasis (bold) phrase across lines adds
-// `highlightSplit`; uneven line widths add a raggedness cost. Hard constraints
-// (line wider than the box, or more than maxLines) disqualify a candidate.
+// `highlightSplit`. The last-line term depends on type: points add a raggedness
+// cost for uneven line widths across the whole block; scripture/body instead adds
+// `shortLast` only when the last line is under `shortLastRatio` of the average of
+// the lines above it. Hard constraints (line wider than the box, or more than
+// maxLines) disqualify a candidate.
 const FIT_WEIGHTS = {
   perLine:        16,   // baseline cost per line → prefer fewer lines
   orphan:         60,   // last line is a single short word (widow)
   orphanMaxChars:  7,   // "short" = this many letters or fewer
-  shortLast:       0,   // reserved (kept 0; raggedness already covers this)
+  shortLast:      50,   // last line's width is < shortLastRatio of the lines above it (scripture/body only)
+  shortLastRatio: 1/3,
   breakSentence:   0,   // breaking after . ! ? … is the ideal break point
   breakClause:     1,   // after : ;
   breakSoft:       3,   // after ,
   breakMidClause: 10,   // breaking with NO punctuation is the worst place
   lineEndRunt:    12,   // a line ending on a runt (conjunction/article/prep)
   highlightSplit: 40,   // an emphasis phrase straddling two lines
-  raggedPerPx:  0.04,   // penalty per px of line-width std-deviation
+  raggedPerPx:  0.04,   // penalty per px of line-width std-deviation (points only)
   maxLines:        6,   // hard cap on line count
   pad:            24,   // breathing room added to the winning width
 };
@@ -3483,7 +3504,10 @@ function _fitLinesAtWidth(inner, words, w) {
 }
 
 // Score a line breakdown. Lower is better; returns Infinity if disqualified.
-function _fitScore(lines, words, boxW) {
+// `type` controls which last-line term applies: points want every line (including
+// the last) close to the same length, so they get the raggedness term; scripture/body
+// just needs the last line to not be conspicuously shorter than the ones above it.
+function _fitScore(lines, words, boxW, type) {
   const W = FIT_WEIGHTS;
   const n = lines.length;
   if (!n) return Infinity;
@@ -3529,12 +3553,21 @@ function _fitScore(lines, words, boxW) {
     }
   }
 
-  // Raggedness: reward evenly-filled lines.
   if (n > 1) {
-    const ws   = lines.map(l => l.width);
-    const mean = ws.reduce((a, b) => a + b, 0) / n;
-    const varc = ws.reduce((a, b) => a + (b - mean) * (b - mean), 0) / n;
-    cost += Math.sqrt(varc) * W.raggedPerPx;
+    if (type === 'point') {
+      // Points: reward evenly-filled lines across the whole block.
+      const ws   = lines.map(l => l.width);
+      const mean = ws.reduce((a, b) => a + b, 0) / n;
+      const varc = ws.reduce((a, b) => a + (b - mean) * (b - mean), 0) / n;
+      cost += Math.sqrt(varc) * W.raggedPerPx;
+    } else {
+      // Scripture/body: only the last line matters — penalize it landing
+      // conspicuously shorter than the average of the lines above it.
+      const above = lines.slice(0, n - 1);
+      const avgAbove = above.reduce((a, l) => a + l.width, 0) / above.length;
+      const last = lines[n - 1];
+      if (avgAbove > 0 && last.width < avgAbove * W.shortLastRatio) cost += W.shortLast;
+    }
   }
 
   return cost;
@@ -3674,7 +3707,7 @@ function computeOptimalBodyWidth(spans, rs, type = 'body') {
     const seen = new Set();
     let best = null;   // { cost, width, broken:string[]|null }
     const consider = (lines, boxW, broken) => {
-      const cost = _fitScore(lines, words, boxW);
+      const cost = _fitScore(lines, words, boxW, type);
       if (cost === Infinity) return;
       const tight = Math.min(Math.max(...lines.map(l => l.width)) + FIT_WEIGHTS.pad, boxW, maxW);
       if (!best || cost < best.cost - 0.01) best = { cost, width: Math.ceil(tight), broken };
@@ -3713,6 +3746,45 @@ function computeOptimalBodyWidth(spans, rs, type = 'body') {
   } finally {
     document.body.removeChild(msr);
   }
+}
+
+// Compute Fit Width for one slide's current text. Single source of truth for
+// both the per-slide toggle (attachFormHandlers) and the pre-export batch
+// recompute — keeps the two from drifting apart.
+//
+// Scripture: measures the stripped (newline-free) text when Strip is also on,
+// since Strip flattens display 1 into one flowing paragraph — the box should
+// fit that paragraph, not the original poetry line lengths.
+//
+// Revealing points: every cue in the sequence shares one box (spec.bodyW/bodyX
+// in builder.js), so it's sized off the WIDEST individual bullet rather than
+// just the first — otherwise a later, longer bullet could overflow a box sized
+// for a short one. That keeps the box static across the whole reveal sequence.
+//
+// Returns { bodyW, bodyX, brokenText } or null if there's no text to measure.
+function computeSlideFitWidth(slide, scheme) {
+  if (slide.type === 'scripture') {
+    let spans = (slide.bodies || [[]])[0] || [];
+    if (slide.stripNewlines) spans = spans.filter(s => s.text !== '\n');
+    if (!spans.length || spans.every(s => !s.text)) return null;
+    return computeOptimalBodyWidth(spans, scheme, 'scripture');
+  }
+  if (slide.type === 'point') {
+    if (slide.mode === 'revealing') {
+      let best = null;
+      for (const bullet of (slide.bullets || [])) {
+        const spans = Array.isArray(bullet) ? bullet : [{ text: bullet || '', bold: true }];
+        if (!spans.length || spans.every(s => !s.text)) continue;
+        const r = computeOptimalBodyWidth(spans, scheme, 'point');
+        if (!best || r.bodyW > best.bodyW) best = r;
+      }
+      return best;
+    }
+    const text = slide.bodyText || '';
+    if (!text) return null;
+    return computeOptimalBodyWidth([{ text, bold: true }], scheme, 'point');
+  }
+  return null;
 }
 
 // ─── Macro color helpers ───────────────────────────────────────────────────────
@@ -8228,7 +8300,14 @@ function pointForm(slide) {
 
   const singleFields = mode === 'single' ? `
     <div class="field" id="field-bodyText">
-      <label>Point Text</label>
+      <div class="body-field-hdr">
+        <label>Point Text</label>
+        <div class="body-field-tools">
+          ${F.bodyTools ? `
+          <button class="btn-sm body-tool-btn ${slide.fitWidth ? 'active' : ''}" id="btn-fit-width" type="button" data-tip-key="fit-width">Fit Width</button>
+          ` : ''}
+        </div>
+      </div>
       ${plainEditor('f-bodyText', slide.bodyText, 'Point text…')}
     </div>
   ` : '';
@@ -8248,7 +8327,14 @@ function pointForm(slide) {
       </div>
     </div>
     <div class="field" id="field-bullets">
-      <label>Bullets (one per slide)</label>
+      <div class="body-field-hdr">
+        <label>Bullets (one per slide)</label>
+        <div class="body-field-tools">
+          ${F.bodyTools ? `
+          <button class="btn-sm body-tool-btn ${slide.fitWidth ? 'active' : ''}" id="btn-fit-width" type="button" data-tip-key="fit-width">Fit Width</button>
+          ` : ''}
+        </div>
+      </div>
       <div class="bullet-list" id="bullet-list">
         ${(slide.bullets || [[]]).map((b, i) => `
           <div class="bullet-row" data-bullet-idx="${i}">
@@ -8920,20 +9006,11 @@ function attachFormHandlers(slide) {
 
   // Helper: compute and store fit-width for the current slide
   function applyFitWidth() {
-    let spans = [];
-    if (slide.type === 'scripture') {
-      spans = (slide.bodies || [[]])[0] || [];
-    } else if (slide.type === 'point') {
-      const text = slide.mode === 'revealing'
-        ? (slide.bullets || [])[0] || ''
-        : (slide.bodyText || '');
-      spans = [{ text, bold: true }];
-    }
-    if (!spans.length || spans.every(s => !s.text)) return;
-    const scheme = activeStyleScheme();
-    const result = computeOptimalBodyWidth(spans, scheme, slide.type);
+    const result = computeSlideFitWidth(slide, activeStyleScheme());
+    if (!result) return;
     slide.bodyW = result.bodyW;
     slide.bodyX = result.bodyX;
+    slide._fitBrokenText = (slide.type === 'point' && slide.mode !== 'revealing') ? (result.brokenText || null) : null;
   }
 
   const fitBtn   = get('btn-fit-width');
@@ -8944,15 +9021,11 @@ function attachFormHandlers(slide) {
       slide.fitWidth = !slide.fitWidth;
       fitBtn.classList.toggle('active', slide.fitWidth);
       if (slide.fitWidth) {
-        // Mutually exclusive with Strip
-        if (slide.stripNewlines) {
-          slide.stripNewlines = false;
-          stripBtn?.classList.remove('active');
-        }
         applyFitWidth();
       } else {
         slide.bodyW = null;
         slide.bodyX = null;
+        slide._fitBrokenText = null;
       }
       saveState();
     });
@@ -8962,13 +9035,9 @@ function attachFormHandlers(slide) {
     stripBtn.addEventListener('click', () => {
       slide.stripNewlines = !slide.stripNewlines;
       stripBtn.classList.toggle('active', slide.stripNewlines);
-      if (slide.stripNewlines && slide.fitWidth) {
-        // Mutually exclusive with Fit Width
-        slide.fitWidth = false;
-        slide.bodyW = null;
-        slide.bodyX = null;
-        fitBtn?.classList.remove('active');
-      }
+      // Strip changes what Fit Width measures (flattened vs. explicit-break text),
+      // so re-run it if it's on.
+      if (slide.fitWidth) applyFitWidth();
       saveState();
     });
   }
@@ -9721,14 +9790,8 @@ async function generate() {
     const scheme = activeStyleScheme();
     for (const slide of state.slides) {
       if (!slide.fitWidth) continue;
-      let spans = null;
-      if (slide.type === 'scripture') spans = (slide.bodies || [[]])[0] || [];
-      else if (slide.type === 'point') {
-        const text = slide.mode === 'revealing' ? (slide.bullets || [])[0] || '' : (slide.bodyText || '');
-        spans = [{ text, bold: true }];
-      }
-      if (spans && spans.some(s => s.text)) {
-        const r = computeOptimalBodyWidth(spans, scheme, slide.type);
+      const r = computeSlideFitWidth(slide, scheme);
+      if (r) {
         slide.bodyW = r.bodyW; slide.bodyX = r.bodyX;
         // Hard punctuation breaks apply to single-mode point body text only.
         slide._fitBrokenText = (slide.type === 'point' && slide.mode !== 'revealing') ? (r.brokenText || null) : null;
@@ -13005,15 +13068,17 @@ function helpSections() {
       <ul>
         <li>Fewer lines.</li>
         <li>No <strong>orphan</strong> — a lone short word stranded on the last line.</li>
-        <li>Not splitting a <strong>bold/emphasis phrase</strong> across two lines.</li>
-        <li>Even line widths.</li>
+        <li>Not splitting a <strong>bold/emphasis phrase</strong> across two lines — though it still will if that's what it takes to keep the other lines a consistent length (see below).</li>
+        <li><strong>Scripture/body:</strong> the last line shouldn't come out conspicuously shorter than the lines above it — specifically, less than a third of their average width.</li>
+        <li><strong>Points:</strong> every line, including the last, is scored for evenness — DeckPro tries to keep all lines close to the same length.</li>
         <li>For points: breaking <strong>after punctuation</strong> (. ! ? … : ;&nbsp;,) rather than mid-clause, and not ending a line on a runt word (“and”, “the”, “through”).</li>
       </ul>
 
       <h4>Scripture vs. Point</h4>
       <ul>
-        <li><strong>Scripture</strong> — toggle the <strong>Fit Width</strong> button on the slide. <strong>Strip</strong> (remove newlines) is the mutually-exclusive alternative.</li>
-        <li><strong>Point</strong> — always fit automatically; for points, DeckPro can insert real line breaks to split cleanly after punctuation (e.g. one line per comma). A point that fits on one line stays on one line — breaks are never forced just because punctuation exists.</li>
+        <li><strong>Scripture</strong> — toggle the <strong>Fit Width</strong> button on the slide. <strong>Strip</strong> (remove newlines) can be combined with it: with both on, the box is sized to fit the flattened (newline-free) text rather than the original poetry line lengths, so display 1 can run more horizontally while display 2 keeps the original line breaks.</li>
+        <li><strong>Point</strong> — on by default (toggle above the Point Text / Bullets box, next to no reason to turn it off), DeckPro can insert real line breaks to split cleanly after punctuation (e.g. one line per comma). A point that fits on one line stays on one line — breaks are never forced just because punctuation exists.</li>
+        <li><strong>Revealing points</strong> — every bullet in the sequence shares one box, so it's sized off the <em>widest</em> bullet in the list rather than just the first, and that same size is held across every reveal step. That keeps the box static as bullets are revealed one at a time, instead of resizing slide to slide.</li>
       </ul>
 
       <div class="help-callout">
@@ -13221,8 +13286,11 @@ function helpSections() {
 
       <h4>Fit Width internals</h4>
       <ul>
-        <li><code>computeOptimalBodyWidth(spans, scheme, type)</code> measures in a hidden DOM node at the resolved font/size (Point uses pointSize + weight 900), sweeps candidate widths (12px steps), and scores each layout with the tunable <code>FIT_WEIGHTS</code> block.</li>
-        <li>For points it also proposes punctuation-only break layouts; if one wins and box-width alone can't reproduce it, it emits hard breaks as <code>bodyDisplayText</code> (main-screen body only — notes/queue/prop keep the unbroken text).</li>
+        <li><code>computeOptimalBodyWidth(spans, scheme, type)</code> measures in a hidden DOM node at the resolved font/size (Point uses pointSize + weight 900), sweeps candidate widths (12px steps), and scores each layout with the tunable <code>FIT_WEIGHTS</code> block via <code>_fitScore(lines, words, boxW, type)</code>.</li>
+        <li>The last-line term is type-dependent: points score raggedness across every line (<code>raggedPerPx</code>); scripture/body instead adds <code>shortLast</code> only when the last line falls under <code>shortLastRatio</code> (1/3) of the average width of the lines above it.</li>
+        <li>For points it also proposes punctuation-only break layouts; if one wins and box-width alone can't reproduce it, it emits hard breaks as <code>bodyDisplayText</code> (main-screen body only — notes/queue/prop keep the unbroken text). Revealing points don't get hard breaks, only single-mode.</li>
+        <li><code>computeSlideFitWidth(slide, scheme)</code> is the shared entry point used by both the per-slide toggle and the pre-export batch recompute. For scripture it strips newline spans first when Strip is also on; for revealing points it runs every bullet through <code>computeOptimalBodyWidth</code> and keeps the widest result, since all reveal cues share one <code>bodyW</code>/<code>bodyX</code> in <code>buildPointCues()</code>.</li>
+        <li>Highlighted/emphasis (<code>alt</code>) text is rendered with ordinary spaces in the exported RTF — earlier builds substituted <code>\~</code> (RTF non-breaking space) for every space inside an <code>alt</code> span, which silently blocked ProPresenter from ever wrapping inside a highlighted phrase regardless of what Fit Width computed. That substitution is gone; <code>highlightSplit</code> in <code>FIT_WEIGHTS</code> is now the only thing discouraging (not preventing) a split there.</li>
       </ul>
 
       <h4>Tests</h4>

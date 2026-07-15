@@ -94,7 +94,7 @@ function buildSpanContent(spans, opts = {}) {
   // Fast path: uniform (all alt or all non-alt), no italic/underline/bold/superscript
   if (!mixedAlt && !hasIU) {
     const escaped = escapeRtf(spans.map(s => s.text).join(''));
-    return { content: allAlt ? escaped.replace(/ /g, '\\~') : escaped, allAlt, mixedAlt };
+    return { content: escaped, allAlt, mixedAlt };
   }
 
   // Per-span character formatting.
@@ -107,8 +107,7 @@ function buildSpanContent(spans, opts = {}) {
   let curSuper     = false;
 
   for (const span of spans) {
-    const rawEsc = escapeRtf(span.text);
-    const txt = span.alt ? rawEsc.replace(/ /g, '\\~') : rawEsc;
+    const txt = escapeRtf(span.text);
     if (!txt) continue;
 
     let cmd = '';

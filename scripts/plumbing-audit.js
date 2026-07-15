@@ -22,6 +22,8 @@
  * Exit: 0 if no P0/P1 findings, 1 otherwise.
  */
 
+const fs = require('fs');
+const os = require('os');
 const path = require('path');
 const protobuf = require('protobufjs');
 const { encode } = require('../encode');
@@ -425,8 +427,60 @@ async function main() {
       rev1 && rev2, names.filter(n => n.startsWith(S.revealBase)).join(', '));
   }
 
+  // ---- Deliver-mode: Configuration/Props binary patch keeps Single Prop Mode on ----
+  // This is a separate code path from the download-mode check above — deliverMode
+  // patches a real Configuration/Props file byte-for-byte instead of building a
+  // fresh PropDocument, so it has its own way to silently drop a field. Regression
+  // for the bug where re-exporting reverted a previously-toggled-on "DeckPro"
+  // collection back to Single Prop Mode = off on every export.
+  await checkDeliverModeSinglePropMode(propRoot);
+
   // ── Report ──────────────────────────────────────────────────────────────────
   report();
+}
+
+async function checkDeliverModeSinglePropMode(propRoot) {
+  const PropDocument = propRoot.lookupType('rv.data.PropDocument');
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'deckpro-plumbing-'));
+  try {
+    const confDir = path.join(tmp, 'Configuration');
+    fs.mkdirSync(confDir, { recursive: true });
+    const confPath = path.join(confDir, 'Props');
+
+    // Seed a pre-existing "DeckPro" collection stuck at singlePropEnabled:false —
+    // simulating the state after a prior export wrote it without the flag.
+    const seedMsg = PropDocument.fromObject({
+      cues: [],
+      propCollections: [{
+        uuid: { string: 'AAAAAAAA-0000-0000-0000-000000000001' },
+        name: 'DeckPro',
+        singlePropEnabled: false,
+        items: [],
+      }],
+    });
+    fs.writeFileSync(confPath, PropDocument.encode(seedMsg).finish());
+
+    const spec = {
+      name: 'PlumbingDeliverTest',
+      deliverMode: true,
+      pro7RootFolder: tmp,
+      slides: [
+        { type: 'point', mode: 'single', label: 'Plumbing Point', bodyText: 'PLUMBING_DELIVER_SENTINEL', propName: 'Plumbing Point' },
+      ],
+    };
+    const result = await encode(spec, null, null);
+
+    const patched = PropDocument.toObject(
+      PropDocument.decode(fs.readFileSync(confPath)), { defaults: true });
+    const deckproColl = (patched.propCollections || []).find(c => c.name === 'DeckPro');
+
+    check('P0', 'props', 'Deliver-mode export completes without error', !!(result && result.propsInstalled), result && result.propsError || '');
+    check('P0', 'props', 'Single Prop Mode stays on after re-exporting an existing DeckPro collection',
+      !!(deckproColl && deckproColl.singlePropEnabled),
+      deckproColl ? `singlePropEnabled=${deckproColl.singlePropEnabled}` : 'no DeckPro collection found in patched file');
+  } finally {
+    fs.rmSync(tmp, { recursive: true, force: true });
+  }
 }
 
 function report() {
