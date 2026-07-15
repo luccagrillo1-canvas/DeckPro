@@ -2,9 +2,16 @@
 
 // ─── Version & Changelog ──────────────────────────────────────────────────────
 
-const APP_VERSION = '4.9.4';
+const APP_VERSION = '4.9.5';
 
 const CHANGELOG = [
+  {
+    version: '4.9.5',
+    date: '2026-07-15',
+    changes: [
+      'Fixed: turning on Fit Width for a slide silently resized and recentered its Display 2 (LED wall) box too — introduced last release. For anyone with a hand-tuned custom Display 2 layout (a specific position/size for a particular screen or NDI feed), this broke it the moment Fit Width was turned on for the main screen, with no way to opt out. Display 2 is now back to never being touched by Fit Width by default — exactly like before. A new "+ Display 2" toggle (next to Fit Width, only shown while Fit Width is on) opts a specific slide into also fitting its Display 2 box, independently sized using Display 2\'s own font/canvas — for when you do want it.',
+    ],
+  },
   {
     version: '4.9.4',
     date: '2026-07-15',
@@ -2248,7 +2255,8 @@ const TOOLTIPS = {
   'blank-before':             'Blank Before\nInserts an empty slide before this one so the previous content clears before this slide appears.',
   // Scripture
   'reference':                'Reference\nBook, chapter and verse — e.g. John 3:16 or Tobit 6:2-4. Press Enter to look it up.',
-  'fit-width':                'Fit Width\nAuto-sizes the text box to the content so short lines aren\'t stretched across the screen. Can be combined with Strip — when both are on, the box is sized to fit the flattened (stripped) text.',
+  'fit-width':                'Fit Width\nAuto-sizes the text box to the content so short lines aren\'t stretched across the screen. Can be combined with Strip — when both are on, the box is sized to fit the flattened (stripped) text. Main screen only — off by default for the LED wall (see "+ Display 2").',
+  'fit-width-prop':           '+ Display 2\nAlso auto-size the LED wall (Display 2) box to the content — off by default so it never touches a box you\'ve positioned by hand. Display 2 has its own font size and canvas, so it gets its own independent fit, not a copy of the main screen\'s.',
   'strip':                    'Strip\nRemoves hard line breaks on the main screen so the verse flows as one block. The prop / LED wall keeps its line breaks. Combine with Fit Width to size the box to the flattened text.',
   'bible-formatting':         'Bible Formatting\nAdd the verse number in front of each verse, and choose superscript or inline.',
   'split':                    'Split\nBreaks this scripture into a second slide so a long passage is shown across two slides instead of one crowded one.',
@@ -3813,10 +3821,17 @@ function stripNewlineSpans(spans) {
 //
 // Display 1 and Display 2 have independent canvas size, font size, and body
 // width, so a box fit for one is not fit for the other — each gets its own
-// computeOptimalBodyWidth() search (see the `display` param there). Before
-// this, Display 2's box never received a Fit Width value at all and always
-// fell back to the palette's static prop width — undersized/oversized boxes
-// there produced orphans and uneven lines independent of what Display 1 did.
+// computeOptimalBodyWidth() search (see the `display` param there).
+//
+// Display 2 is gated behind its OWN flag (slide.propFitWidth), separate from
+// Display 1's (slide.fitWidth) — it defaults off. Coupling the two directly
+// (Display 1 on ⇒ Display 2 also resized) was tried and reverted: Display 2
+// often carries a deliberately custom box (position/size hand-tuned to a
+// specific screen/NDI feed), and silently shrinking + recentering it the
+// moment Display 1's Fit Width was turned on broke that tuning with no way
+// to opt out. Turn this on only for slides where Display 2 should also be
+// content-fit (undersized/oversized boxes there can otherwise produce
+// orphans and uneven lines independent of Display 1).
 //
 // Revealing points: every cue in the sequence shares one box per display
 // (spec.bodyW/bodyX and spec.propBodyW/propBodyX in builder.js/buildProp.js),
@@ -3832,11 +3847,13 @@ function stripNewlineSpans(spans) {
 // estimatePropTitleY) instead of that heuristic re-deriving them and
 // disagreeing with what Fit Width actually rendered.
 function computeSlideFitWidth(slide, scheme) {
+  const wantsProp = !!slide.propFitWidth;
   if (slide.type === 'scripture') {
     const rawSpans = (slide.bodies || [[]])[0] || [];
     if (!rawSpans.length || rawSpans.every(s => !s.text)) return null;
     const mainSpans = slide.stripNewlines ? stripNewlineSpans(rawSpans) : rawSpans;
     const main = computeOptimalBodyWidth(mainSpans, scheme, 'scripture', 'main');
+    if (!wantsProp) return { ...main, bodyLines: main.lines, propBodyW: null, propBodyX: null, propBodyLines: null };
     const prop = computeOptimalBodyWidth(rawSpans, scheme, 'scripture', 'prop');
     return { ...main, bodyLines: main.lines, propBodyW: prop.bodyW, propBodyX: prop.bodyX, propBodyLines: prop.lines };
   }
@@ -3848,8 +3865,10 @@ function computeSlideFitWidth(slide, scheme) {
         if (!spans.length || spans.every(s => !s.text)) continue;
         const r = computeOptimalBodyWidth(spans, scheme, 'point', 'main');
         if (!best || r.bodyW > best.bodyW) best = r;
-        const rp = computeOptimalBodyWidth(spans, scheme, 'point', 'prop');
-        if (!bestProp || rp.bodyW > bestProp.bodyW) bestProp = rp;
+        if (wantsProp) {
+          const rp = computeOptimalBodyWidth(spans, scheme, 'point', 'prop');
+          if (!bestProp || rp.bodyW > bestProp.bodyW) bestProp = rp;
+        }
       }
       if (!best) return null;
       return { ...best, propBodyW: bestProp ? bestProp.bodyW : null, propBodyX: bestProp ? bestProp.bodyX : null };
@@ -3858,6 +3877,7 @@ function computeSlideFitWidth(slide, scheme) {
     if (!text) return null;
     const spans = [{ text, bold: true }];
     const main = computeOptimalBodyWidth(spans, scheme, 'point', 'main');
+    if (!wantsProp) return { ...main, propBodyW: null, propBodyX: null, propBrokenText: null };
     const prop = computeOptimalBodyWidth(spans, scheme, 'point', 'prop');
     return { ...main, propBodyW: prop.bodyW, propBodyX: prop.bodyX, propBrokenText: prop.brokenText || null };
   }
@@ -8339,6 +8359,9 @@ function scriptureForm(slide) {
           <div class="body-field-tools">
             ${F.bodyTools ? `
             <button class="btn-sm body-tool-btn ${slide.fitWidth ? 'active' : ''}" id="btn-fit-width" type="button" data-tip-key="fit-width">Fit Width</button>
+            ${slide.fitWidth ? `
+            <button class="btn-sm body-tool-btn ${slide.propFitWidth ? 'active' : ''}" id="btn-fit-width-prop" type="button" data-tip-key="fit-width-prop">+ Display 2</button>
+            ` : ''}
             <button class="btn-sm body-tool-btn ${slide.stripNewlines ? 'active' : ''}" id="btn-strip-nl" type="button" data-tip-key="strip">Strip</button>
             ` : ''}
             ${F.verseFormatting ? `
@@ -8382,6 +8405,9 @@ function pointForm(slide) {
         <div class="body-field-tools">
           ${F.bodyTools ? `
           <button class="btn-sm body-tool-btn ${slide.fitWidth ? 'active' : ''}" id="btn-fit-width" type="button" data-tip-key="fit-width">Fit Width</button>
+          ${slide.fitWidth ? `
+          <button class="btn-sm body-tool-btn ${slide.propFitWidth ? 'active' : ''}" id="btn-fit-width-prop" type="button" data-tip-key="fit-width-prop">+ Display 2</button>
+          ` : ''}
           ` : ''}
         </div>
       </div>
@@ -8409,6 +8435,9 @@ function pointForm(slide) {
         <div class="body-field-tools">
           ${F.bodyTools ? `
           <button class="btn-sm body-tool-btn ${slide.fitWidth ? 'active' : ''}" id="btn-fit-width" type="button" data-tip-key="fit-width">Fit Width</button>
+          ${slide.fitWidth ? `
+          <button class="btn-sm body-tool-btn ${slide.propFitWidth ? 'active' : ''}" id="btn-fit-width-prop" type="button" data-tip-key="fit-width-prop">+ Display 2</button>
+          ` : ''}
           ` : ''}
         </div>
       </div>
@@ -9095,25 +9124,38 @@ function attachFormHandlers(slide) {
     slide._fitPropBrokenText = (slide.type === 'point' && slide.mode !== 'revealing') ? (result.propBrokenText || null) : null;
   }
 
-  const fitBtn   = get('btn-fit-width');
-  const stripBtn = get('btn-strip-nl');
+  const fitBtn     = get('btn-fit-width');
+  const fitPropBtn = get('btn-fit-width-prop');
+  const stripBtn   = get('btn-strip-nl');
 
   if (fitBtn) {
     fitBtn.addEventListener('click', () => {
       slide.fitWidth = !slide.fitWidth;
-      fitBtn.classList.toggle('active', slide.fitWidth);
       if (slide.fitWidth) {
         applyFitWidth();
       } else {
         slide.bodyW = null;
         slide.bodyX = null;
         slide.bodyLines = null;
+        // Reset the Display 2 sub-toggle too, so it doesn't silently reapply
+        // next time Fit Width is turned back on without being re-chosen.
+        slide.propFitWidth = false;
         slide.propBodyW = null;
         slide.propBodyX = null;
         slide.propBodyLines = null;
         slide._fitBrokenText = null;
         slide._fitPropBrokenText = null;
       }
+      saveState();
+      renderMain(); // the "+ Display 2" sub-toggle only shows while Fit Width is on
+    });
+  }
+
+  if (fitPropBtn) {
+    fitPropBtn.addEventListener('click', () => {
+      slide.propFitWidth = !slide.propFitWidth;
+      fitPropBtn.classList.toggle('active', slide.propFitWidth);
+      if (slide.fitWidth) applyFitWidth(); // recompute — computeSlideFitWidth already nulls prop fields when off
       saveState();
     });
   }
@@ -9161,8 +9203,8 @@ function selectSlide(id) {
 function addSlide(type) {
   const endIdx = state.slides.findIndex(s => s.type === 'end');
   const defaults = {
-    scripture: { label: 'New Scripture', reference: '', bodies: [[]], propName: '', blankBefore: true, blankSpans: [], blankShowProp: false, transition: null, propTransition: null, stripNewlines: false, fitWidth: true, bodyW: null, bodyX: null, followReveal: 'single' },
-    point:     { label: 'New Point', mode: 'single', bodyText: '', propName: '', propBaseName: '', title: '', bullets: [[]], blankBefore: true, blankSpans: [], blankShowProp: false, transition: null, propTransition: null, propInitialTransition: null, propRevealTransition: null, fitWidth: true, bodyW: null, bodyX: null },
+    scripture: { label: 'New Scripture', reference: '', bodies: [[]], propName: '', blankBefore: true, blankSpans: [], blankShowProp: false, transition: null, propTransition: null, stripNewlines: false, fitWidth: true, bodyW: null, bodyX: null, propFitWidth: false, propBodyW: null, propBodyX: null, followReveal: 'single' },
+    point:     { label: 'New Point', mode: 'single', bodyText: '', propName: '', propBaseName: '', title: '', bullets: [[]], blankBefore: true, blankSpans: [], blankShowProp: false, transition: null, propTransition: null, propInitialTransition: null, propRevealTransition: null, fitWidth: true, bodyW: null, bodyX: null, propFitWidth: false, propBodyW: null, propBodyX: null },
     blank:     { label: 'Blank', spans: [], transition: null },
     image:     { label: 'Image', blankBefore: true, blankSpans: [], transition: null, propTransition: null },
     custom:    { label: 'Custom' },
@@ -9547,9 +9589,9 @@ function buildSpec() {
         bodyW:         slide.fitWidth ? (slide.bodyW || null) : null,
         bodyX:         slide.fitWidth ? (slide.bodyX || null) : null,
         bodyLines:     slide.fitWidth ? (slide.bodyLines || null) : null,
-        propBodyW:     slide.fitWidth ? (slide.propBodyW || null) : null,
-        propBodyX:     slide.fitWidth ? (slide.propBodyX || null) : null,
-        propBodyLines: slide.fitWidth ? (slide.propBodyLines || null) : null,
+        propBodyW:     (slide.fitWidth && slide.propFitWidth) ? (slide.propBodyW || null) : null,
+        propBodyX:     (slide.fitWidth && slide.propFitWidth) ? (slide.propBodyX || null) : null,
+        propBodyLines: (slide.fitWidth && slide.propFitWidth) ? (slide.propBodyLines || null) : null,
       };
     }
 
@@ -9572,8 +9614,8 @@ function buildSpec() {
           propRevealTransition:  slide.propRevealTransition || null,
           bodyW:                slide.fitWidth ? (slide.bodyW || null) : null,
           bodyX:                slide.fitWidth ? (slide.bodyX || null) : null,
-          propBodyW:            slide.fitWidth ? (slide.propBodyW || null) : null,
-          propBodyX:            slide.fitWidth ? (slide.propBodyX || null) : null,
+          propBodyW:            (slide.fitWidth && slide.propFitWidth) ? (slide.propBodyW || null) : null,
+          propBodyX:            (slide.fitWidth && slide.propFitWidth) ? (slide.propBodyX || null) : null,
         };
       }
       return {
@@ -9589,7 +9631,7 @@ function buildSpec() {
           ? normalizeDeckQuotes(slide._fitBrokenText) : null,
         // Same idea for Display 2 (LED wall) — its own hard breaks, independent
         // of Display 1's, since it wraps at its own box width.
-        propBodyDisplayText: (slide.fitWidth && slide._fitPropBrokenText &&
+        propBodyDisplayText: (slide.fitWidth && slide.propFitWidth && slide._fitPropBrokenText &&
           slide._fitPropBrokenText.replace(/\n/g, ' ').trim() === (slide.bodyText || '').trim())
           ? normalizeDeckQuotes(slide._fitPropBrokenText) : null,
         propName:      normalizeDeckQuotes(slide.propName || slide.bodyText || 'point'),
@@ -9602,8 +9644,8 @@ function buildSpec() {
         propTransition: slide.propTransition || null,
         bodyW:         slide.fitWidth ? (slide.bodyW || null) : null,
         bodyX:         slide.fitWidth ? (slide.bodyX || null) : null,
-        propBodyW:     slide.fitWidth ? (slide.propBodyW || null) : null,
-        propBodyX:     slide.fitWidth ? (slide.propBodyX || null) : null,
+        propBodyW:     (slide.fitWidth && slide.propFitWidth) ? (slide.propBodyW || null) : null,
+        propBodyX:     (slide.fitWidth && slide.propFitWidth) ? (slide.propBodyX || null) : null,
       };
     }
 
@@ -13186,6 +13228,10 @@ function helpSections() {
       <div class="help-callout">
         <strong>The width cap.</strong> Fit Width can only ever <em>shrink</em> the box — never grow it past the Body width set in the palette's Layout tab. Widen the ceiling there if you need more room.
       </div>
+
+      <h4>Display 2 (LED wall) — opt-in only</h4>
+      <p>By default, Fit Width only sizes the <strong>main screen's</strong> box. Display 2 always renders at your palette's configured prop width, exactly as if Fit Width didn't exist — so a box you've hand-positioned for a specific screen or NDI feed is never silently resized or recentered out from under you.</p>
+      <p>Click <strong>+ Display 2</strong> (next to Fit Width, only shown while Fit Width itself is on) to also fit that slide's LED-wall box to its content. It runs its own independent search using Display 2's own font size, canvas, and body width — it does not copy whatever Display 1 computed. Turning Fit Width off resets this sub-toggle too.</p>
     `,
   },
   {
@@ -13392,6 +13438,7 @@ function helpSections() {
         <li>The last-line term is type-dependent: points score raggedness across every line (<code>raggedPerPx</code>); scripture/body instead adds <code>shortLast</code> only when the last line falls under <code>shortLastRatio</code> (1/3) of the average width of the lines above it.</li>
         <li>For points it also proposes punctuation-only break layouts; if one wins and box-width alone can't reproduce it, it emits hard breaks as <code>bodyDisplayText</code> (main-screen body only — notes/queue/prop keep the unbroken text). Revealing points don't get hard breaks, only single-mode.</li>
         <li><code>computeSlideFitWidth(slide, scheme)</code> is the shared entry point used by both the per-slide toggle and the pre-export batch recompute. For scripture it strips newline spans first when Strip is also on; for revealing points it runs every bullet through <code>computeOptimalBodyWidth</code> and keeps the widest result, since all reveal cues share one <code>bodyW</code>/<code>bodyX</code> in <code>buildPointCues()</code>.</li>
+        <li><code>computeOptimalBodyWidth(spans, rs, type, display)</code>'s <code>display</code> param (<code>'main'</code>|<code>'prop'</code>) selects Display 2's own canvas size/font size/body-width ceiling instead of Display 1's. <code>computeSlideFitWidth</code> only runs the <code>'prop'</code> search when <code>slide.propFitWidth</code> is true (the "+ Display 2" sub-toggle, off by default, only shown while <code>slide.fitWidth</code> is on) — coupling it unconditionally to <code>slide.fitWidth</code> was tried and reverted, since it silently resized/recentered hand-tuned custom Display 2 boxes the moment Display 1's Fit Width was turned on, with no way to opt out.</li>
         <li>Highlighted/emphasis (<code>alt</code>) text is rendered with ordinary spaces in the exported RTF — earlier builds substituted <code>\~</code> (RTF non-breaking space) for every space inside an <code>alt</code> span, which silently blocked ProPresenter from ever wrapping inside a highlighted phrase regardless of what Fit Width computed. That substitution is gone; <code>highlightSplit</code> in <code>FIT_WEIGHTS</code> is now the only thing discouraging (not preventing) a split there.</li>
       </ul>
 
