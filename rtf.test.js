@@ -103,7 +103,7 @@ test('blank all-bold: Show Jesus to the world.', rtfBody([{text: 'Show Jesus to 
 \\deftab1680
 \\pard\\pardeftab1680\\pardirnatural\\qc\\partightenfactor0
 
-\\f0\\b\\fs88 \\cf2 \\CocoaLigature0 \\outl0\\strokewidth-20 \\strokec3 Show\\~Jesus\\~to\\~the\\~world.}`);
+\\f0\\b\\fs88 \\cf2 \\CocoaLigature0 \\outl0\\strokewidth-20 \\strokec3 Show Jesus to the world.}`);
 
 // cue 2 — John 13:35 body: mixed bold
 const johnSpans = [
@@ -120,7 +120,7 @@ test('mixed bold: John 13:35 body', rtfBody(johnSpans),
 \\pard\\pardeftab1680\\pardirnatural\\partightenfactor0
 
 \\f0\\fs88 \\cf2 \\CocoaLigature0 \\outl0\\strokewidth-20 \\strokec3 \\'93Your 
-\\f1 love\\~for\\~one\\~another
+\\f1 love for one another
 \\f0  will prove to the world that you are my disciples.\\'94}`);
 
 // cue 5 — Acts 2:46 body: multiple bold spans
@@ -142,7 +142,7 @@ test('mixed bold: Acts 2:46 body', rtfBody(acts246Spans),
 \\pard\\pardeftab1680\\pardirnatural\\partightenfactor0
 
 \\f0\\fs88 \\cf2 \\CocoaLigature0 \\outl0\\strokewidth-20 \\strokec3 They worshiped 
-\\f1 together\\~at\\~the\\~Temple
+\\f1 together at the Temple
 \\f0  each day, met in homes for the Lord\\'92s Supper, and shared their meals with great 
 \\f1 joy
 \\f0  and 
