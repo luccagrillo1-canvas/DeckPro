@@ -2,9 +2,17 @@
 
 // ─── Version & Changelog ──────────────────────────────────────────────────────
 
-const APP_VERSION = '4.9.3';
+const APP_VERSION = '4.9.4';
 
 const CHANGELOG = [
+  {
+    version: '4.9.4',
+    date: '2026-07-15',
+    changes: [
+      "Fixed: Auto Title Y (the reference bar's automatic vertical position, above the body text) was routinely off — sometimes leaving a big gap, sometimes crowding the body — because it independently re-guessed how many lines the body text would wrap into using a rough character-width estimate, which frequently disagreed with what Fit Width actually measured and rendered. It now uses Fit Width's real, DOM-measured line count directly when available, for both Display 1 and Display 2.",
+      "Fixed: Auto Title Y on Display 2 (the LED wall) was positioning the reference bar hundreds of pixels too high on any multi-line verse — a leftover RTF half-point conversion was accidentally doubling the font size used for its own line-height math (a real-pixel calculation that should never have touched that conversion at all).",
+    ],
+  },
   {
     version: '4.9.3',
     date: '2026-07-15',
@@ -3640,7 +3648,10 @@ function _fitPunctPartitions(words) {
  * For points, the search also proposes explicit punctuation-break layouts;
  *   when one wins and box-width can't reproduce it, `brokenText` carries the
  *   text with hard line breaks (\n) for the caller to export.
- * Returns { bodyW, bodyX, brokenText } in Pro7 canvas coordinates.
+ * `lines` is the real measured line count the winning width actually wraps
+ *   into — used for Auto Title Y instead of a separate, disagreement-prone
+ *   estimate.
+ * Returns { bodyW, bodyX, brokenText, lines } in Pro7 canvas coordinates.
  */
 function computeOptimalBodyWidth(spans, rs, type = 'body', display = 'main') {
   // Resolve the scheme so inherited body width / sizes are real numbers, not
@@ -3662,7 +3673,10 @@ function computeOptimalBodyWidth(spans, rs, type = 'body', display = 'main') {
   const padding = 80; // breathing room for the poetry branch
 
   const hasExplicit = (spans || []).some(s => s.text?.includes('\n'));
-  const centered = (w, brokenText = null) => ({ bodyW: w, bodyX: Math.round((canvasW - w) / 2), brokenText });
+  // `lines` is the REAL measured line count at the winning width — Auto Title Y
+  // uses this instead of independently re-guessing it from a char-width
+  // heuristic, which routinely disagreed with what Fit Width actually rendered.
+  const centered = (w, brokenText = null, lines = null) => ({ bodyW: w, bodyX: Math.round((canvasW - w) / 2), brokenText, lines });
 
   // Hidden measurement container — 1:1 canvas coordinate space.
   const msr   = document.createElement('div');
@@ -3697,13 +3711,14 @@ function computeOptimalBodyWidth(spans, rs, type = 'body', display = 'main') {
         });
       }
 
-      let widest = 0;
+      let widest = 0, lineCount = 0;
       for (const line of lines) {
         if (!line.length) continue;
+        lineCount++;
         inner.innerHTML = spansToHtml(line);
         widest = Math.max(widest, inner.scrollWidth);
       }
-      return centered(Math.min(Math.ceil(widest) + padding, maxW));
+      return centered(Math.min(Math.ceil(widest) + padding, maxW), null, Math.max(1, lineCount));
     }
 
     // ── Balance mode: weighted candidate search ──
@@ -3731,7 +3746,7 @@ function computeOptimalBodyWidth(spans, rs, type = 'body', display = 'main') {
       const cost = _fitScore(lines, words, boxW, type);
       if (cost === Infinity) return;
       const tight = Math.min(Math.max(...lines.map(l => l.width)) + FIT_WEIGHTS.pad, boxW, maxW);
-      if (!best || cost < best.cost - 0.01) best = { cost, width: Math.ceil(tight), broken };
+      if (!best || cost < best.cost - 0.01) best = { cost, width: Math.ceil(tight), broken, lineCount: lines.length };
     };
     for (let w = floorW; w <= maxW; w += STEP) {
       const lines = _fitLinesAtWidth(inner, words, w);
@@ -3763,7 +3778,7 @@ function computeOptimalBodyWidth(spans, rs, type = 'body', display = 'main') {
       const brk = best.broken.join('\n');
       if (nat !== brk) brokenText = brk;
     }
-    return centered(width, brokenText);
+    return centered(width, brokenText, best.lineCount);
   } finally {
     document.body.removeChild(msr);
   }
@@ -3810,8 +3825,12 @@ function stripNewlineSpans(spans) {
 // sized for a short one. That keeps each box static across the whole reveal
 // sequence.
 //
-// Returns { bodyW, bodyX, brokenText, propBodyW, propBodyX, propBrokenText }
-// (prop fields null if not applicable) or null if there's no text to measure.
+// Returns { bodyW, bodyX, brokenText, bodyLines, propBodyW, propBodyX,
+// propBrokenText, propBodyLines } (prop fields null if not applicable) or
+// null if there's no text to measure. bodyLines/propBodyLines are the real
+// measured line counts, fed to Auto Title Y (see estimateTitleY/
+// estimatePropTitleY) instead of that heuristic re-deriving them and
+// disagreeing with what Fit Width actually rendered.
 function computeSlideFitWidth(slide, scheme) {
   if (slide.type === 'scripture') {
     const rawSpans = (slide.bodies || [[]])[0] || [];
@@ -3819,7 +3838,7 @@ function computeSlideFitWidth(slide, scheme) {
     const mainSpans = slide.stripNewlines ? stripNewlineSpans(rawSpans) : rawSpans;
     const main = computeOptimalBodyWidth(mainSpans, scheme, 'scripture', 'main');
     const prop = computeOptimalBodyWidth(rawSpans, scheme, 'scripture', 'prop');
-    return { ...main, propBodyW: prop.bodyW, propBodyX: prop.bodyX };
+    return { ...main, bodyLines: main.lines, propBodyW: prop.bodyW, propBodyX: prop.bodyX, propBodyLines: prop.lines };
   }
   if (slide.type === 'point') {
     if (slide.mode === 'revealing') {
@@ -9068,8 +9087,10 @@ function attachFormHandlers(slide) {
     if (!result) return;
     slide.bodyW = result.bodyW;
     slide.bodyX = result.bodyX;
+    slide.bodyLines = result.bodyLines ?? null;
     slide.propBodyW = result.propBodyW ?? null;
     slide.propBodyX = result.propBodyX ?? null;
+    slide.propBodyLines = result.propBodyLines ?? null;
     slide._fitBrokenText = (slide.type === 'point' && slide.mode !== 'revealing') ? (result.brokenText || null) : null;
     slide._fitPropBrokenText = (slide.type === 'point' && slide.mode !== 'revealing') ? (result.propBrokenText || null) : null;
   }
@@ -9086,8 +9107,10 @@ function attachFormHandlers(slide) {
       } else {
         slide.bodyW = null;
         slide.bodyX = null;
+        slide.bodyLines = null;
         slide.propBodyW = null;
         slide.propBodyX = null;
+        slide.propBodyLines = null;
         slide._fitBrokenText = null;
         slide._fitPropBrokenText = null;
       }
@@ -9523,8 +9546,10 @@ function buildSpec() {
         followReveal:  slide.followReveal || 'single',
         bodyW:         slide.fitWidth ? (slide.bodyW || null) : null,
         bodyX:         slide.fitWidth ? (slide.bodyX || null) : null,
+        bodyLines:     slide.fitWidth ? (slide.bodyLines || null) : null,
         propBodyW:     slide.fitWidth ? (slide.propBodyW || null) : null,
         propBodyX:     slide.fitWidth ? (slide.propBodyX || null) : null,
+        propBodyLines: slide.fitWidth ? (slide.propBodyLines || null) : null,
       };
     }
 
@@ -9867,8 +9892,8 @@ async function generate() {
       if (!slide.fitWidth) continue;
       const r = computeSlideFitWidth(slide, scheme);
       if (r) {
-        slide.bodyW = r.bodyW; slide.bodyX = r.bodyX;
-        slide.propBodyW = r.propBodyW ?? null; slide.propBodyX = r.propBodyX ?? null;
+        slide.bodyW = r.bodyW; slide.bodyX = r.bodyX; slide.bodyLines = r.bodyLines ?? null;
+        slide.propBodyW = r.propBodyW ?? null; slide.propBodyX = r.propBodyX ?? null; slide.propBodyLines = r.propBodyLines ?? null;
         // Hard punctuation breaks apply to single-mode point body text only.
         slide._fitBrokenText = (slide.type === 'point' && slide.mode !== 'revealing') ? (r.brokenText || null) : null;
         slide._fitPropBrokenText = (slide.type === 'point' && slide.mode !== 'revealing') ? (r.propBrokenText || null) : null;
