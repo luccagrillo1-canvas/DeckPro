@@ -655,6 +655,8 @@ function collectPropSpecs(slides, responses = {}, includeResponseCard = false) {
         reference: slide.reference || '',
         bodies: slide.bodies || (slide.body ? [slide.body] : [[]]),
         propTransition: slide.propTransition || null,
+        bodyW: slide.propBodyW || null,
+        bodyX: slide.propBodyX || null,
       });
     } else if (slide.type === 'point') {
       if (slide.mode === 'revealing') {
@@ -674,6 +676,8 @@ function collectPropSpecs(slides, responses = {}, includeResponseCard = false) {
             propTransition:        slide.propTransition        || null,
             propInitialTransition: slide.propInitialTransition || null,
             propRevealTransition:  slide.propRevealTransition  || null,
+            bodyW: slide.propBodyW || null,
+            bodyX: slide.propBodyX || null,
           });
         }
       } else {
@@ -688,8 +692,10 @@ function collectPropSpecs(slides, responses = {}, includeResponseCard = false) {
             propName: pName,
             slotName: slot.slot,
             slotUuid: slot.uuid,
-            bodyText: slide.bodyText || '',
+            bodyText: slide.propBodyDisplayText || slide.bodyText || '',
             propTransition: slide.propTransition || null,
+            bodyW: slide.propBodyW || null,
+            bodyX: slide.propBodyX || null,
           });
         }
       }

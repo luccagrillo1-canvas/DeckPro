@@ -431,9 +431,12 @@ function buildScripturePropCue(spec, rs = {}) {
   const titleRtf  = rtf.rtfTitle(reference, prs);
   const plainBody = allSpans.map(s => s.text).join('');
 
-  const bx = prs.propBodyX ?? 0;
+  // Fit Width override (per-slide, computed against Display 2's own metrics —
+  // see computeSlideFitWidth in public/app.js) takes precedence over the
+  // palette's static prop width, same as spec.bodyW does for the main slide.
+  const bx = spec.bodyX ?? prs.propBodyX ?? 0;
   const by = prs.propBodyY ?? 729.98;
-  const bw = prs.propBodyW ?? prs.propCanvasW ?? 1920;
+  const bw = spec.bodyW ?? prs.propBodyW ?? prs.propCanvasW ?? 1920;
   const bh = prs.propBodyH ?? 350.02;
   const bodyYOff = prs.propBodyFontAdv?.yOffset ?? 0;
 
@@ -491,9 +494,11 @@ function buildPointSinglePropCue(spec, rs = {}) {
   const bodyRtf = rtf.rtfPointBody(bodyText, prs);
   const adv     = prs.pointFontAdv || prs.boldFontAdv || {};
 
-  const bx = prs.propPointX ?? prs.propBodyX ?? 0;
+  // Fit Width override (per-slide, computed against Display 2's own metrics)
+  // takes precedence over the palette's static prop width.
+  const bx = spec.bodyX ?? prs.propPointX ?? prs.propBodyX ?? 0;
   const by = prs.propPointY ?? prs.propBodyY ?? 729.98;
-  const bw = prs.propPointW ?? prs.propBodyW ?? prs.propCanvasW ?? 1920;
+  const bw = spec.bodyW ?? prs.propPointW ?? prs.propBodyW ?? prs.propCanvasW ?? 1920;
   const bh = prs.propPointH ?? prs.propBodyH ?? 350.02;
   const boldYOff = adv.yOffset ?? 0;
 
@@ -527,9 +532,12 @@ function buildRevealingPointPropCue(spec, rs = {}) {
   const plainText      = visibleBullets.map((p, i) => `${i + 1} \u2014 ${rtf.bulletToText(p)}`).join('\n');
   const adv            = prs.pointFontAdv || prs.boldFontAdv || {};
 
-  const bx = prs.propPointX ?? prs.propBodyX ?? 0;
+  // Fit Width override (per-slide, computed against Display 2's own metrics,
+  // sized off the widest bullet so the box stays static across the reveal
+  // sequence) takes precedence over the palette's static prop width.
+  const bx = spec.bodyX ?? prs.propPointX ?? prs.propBodyX ?? 0;
   const by = prs.propPointY ?? prs.propBodyY ?? 729.98;
-  const bw = prs.propPointW ?? prs.propBodyW ?? prs.propCanvasW ?? 1920;
+  const bw = spec.bodyW ?? prs.propPointW ?? prs.propBodyW ?? prs.propCanvasW ?? 1920;
   const bh = prs.propPointH ?? prs.propBodyH ?? 350.02;
   const boldYOff = adv.yOffset ?? 0;
 
