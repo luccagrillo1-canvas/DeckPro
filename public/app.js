@@ -2,9 +2,16 @@
 
 // ─── Version & Changelog ──────────────────────────────────────────────────────
 
-const APP_VERSION = '4.9.5';
+const APP_VERSION = '4.9.6';
 
 const CHANGELOG = [
+  {
+    version: '4.9.6',
+    date: '2026-07-15',
+    changes: [
+      '"+ Display 2" (the LED-wall Fit Width sub-toggle added last release) is now on by default for new scripture and point slides, same as Fit Width itself — most slides want both. Turn it off per-slide wherever you\'ve hand-positioned that box for a specific screen or NDI feed and want it left alone.',
+    ],
+  },
   {
     version: '4.9.5',
     date: '2026-07-15',
@@ -2255,8 +2262,8 @@ const TOOLTIPS = {
   'blank-before':             'Blank Before\nInserts an empty slide before this one so the previous content clears before this slide appears.',
   // Scripture
   'reference':                'Reference\nBook, chapter and verse — e.g. John 3:16 or Tobit 6:2-4. Press Enter to look it up.',
-  'fit-width':                'Fit Width\nAuto-sizes the text box to the content so short lines aren\'t stretched across the screen. Can be combined with Strip — when both are on, the box is sized to fit the flattened (stripped) text. Main screen only — off by default for the LED wall (see "+ Display 2").',
-  'fit-width-prop':           '+ Display 2\nAlso auto-size the LED wall (Display 2) box to the content — off by default so it never touches a box you\'ve positioned by hand. Display 2 has its own font size and canvas, so it gets its own independent fit, not a copy of the main screen\'s.',
+  'fit-width':                'Fit Width\nAuto-sizes the text box to the content so short lines aren\'t stretched across the screen. Can be combined with Strip — when both are on, the box is sized to fit the flattened (stripped) text. Sizes the main screen by default; see "+ Display 2" to also fit the LED wall (on by default too, independently).',
+  'fit-width-prop':           '+ Display 2\nAlso auto-size the LED wall (Display 2) box to the content — on by default alongside Fit Width. Display 2 has its own font size and canvas, so it gets its own independent fit, not a copy of the main screen\'s. Turn it off on slides where you\'ve positioned that box by hand and want it left alone.',
   'strip':                    'Strip\nRemoves hard line breaks on the main screen so the verse flows as one block. The prop / LED wall keeps its line breaks. Combine with Fit Width to size the box to the flattened text.',
   'bible-formatting':         'Bible Formatting\nAdd the verse number in front of each verse, and choose superscript or inline.',
   'split':                    'Split\nBreaks this scripture into a second slide so a long passage is shown across two slides instead of one crowded one.',
@@ -3823,15 +3830,15 @@ function stripNewlineSpans(spans) {
 // width, so a box fit for one is not fit for the other — each gets its own
 // computeOptimalBodyWidth() search (see the `display` param there).
 //
-// Display 2 is gated behind its OWN flag (slide.propFitWidth), separate from
-// Display 1's (slide.fitWidth) — it defaults off. Coupling the two directly
-// (Display 1 on ⇒ Display 2 also resized) was tried and reverted: Display 2
-// often carries a deliberately custom box (position/size hand-tuned to a
-// specific screen/NDI feed), and silently shrinking + recentering it the
-// moment Display 1's Fit Width was turned on broke that tuning with no way
-// to opt out. Turn this on only for slides where Display 2 should also be
-// content-fit (undersized/oversized boxes there can otherwise produce
-// orphans and uneven lines independent of Display 1).
+// Display 2 is gated behind its OWN flag (slide.propFitWidth) — defaults to
+// true on new slides (same as slide.fitWidth), but is a genuinely independent
+// flag, not hard-coupled to Display 1's. Coupling them directly (Display 1 on
+// ⇒ Display 2 also resized, with no separate flag at all) was tried and
+// reverted: Display 2 often carries a deliberately custom box (position/size
+// hand-tuned to a specific screen/NDI feed), and silently shrinking +
+// recentering it the moment Display 1's Fit Width was turned on broke that
+// tuning with no way to opt out. Turn this off per-slide wherever Display 2
+// has a hand-tuned box that should be left alone.
 //
 // Revealing points: every cue in the sequence shares one box per display
 // (spec.bodyW/bodyX and spec.propBodyW/propBodyX in builder.js/buildProp.js),
@@ -9203,8 +9210,8 @@ function selectSlide(id) {
 function addSlide(type) {
   const endIdx = state.slides.findIndex(s => s.type === 'end');
   const defaults = {
-    scripture: { label: 'New Scripture', reference: '', bodies: [[]], propName: '', blankBefore: true, blankSpans: [], blankShowProp: false, transition: null, propTransition: null, stripNewlines: false, fitWidth: true, bodyW: null, bodyX: null, propFitWidth: false, propBodyW: null, propBodyX: null, followReveal: 'single' },
-    point:     { label: 'New Point', mode: 'single', bodyText: '', propName: '', propBaseName: '', title: '', bullets: [[]], blankBefore: true, blankSpans: [], blankShowProp: false, transition: null, propTransition: null, propInitialTransition: null, propRevealTransition: null, fitWidth: true, bodyW: null, bodyX: null, propFitWidth: false, propBodyW: null, propBodyX: null },
+    scripture: { label: 'New Scripture', reference: '', bodies: [[]], propName: '', blankBefore: true, blankSpans: [], blankShowProp: false, transition: null, propTransition: null, stripNewlines: false, fitWidth: true, bodyW: null, bodyX: null, propFitWidth: true, propBodyW: null, propBodyX: null, followReveal: 'single' },
+    point:     { label: 'New Point', mode: 'single', bodyText: '', propName: '', propBaseName: '', title: '', bullets: [[]], blankBefore: true, blankSpans: [], blankShowProp: false, transition: null, propTransition: null, propInitialTransition: null, propRevealTransition: null, fitWidth: true, bodyW: null, bodyX: null, propFitWidth: true, propBodyW: null, propBodyX: null },
     blank:     { label: 'Blank', spans: [], transition: null },
     image:     { label: 'Image', blankBefore: true, blankSpans: [], transition: null, propTransition: null },
     custom:    { label: 'Custom' },
@@ -13229,9 +13236,9 @@ function helpSections() {
         <strong>The width cap.</strong> Fit Width can only ever <em>shrink</em> the box — never grow it past the Body width set in the palette's Layout tab. Widen the ceiling there if you need more room.
       </div>
 
-      <h4>Display 2 (LED wall) — opt-in only</h4>
-      <p>By default, Fit Width only sizes the <strong>main screen's</strong> box. Display 2 always renders at your palette's configured prop width, exactly as if Fit Width didn't exist — so a box you've hand-positioned for a specific screen or NDI feed is never silently resized or recentered out from under you.</p>
-      <p>Click <strong>+ Display 2</strong> (next to Fit Width, only shown while Fit Width itself is on) to also fit that slide's LED-wall box to its content. It runs its own independent search using Display 2's own font size, canvas, and body width — it does not copy whatever Display 1 computed. Turning Fit Width off resets this sub-toggle too.</p>
+      <h4>Display 2 (LED wall)</h4>
+      <p><strong>+ Display 2</strong> (next to Fit Width, only shown while Fit Width itself is on) fits that slide's LED-wall box to its content too — on by default for new slides, alongside Fit Width. It runs its own independent search using Display 2's own font size, canvas, and body width — it does not copy whatever Display 1 computed.</p>
+      <p>Turn it off on a slide where you've hand-positioned the Display 2 box for a specific screen or NDI feed and want it left exactly where you put it — DeckPro will render that box at your palette's configured prop width, exactly as if Fit Width didn't exist. Turning Fit Width off resets this sub-toggle too.</p>
     `,
   },
   {
@@ -13438,7 +13445,7 @@ function helpSections() {
         <li>The last-line term is type-dependent: points score raggedness across every line (<code>raggedPerPx</code>); scripture/body instead adds <code>shortLast</code> only when the last line falls under <code>shortLastRatio</code> (1/3) of the average width of the lines above it.</li>
         <li>For points it also proposes punctuation-only break layouts; if one wins and box-width alone can't reproduce it, it emits hard breaks as <code>bodyDisplayText</code> (main-screen body only — notes/queue/prop keep the unbroken text). Revealing points don't get hard breaks, only single-mode.</li>
         <li><code>computeSlideFitWidth(slide, scheme)</code> is the shared entry point used by both the per-slide toggle and the pre-export batch recompute. For scripture it strips newline spans first when Strip is also on; for revealing points it runs every bullet through <code>computeOptimalBodyWidth</code> and keeps the widest result, since all reveal cues share one <code>bodyW</code>/<code>bodyX</code> in <code>buildPointCues()</code>.</li>
-        <li><code>computeOptimalBodyWidth(spans, rs, type, display)</code>'s <code>display</code> param (<code>'main'</code>|<code>'prop'</code>) selects Display 2's own canvas size/font size/body-width ceiling instead of Display 1's. <code>computeSlideFitWidth</code> only runs the <code>'prop'</code> search when <code>slide.propFitWidth</code> is true (the "+ Display 2" sub-toggle, off by default, only shown while <code>slide.fitWidth</code> is on) — coupling it unconditionally to <code>slide.fitWidth</code> was tried and reverted, since it silently resized/recentered hand-tuned custom Display 2 boxes the moment Display 1's Fit Width was turned on, with no way to opt out.</li>
+        <li><code>computeOptimalBodyWidth(spans, rs, type, display)</code>'s <code>display</code> param (<code>'main'</code>|<code>'prop'</code>) selects Display 2's own canvas size/font size/body-width ceiling instead of Display 1's. <code>computeSlideFitWidth</code> only runs the <code>'prop'</code> search when <code>slide.propFitWidth</code> is true (the "+ Display 2" sub-toggle, only shown while <code>slide.fitWidth</code> is on — defaults to <code>true</code> on new slides, same as <code>fitWidth</code>, but is a genuinely independent flag: turn it off per-slide to leave a hand-tuned custom Display 2 box alone). It's independent rather than hard-coupled to <code>slide.fitWidth</code> because that was tried first and reverted — it silently resized/recentered custom Display 2 boxes the moment Display 1's Fit Width was turned on, with no way to opt out.</li>
         <li>Highlighted/emphasis (<code>alt</code>) text is rendered with ordinary spaces in the exported RTF — earlier builds substituted <code>\~</code> (RTF non-breaking space) for every space inside an <code>alt</code> span, which silently blocked ProPresenter from ever wrapping inside a highlighted phrase regardless of what Fit Width computed. That substitution is gone; <code>highlightSplit</code> in <code>FIT_WEIGHTS</code> is now the only thing discouraging (not preventing) a split there.</li>
       </ul>
 
