@@ -2,9 +2,16 @@
 
 // ─── Version & Changelog ──────────────────────────────────────────────────────
 
-const APP_VERSION = '4.8.4';
+const APP_VERSION = '4.8.5';
 
 const CHANGELOG = [
+  {
+    version: '4.8.5',
+    date: '2026-07-10',
+    changes: [
+      'DeckPro now warns before export if a macro or stage display you picked has no triggers checked. Picking a real macro or stage layout from Pro7 but leaving every trigger chip unchecked looked identical in the Palette editor to a fully-configured entry — but it was silently excluded from the export with no warning anywhere. If you\'ve ever had a real stage display or macro sitting in your Palette that never seemed to fire, this was almost certainly why. The pre-export warning dialog now calls it out by name so you can check the trigger chips before exporting.',
+    ],
+  },
   {
     version: '4.8.4',
     date: '2026-07-10',
@@ -9640,6 +9647,23 @@ function preflightWarnings() {
     const r = cfg.responses || {};
     if (!r.r1?.trim() && !r.r2?.trim() && !r.r3?.trim())
       warn('Response card is enabled but all three response lines are empty', 'rc');
+  }
+
+  // ── Macros / Stage Displays with no triggers ──────────────────────────────
+  // A correctly-picked entry (real name + uuid) with zero triggers checked is
+  // indistinguishable in the Palette UI from one that's fully configured — no
+  // visual difference, and buildSpec()'s `.filter(d => ... (d.triggers||[]).length)`
+  // silently drops it from the export. This is the most likely explanation for
+  // "I picked a real stage layout/macro but it never fires" — catch it here.
+  const activeMacros = (activeStyleScheme().macros ?? ensureGlobalMacros());
+  for (const m of activeMacros) {
+    if (m.name && m.uuid && !(m.triggers || []).length)
+      warn(`Macro "${m.name}" has no triggers set — it will never fire on export (Palette → Macros)`);
+  }
+  const activeStageDisplays = (activeStyleScheme().stageDisplays ?? ensureGlobalStageDisplays());
+  for (const d of activeStageDisplays) {
+    if (d.name && d.uuid && !(d.triggers || []).length)
+      warn(`Stage display "${d.name}" has no triggers set — it will never fire on export (Palette → Stage)`);
   }
 
   // ── Quote mismatch checks ──────────────────────────────────────────────────

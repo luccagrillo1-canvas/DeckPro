@@ -82,6 +82,14 @@ environment need their own checks. Do these when the change touches them:
    browser (`styleForExport`, `computeOptimalBodyWidth`, `buildSpec` in
    `public/app.js`). Verify by driving the running app (port 3000; preview 3002)
    and inspecting the generated spec / decoded export — not the script.
+   **Known silent-drop trap:** `buildSpec()` filters macros/stage displays with
+   `.filter(d => d.name && d.uuid && (d.triggers || []).length)` — a correctly
+   picked entry (real name + real UUID from Pro7) with zero triggers checked
+   looks identical in the Palette UI to a fully-configured one, but is silently
+   excluded from the export. `preflightWarnings()` now flags this (added
+   2026-07-10) — if a user reports "I picked a real stage layout/macro but it
+   never fires," check the trigger chips first, and confirm the preflight
+   warning is present before digging into the server half.
 3. **Cross-machine paths.** Confirm DeckPro respects the *selected* Pro7
    folder/library, not a guessed one. Exercise the layouts it must detect:
    `Documents/ProPresenter`, `…/UserWorkspaces/ProPresenter`,
