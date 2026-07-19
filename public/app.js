@@ -2,9 +2,16 @@
 
 // ─── Version & Changelog ──────────────────────────────────────────────────────
 
-const APP_VERSION = '4.11.2';
+const APP_VERSION = '4.11.3';
 
 const CHANGELOG = [
+  {
+    version: '4.11.3',
+    date: '2026-07-19',
+    changes: [
+      'QR Stop add-item button now shows a hashtag (#) instead of the box-split glyph.',
+    ],
+  },
   {
     version: '4.11.2',
     date: '2026-07-19',
