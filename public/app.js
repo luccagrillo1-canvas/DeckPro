@@ -11,7 +11,7 @@ const CHANGELOG = [
     changes: [
       'Smart Notes: fixed a point\'s bullet list swallowing unrelated later bullets in a long list — collection now stops at a bullet that\'s been explicitly mapped to a different Style Map role, or that carries its own highlight color differing from the triggering block\'s, so it surfaces as its own suggestion instead of getting absorbed.',
       'Smart Notes: fixed a Style Map "Scripture" highlight color producing a bogus second suggestion when it also covered the verse-text paragraph right after a reference (or any other unrelated block) — a scripture-mapped block now only suggests when its text actually contains a Bible reference, and a same-highlight block immediately following a pushed reference is treated as its continuation instead of a new fabricated suggestion.',
-      'Smart Notes: Response Card suggestions no longer let a "decided to follow Jesus" style boilerplate line crowd out real weekly response options — bullets with heavy word overlap against the deck\'s decision text are pushed to the back before picking the first 3.',
+      'Smart Notes: Response Card suggestions no longer let a "decided to follow Jesus" style boilerplate line crowd out real weekly response options — whichever single bullet overlaps the deck\'s decision text the most (pastors often write their own close paraphrase, not the exact string) is dropped, and the rest keep their original order before picking the first 3.',
     ],
   },
   {
@@ -10959,11 +10959,15 @@ function buildNotesSuggestions() {
     const grp = collectBullets(blocks, b._i);
     const raw = grp.bullets.length ? grp.bullets : [b.text];
     const decisionPhrase = state.config.responses?.decisionText || 'I have decided to follow Jesus today!';
-    const bullets = raw
-      .map((t, i) => ({ t, i, overlap: decisionWordOverlap(t, decisionPhrase) }))
-      .sort((a, c) => a.overlap - c.overlap || a.i - c.i)
-      .slice(0, 3)
-      .map(x => x.t);
+    // Whichever single line matches the decision text the most closely is the
+    // decision text — pastors often write their own close paraphrase of it
+    // rather than the exact string. Drop just that one line and keep the rest
+    // in their original order.
+    let pool = raw;
+    const scored = raw.map((t, i) => ({ t, i, overlap: decisionWordOverlap(t, decisionPhrase) }));
+    const top = scored.reduce((a, c) => (c.overlap > a.overlap ? c : a), scored[0]);
+    if (top && top.overlap > 0) pool = raw.filter((_, i) => i !== top.i);
+    const bullets = pool.slice(0, 3);
     push({ type: 'response', bullets, preview: bullets.join(' • '), blockIdx: b.idx,
            confidence: conf, key: 'rc:' + _normLabel(bullets.join('|')),
            dupe: responseCardHasContent() });
