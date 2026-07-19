@@ -3645,6 +3645,7 @@ details[open] .font-adv-summary::before { transform: rotate(90deg); }
 .sug-add:hover { background: var(--blue); border-color: var(--blue); color: #fff; }
 .sug-ignore:hover { border-color: var(--muted); color: var(--muted); }
 .sug-confidence { background: #b45309; }
+.sug-response { background: #b06000; }
 .sug-mode { display: flex; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
 .sug-mode-btn {
   flex: 1; background: none; border: none; cursor: pointer;
