@@ -42,6 +42,7 @@ body.dark .icon-point     { background: rgba(21,128,61,.18);  color: #6fcf7a; }
 body.dark .icon-blank     { background: rgba(109,40,217,.18); color: #b798f7; }
 body.dark .icon-image     { background: rgba(194,65,12,.18);  color: #f7a87a; }
 body.dark .icon-custom    { background: rgba(190,24,93,.18);  color: #f7a0c8; }
+body.dark .si-scripture { background: rgba(29,78,216,.16); color: #93b4f7; }
 body.dark .si-start  { background: rgba(29,78,216,.16);   color: #93b4f7; }
 body.dark .si-end    { background: rgba(198,40,40,.16);   color: #f48080; }
 body.dark .si-blank  { background: rgba(123,31,162,.16);  color: #b798f7; }
@@ -2607,7 +2608,7 @@ body.dark .si-tag-stage {
   letter-spacing: .6px;
   color: var(--muted);
 }
-.btn-show-blanks {
+.btn-deck-qr {
   display: flex;
   align-items: center;
   gap: 4px;
@@ -2621,13 +2622,13 @@ body.dark .si-tag-stage {
   cursor: pointer;
   transition: border-color .15s, color .15s, background .15s;
 }
-.btn-show-blanks:hover { border-color: var(--blue); color: var(--blue); }
-.btn-show-blanks.active {
-  background: var(--blue);
-  border-color: var(--blue);
+.btn-deck-qr:hover { border-color: var(--orange); color: var(--orange); }
+.btn-deck-qr.active {
+  background: var(--orange);
+  border-color: var(--orange);
   color: #1a1a2e;
 }
-.btn-show-blanks.active:hover { background: var(--blue-dk); border-color: var(--blue-dk); color: #1a1a2e; }
+.btn-deck-qr.active:hover { background: var(--blue-dk); border-color: var(--blue-dk); color: #1a1a2e; }
 
 /* ─── Sidebar blank-before indicator row ─────────────────────────────── */
 
