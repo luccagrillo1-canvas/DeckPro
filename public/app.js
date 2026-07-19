@@ -2,9 +2,17 @@
 
 // ─── Version & Changelog ──────────────────────────────────────────────────────
 
-const APP_VERSION = '4.12.0';
+const APP_VERSION = '4.13.0';
 
 const CHANGELOG = [
+  {
+    version: '4.13.0',
+    date: '2026-07-19',
+    changes: [
+      'Smart Notes: fixed points getting swallowed into scripture suggestions — pairing a highlighted block with a nearby Bible reference now only fires when that reference sits alone on its own line, not whenever a reference is merely mentioned nearby.',
+      'Smart Notes: new "Response" Style Map role — map a heading or highlight color to it and Smart Notes will suggest filling the Response Card\'s weekly options (Response 1/2/3) straight from your notes.',
+    ],
+  },
   {
     version: '4.12.0',
     date: '2026-07-19',
@@ -9384,8 +9392,10 @@ function attachFormHandlers(slide) {
       if (!lines.length) return;
       slide.bullets = lines.map(l => [{ text: l, bold: false }]);
       ta.value = '';
+      syncRevealingLabel(); // first bullet may have changed, which the label falls back to
       renderMain();
       renderSidebar(); // keep unfurled bullet subitems in sync
+      saveState();
     });
   }
 
@@ -10799,6 +10809,10 @@ function pointExists(text) {
   return state.slides.some(s => s.type === 'point' &&
     (_normLabel(s.label) === n || _normLabel(s.bodyText) === n));
 }
+function responseCardHasContent() {
+  const r = state.config.responses || {};
+  return !!(r.r1?.trim() || r.r2?.trim() || r.r3?.trim());
+}
 
 function _isHighlight(c) {
   if (!c) return false;
@@ -10913,6 +10927,15 @@ function buildNotesSuggestions() {
     return grp.consumed;
   };
 
+  const makeResponse = (b, conf) => {
+    const grp = collectBullets(blocks, b._i);
+    const bullets = (grp.bullets.length ? grp.bullets : [b.text]).slice(0, 3);
+    push({ type: 'response', bullets, preview: bullets.join(' • '), blockIdx: b.idx,
+           confidence: conf, key: 'rc:' + _normLabel(bullets.join('|')),
+           dupe: responseCardHasContent() });
+    return grp.consumed;
+  };
+
   const pushScripturesFromBlock = (b, conf) => {
     rx.lastIndex = 0;
     let found = false;
@@ -10933,16 +10956,20 @@ function buildNotesSuggestions() {
 
   const nearbyUnhighlightedRef = (i) => {
     if (state.config.notesUseNearbyRefs === false) return '';
-    const floor = Math.max(0, i - 3);
-    for (let j = i - 1; j >= floor; j--) {
-      const prev = blocks[j];
-      const prevRole = resolveBlockRole(prev);
-      if (['ignore', 'point', 'confidence'].includes(prevRole)) break;
-      const ref = firstScriptureRef(prev.text);
-      if (ref && !prev.bg && prev.text.length <= 120) return ref;
-      if (/^h[1-6]$/.test(prev.tag) && prevRole !== 'scripture') break;
-    }
-    return '';
+    if (i === 0) return '';
+    const prev = blocks[i - 1];
+    const prevRole = resolveBlockRole(prev);
+    if (['ignore', 'point', 'confidence', 'response'].includes(prevRole)) return '';
+    if (prev.bg) return ''; // must be unhighlighted, per the feature's design
+    const ref = firstScriptureRef(prev.text);
+    if (!ref) return '';
+    // Require the block to be essentially JUST the reference — a prose line that
+    // merely mentions a verse must not pair, or a highlighted point sitting near an
+    // incidental scripture mention gets folded into a scripture suggestion instead
+    // of surfacing as its own point.
+    const remainder = prev.text.replace(ref, '').trim();
+    if (remainder.length > 2) return '';
+    return ref;
   };
 
   const sameSignal = (a, b) => a && b && a.bg && a.bg === b.bg && resolveBlockRole(a) === resolveBlockRole(b);
@@ -10966,6 +10993,7 @@ function buildNotesSuggestions() {
       continue;
     }
     if (role === 'point') { scriptureContinuation = null; i += makePoint(b, 'Mapped'); continue; }
+    if (role === 'response') { scriptureContinuation = null; i += makeResponse(b, 'Mapped'); continue; }
     if (role === 'content') {
       const hasScripture = pushScripturesFromBlock(b, 'Content');
       if (hasScripture) {
@@ -11031,13 +11059,14 @@ function renderNotesTray() {
     body.innerHTML = `<p class="notes-tray-empty">No suggestions found in this doc.</p>`;
     return;
   }
-  const chipLabel = t => t === 'scripture' ? 'Scripture' : t === 'confidence' ? 'Confidence' : 'Point';
+  const chipLabel = t => t === 'scripture' ? 'Scripture' : t === 'confidence' ? 'Confidence' : t === 'response' ? 'Response' : 'Point';
+  const dupeTitle = t => t === 'response' ? 'Response Card already has content' : 'A matching slide already exists';
   body.innerHTML = sugs.map(s => `
     <div class="sug-card" data-key="${esc(s.key)}" data-block="${s.blockIdx}">
       <div class="sug-top">
         <span class="sug-chip sug-${s.type}">${chipLabel(s.type)}</span>
         <span class="sug-conf">${s.confidence}</span>
-        ${s.dupe ? `<span class="sug-dupe" title="A matching slide already exists">⚠ in deck</span>` : ''}
+        ${s.dupe ? `<span class="sug-dupe" title="${esc(dupeTitle(s.type))}">⚠ in deck</span>` : ''}
       </div>
       <div class="sug-preview">${esc(s.preview)}</div>
       ${s.type === 'point' && s.bullets && s.bullets.length ? `
@@ -11111,6 +11140,21 @@ function notesAddConfidence(text) {
   toast('success', 'Confidence note added', '');
 }
 
+// Response Card suggestion → fills the weekly r1/r2/r3 options.
+// decisionText is deliberately left alone — it's boilerplate, not weekly content.
+function notesAddResponseCard(s) {
+  const cfg = state.config;
+  if (!cfg.responses) cfg.responses = { decisionText: '', r1: '', r2: '', r3: '' };
+  const [r1, r2, r3] = s.bullets || [];
+  if (r1) cfg.responses.r1 = r1;
+  if (r2) cfg.responses.r2 = r2;
+  if (r3) cfg.responses.r3 = r3;
+  cfg.includeResponseCard = true; // filling it implies this week uses it
+  saveState();
+  render();
+  toast('success', 'Response Card filled', [r1, r2, r3].filter(Boolean).join(' · '));
+}
+
 function notesIgnore(key) {
   if (!state.config.notesIgnored) state.config.notesIgnored = [];
   if (!state.config.notesIgnored.includes(key)) state.config.notesIgnored.push(key);
@@ -11126,13 +11170,14 @@ function applyNotesZoom() {
 }
 
 // ── Style Map: map this doc's heading levels & highlight colors to roles ────
-const NOTES_ROLES = ['auto', 'content', 'scripture', 'point', 'confidence', 'ignore'];
+const NOTES_ROLES = ['auto', 'content', 'scripture', 'point', 'confidence', 'response', 'ignore'];
 const NOTES_ROLE_LABELS = {
   auto: 'Auto',
   content: 'Content',
   scripture: 'Scripture',
   point: 'Point',
   confidence: 'Confidence',
+  response: 'Response',
   ignore: 'Ignore',
 };
 
@@ -11226,8 +11271,9 @@ function attachNotesDocHandlers() {
     if (addBtn) {
       const s = notesSuggestionByKey(addBtn.dataset.key);
       if (!s) return;
-      if (s.type === 'scripture')      notesAddScripture(s.ref);
+      if (s.type === 'scripture')       notesAddScripture(s.ref);
       else if (s.type === 'confidence') notesAddConfidence(s.text);
+      else if (s.type === 'response')   notesAddResponseCard(s);
       else                              notesAddPointFrom(s);
       notesIgnore(s.key);   // remove from tray once added (tracked as handled)
     } else if (igBtn) {
@@ -11309,6 +11355,9 @@ function attachNotesDocHandlers() {
       } else {
         toast('error', 'Select a slide first', 'Confidence text attaches to the current scripture/point slide');
       }
+    } else if (opt.dataset.role === 'response') {
+      const bullets = text.split('\n').map(l => l.trim()).filter(Boolean).slice(0, 3);
+      notesAddResponseCard({ bullets });
     }
     window.getSelection()?.removeAllRanges();
   });
