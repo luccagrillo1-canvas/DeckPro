@@ -941,49 +941,45 @@ header h1:hover { opacity: .8; }
   background: rgba(33,150,242,.08);
 }
 
+/* Wraps to more/fewer rows as the sidebar is resized (flex-wrap), and never
+   stretches the squares to fill extra width (flex-start) — a rigid N-column
+   grid did both wrong: overflowing when the sidebar got narrow, and stretching
+   the buttons into oversized rectangles when it got wide. */
 .sidebar-actions {
   padding: 6px 8px;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-start;
   gap: 4px;
   border-bottom: 1px solid var(--border);
 }
 
 .btn-add {
+  width: 34px; height: 34px;
+  flex: 0 0 auto;
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 5px 8px;
+  justify-content: center;
   border: 1px solid var(--border);
   border-radius: 7px;
-  background: var(--surface);
-  color: var(--text);
   font-size: 12px;
-  font-weight: 500;
+  font-weight: 800;
+  letter-spacing: -.02em;
   cursor: pointer;
-  transition: background .15s, border-color .15s, box-shadow .15s;
-  text-align: left;
+  transition: border-color .15s, box-shadow .15s, filter .15s;
 }
 .btn-add:hover {
-  background: var(--bg);
   border-color: var(--blue);
   box-shadow: 0 0 0 3px rgba(224,96,16,.08);
+  filter: brightness(1.06);
 }
 
-.btn-add .icon {
-  width: 22px; height: 22px;
-  border-radius: 6px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 10px; font-weight: 800;
-  flex-shrink: 0;
-  letter-spacing: -.02em;
-}
 .icon-scripture { background: #dbeafe; color: #1d4ed8; }
 .icon-point     { background: #dcfce7; color: #15803d; }
 .icon-blank     { background: #ede9fe; color: #6d28d9; }
 .icon-image     { background: #ffedd5; color: #c2410c; }
 .icon-custom    { background: #fce7f3; color: #be185d; }
-.btn-add-full   { grid-column: 1 / -1; }
+.icon-qrmarker  { background: #ffe4cc; color: var(--orange); }
 
 .slide-queue {
   flex: 1;
@@ -1801,9 +1797,6 @@ details[open].settings-disclosure .settings-disclosure-summary::before { transfo
 }
 .scheme-tb-name:focus, .scheme-tb-select:focus { border-color: var(--blue); }
 .scheme-tb-icons { display: flex; gap: 4px; flex-shrink: 0; }
-.scheme-tb-actions { display: flex; gap: 6px; flex-shrink: 0; margin-left: auto; }
-.btn-scheme-test-primary { background: var(--blue); color: #fff; border-color: var(--blue); }
-.btn-scheme-test-primary:hover { background: var(--blue-dk); }
 
 /* Text-style cards */
 .tcard {
@@ -2487,24 +2480,6 @@ body.dark .setup-pill.ok { color: #6fcf7a; }
 }
 .btn-scheme-lock.locked { border-color: rgba(255,152,0,.5); background: rgba(255,152,0,.06); }
 .btn-scheme-lock:hover { border-color: var(--blue); }
-
-.btn-scheme-test {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 3px 9px;
-  border: 1px solid var(--border);
-  border-radius: 5px;
-  background: var(--bg);
-  color: var(--muted);
-  font-size: 11px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: border-color .15s, color .15s;
-  white-space: nowrap;
-}
-.btn-scheme-test:hover { border-color: var(--accent); color: var(--accent); }
-.btn-scheme-test:disabled { opacity: .5; cursor: default; }
 
 /* fieldset resets */
 fieldset.scheme-fields {
@@ -3483,20 +3458,11 @@ details[open] .font-adv-summary::before { transform: rotate(90deg); }
   border-bottom: 1px solid var(--border);
   flex-shrink: 0; gap: 6px;
 }
-.notes-tabs {
-  display: flex; gap: 2px; flex: 1;
+.notes-panel-title {
+  flex: 1;
+  font-size: 12px; font-weight: 600; color: var(--text);
+  padding: 6px 8px 7px;
 }
-.notes-tab {
-  background: none; border: none;
-  font-size: 12px; font-weight: 600; color: var(--muted);
-  padding: 6px 8px 7px; cursor: pointer;
-  border-bottom: 2px solid transparent;
-  margin-bottom: -1px;
-  white-space: nowrap;
-  transition: color .12s;
-}
-.notes-tab:hover { color: var(--text); }
-.notes-tab.active { color: var(--blue); border-bottom-color: var(--blue); }
 .notes-panel-close {
   background: none; border: none; color: var(--muted); font-size: 16px;
   cursor: pointer; line-height: 1; padding: 0 2px; flex-shrink: 0;
@@ -3505,12 +3471,6 @@ details[open] .font-adv-summary::before { transform: rotate(90deg); }
 .notes-panel-close:hover { color: var(--text); }
 .notes-tab-body {
   flex: 1; display: flex; flex-direction: column; overflow: hidden;
-}
-.notes-tab-body.hidden { display: none; }
-.notes-panel-body {
-  flex: 1; overflow-y: auto;
-  padding: 10px 12px;
-  display: flex; flex-direction: column; gap: 12px;
 }
 
 /* ── PDF drop zone ── */
@@ -3723,33 +3683,6 @@ details[open] .font-adv-summary::before { transform: rotate(90deg); }
   border: 1px solid var(--border); background: var(--bg); color: var(--text);
 }
 
-.notes-entry {
-  display: flex; flex-direction: column; gap: 3px;
-}
-.notes-entry-hdr {
-  display: flex; align-items: center; gap: 5px;
-}
-.notes-entry-num {
-  font-size: 10px; color: var(--muted); font-weight: 600;
-  min-width: 16px;
-}
-.notes-entry-label {
-  font-size: 11px; font-weight: 700; color: var(--muted);
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
-.notes-entry-body {
-  font-size: 12px; line-height: 1.45; color: var(--text);
-  padding-left: 21px;
-}
-.notes-entry-body strong { font-weight: 700; }
-.notes-entry-ref {
-  font-size: 10px; font-weight: 600; color: var(--blue);
-  padding-left: 21px; margin-top: 1px;
-}
-.notes-entry + .notes-entry { border-top: 1px solid var(--border); padding-top: 12px; }
-.notes-empty {
-  font-size: 12px; color: var(--muted); text-align: center; padding-top: 20px;
-}
 
 /* ── Blank slide monitor controls ─────────────────────────────────────────── */
 .blank-led-row {
@@ -3902,11 +3835,6 @@ details[open] .font-adv-summary::before { transform: rotate(90deg); }
 }
 .warn-btn-ok:hover { opacity: .88; }
 
-/* ── Scheme import modal ──────────────────────────────────────────────────── */
-.scheme-import-modal { width: 460px; }
-.scheme-import-modal .warn-hdr { color: var(--text); }
-.scheme-import-modal .warn-btn-ok { background: var(--blue); }
-.scheme-import-modal .warn-btn-ok:disabled { opacity: .4; cursor: default; }
 .digit-badge {
   display: none;
   color: #c0392b;
@@ -3915,37 +3843,6 @@ details[open] .font-adv-summary::before { transform: rotate(90deg); }
   margin: -2px 0 6px 2px;
   letter-spacing: .01em;
 }
-
-.scheme-import-help {
-  font-size: 12.5px; color: var(--muted); line-height: 1.55; margin-bottom: 14px;
-}
-.scheme-import-or {
-  font-size: 12px; color: var(--muted); margin: 4px 0 14px;
-  display: flex; align-items: center; gap: 8px;
-}
-.scheme-import-report {
-  font-size: 12.5px; line-height: 1.5; border-radius: 7px;
-  padding: 9px 11px; margin-bottom: 14px;
-  background: var(--bg); color: var(--text); border: 1px solid var(--border);
-}
-.scheme-import-report.err {
-  background: rgba(229,57,53,.08); border-color: rgba(229,57,53,.3); color: var(--danger);
-}
-
-/* Import review screen */
-.si-review-groups { max-height: 46vh; overflow-y: auto; margin-bottom: 14px; padding-right: 2px; }
-.si-rev-group { margin-bottom: 12px; }
-.si-rev-title {
-  font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em;
-  color: var(--muted); margin: 0 0 6px; padding-bottom: 4px; border-bottom: 1px solid var(--border);
-}
-.si-rev-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 3px 0; font-size: 12.5px; }
-.si-rev-k { color: var(--muted); }
-.si-rev-v { color: var(--text); font-weight: 600; display: flex; align-items: center; gap: 6px; text-align: right; }
-.si-swatch { width: 13px; height: 13px; border-radius: 3px; border: 1px solid var(--border); flex-shrink: 0; }
-.si-rev-warn ul { margin: 0; padding-left: 16px; }
-.si-rev-warn li { font-size: 12px; line-height: 1.5; color: var(--muted); margin-bottom: 3px; }
-.si-rev-warn .si-rev-title { color: #c97a00; border-bottom-color: rgba(201,122,0,.3); }
 
 /* ── Bible lookup button + translation picker ─────────────────────────────── */
 .ref-row { display: flex; gap: 6px; align-items: center; }

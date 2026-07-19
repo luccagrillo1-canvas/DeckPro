@@ -2,9 +2,19 @@
 
 // ─── Version & Changelog ──────────────────────────────────────────────────────
 
-const APP_VERSION = '4.10.1';
+const APP_VERSION = '4.11.0';
 
 const CHANGELOG = [
+  {
+    version: '4.11.0',
+    date: '2026-07-18',
+    changes: [
+      'ADD ITEM buttons (Scripture/Point/Blank/Image/Custom/QR Stop) are now just the colored square — no icon-plus-label — with the full description on hover as a tooltip. The row now wraps to more or fewer rows as you resize the sidebar narrower, and stays left-aligned at fixed size instead of stretching into oversized rectangles when the sidebar is wide — fixes the layout breaking at the sidebar\'s narrow end.',
+      'Fixed a stray uppercase "V" in the DeckPro brand panel\'s version display (every other version display in the app already used lowercase, matching the "v4.11.0"-style release tags).',
+      'Completely removed "Import from Pro7" and "Test Palette" from the Palette editor toolbar, and everything behind them (the Pro7-presentation picker/review screen, the sample-deck export-and-open flow).',
+      'Completely removed the Outline panel — the right-side panel is Speaker Notes only now, no more tab switcher. (Along the way, found and fixed a shadowed duplicate of a span-rendering helper left over from that panel that was silently overriding a more complete version used elsewhere — verse-number/italic/underline formatting in a couple of spots is now handled correctly again.)',
+    ],
+  },
   {
     version: '4.10.1',
     date: '2026-07-18',
@@ -2250,6 +2260,12 @@ function bibleBookAutocomplete(raw) {
 // Single source of truth for all tooltip text. HTML uses data-tip-key="key".
 // Dynamic tips that require runtime values keep data-tip in the template instead.
 const TOOLTIPS = {
+  // Add Item
+  'add-scripture':            'Scripture\nA Bible passage — reference bar, body text, and a matching prop for the LED wall.',
+  'add-point':                'Point\nA message point — single static prop, or a revealing list that builds bullet by bullet.',
+  'add-blank':                'Blank\nAn empty slide — optional confidence-monitor text, no prop.',
+  'add-image':                'Image\nAn image placeholder slide — build the media in Pro7 by hand.',
+  'add-custom':               'Custom\nAn empty slot exported as a blank slide with your label — build it out by hand in ProPresenter.',
   // Preferences — Queue
   'queue':                    'Queue\nThe strip on the confidence monitor that lists what\'s coming up next.',
   'queue-format':             'Queue format\nNext Reference / Reference + Phrase show only the single next slide. Full List shows every upcoming slide.',
@@ -2257,7 +2273,6 @@ const TOOLTIPS = {
   'feature-visibility':       'Feature Visibility\nHide advanced fields so the slide editor is simpler when handing off to other users. Turning one off just hides it — it doesn\'t change exports.',
   'scheme-new':               'New Palette\nCreate a blank palette from defaults.',
   'scheme-dupe':              'Duplicate\nCopy this palette into a new editable one — the usual way to make your own look.',
-  'scheme-import':            'Import from Pro7\nBuild a palette from a presentation you styled inside ProPresenter — fonts, sizes, colours and positions are read back in.',
   // Response Card
   'decision-text':            'Decision Text\nThe main commitment statement shown on the Response Card slide.',
   // Rich-text toolbar
@@ -2911,7 +2926,6 @@ function saveState() {
     clearTimeout(_savedTimer);
     _savedTimer = setTimeout(() => el.classList.remove('show'), 1200);
   }
-  renderNotesPanel();
   clearTimeout(_autosaveTimer);
   _autosaveTimer = setTimeout(autosaveDeck, 1500);
   bumpSyncMeta();
@@ -4321,7 +4335,7 @@ function renderMain() {
     panel.innerHTML = `
       <div class="panel-brand">
         <img src="assets/deckpro_wordmark_black.png" alt="DeckPro" class="panel-brand-logo">
-        <div class="panel-brand-sub">V${APP_VERSION} &nbsp;·&nbsp; Lucca Grillo</div>
+        <div class="panel-brand-sub">v${APP_VERSION} &nbsp;·&nbsp; Lucca Grillo</div>
       </div>`;
     return;
   }
@@ -6640,7 +6654,7 @@ function schemePreviewPanel(scheme) {
         <div class="sp-notes" style="font-family:${fam(scheme.notesFont)}">Speaker note preview — only visible on the ${dn('monitor')}.</div>
       </div>
     </div>
-    <p class="sp-foot">Approximate preview from this palette's fonts, sizes and colours. Use <strong>Test Palette</strong> (top right) to generate a real deck in ProPresenter.</p>`;
+    <p class="sp-foot">Approximate preview from this palette's fonts, sizes and colours.</p>`;
 }
 
 // Visual Layout preview — scaled Main + Prop canvases with clickable region boxes
@@ -7121,10 +7135,6 @@ function renderStylePanel(panel) {
           <button class="btn-scheme-lock ${locked ? 'locked' : 'unlocked'}" id="btn-scheme-lock"
             title="${locked ? 'Unlock to edit' : 'Lock palette'}">${locked ? '🔒' : '🔓'}</button>
         </div>
-        <div class="scheme-tb-actions">
-          <button class="btn-scheme-test" id="btn-scheme-import" data-tip-key="scheme-import">Import from Pro7</button>
-          <button class="btn-scheme-test btn-scheme-test-primary" id="btn-scheme-test">Test Palette</button>
-        </div>
       </div>
 
       ${locked ? `
@@ -7368,12 +7378,6 @@ function renderStylePanel(panel) {
     s.isLocked = !s.isLocked;
     saveState(); renderStylePanel(panel);
   });
-
-  // Test scheme
-  document.getElementById('btn-scheme-test').addEventListener('click', () => runSchemeTest(getScheme()));
-
-  // Import scheme from a Pro7 presentation
-  document.getElementById('btn-scheme-import').addEventListener('click', () => showSchemeImport(panel));
 
   // Scheme name
   document.getElementById('style-scheme-name').addEventListener('input', e => {
@@ -9558,17 +9562,6 @@ function attachHeaderHandlers() {
     });
   }
 
-  // Outline / Speaker Notes tabs
-  document.querySelectorAll('.notes-tab').forEach(tab => {
-    tab.addEventListener('click', () => {
-      document.querySelectorAll('.notes-tab').forEach(t => t.classList.remove('active'));
-      tab.classList.add('active');
-      const target = tab.dataset.tab;
-      document.getElementById('notes-tab-outline')?.classList.toggle('hidden', target !== 'outline');
-      document.getElementById('notes-tab-speaker')?.classList.toggle('hidden', target !== 'speaker');
-    });
-  });
-
   // PDF drop zone
   attachPdfHandlers();
   document.getElementById('gen-modal-close')?.addEventListener('click', () => {
@@ -10238,320 +10231,6 @@ function showRebuildError(msg) {
   if (closeBtn) {
     closeBtn.style.display = '';
     closeBtn.onclick = () => document.getElementById('rebuild-overlay')?.classList.remove('visible');
-  }
-}
-
-// ─── Import a scheme from a Pro7 presentation ───────────────────────────────
-// Build it in Pro7 (or restyle a DeckPro export), then read its fonts, sizes,
-// colours and element positions back into a new scheme.
-
-async function showSchemeImport(panel) {
-  const overlay = document.createElement('div');
-  overlay.className = 'warn-overlay';
-  overlay.innerHTML = `
-    <div class="warn-modal scheme-import-modal">
-      <div class="warn-hdr"><span>Import scheme from Pro7</span></div>
-      <p class="scheme-import-help">
-        Pick a presentation you've styled in ProPresenter (fonts, sizes, colours, element positions)
-        and DeckPro will read those into a new scheme. Tip: export a deck, restyle it in Pro7, then import it back.
-      </p>
-      <div class="field" style="margin-bottom:8px">
-        <label>Presentation</label>
-        <select id="si-select"><option value="">Loading your Pro7 library…</option></select>
-      </div>
-      <div class="scheme-import-or">or <button class="btn-sm" id="si-browse">Browse for a .pro file…</button></div>
-      <div id="si-report" class="scheme-import-report" style="display:none"></div>
-      <div class="warn-actions">
-        <button class="warn-btn-cancel" id="si-cancel">Cancel</button>
-        <button class="warn-btn-ok" id="si-import" disabled>Import</button>
-      </div>
-    </div>`;
-  document.body.appendChild(overlay);
-
-  const sel      = overlay.querySelector('#si-select');
-  const reportEl = overlay.querySelector('#si-report');
-  const importBtn= overlay.querySelector('#si-import');
-  let chosenPath = '';
-
-  const close = () => overlay.remove();
-  overlay.querySelector('#si-cancel').addEventListener('click', close);
-  overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
-
-  const setChosen = (path) => { chosenPath = path || ''; importBtn.disabled = !chosenPath; };
-  sel.addEventListener('change', () => setChosen(sel.value));
-
-  // Load the library list
-  try {
-    const res  = await fetch('/api/scheme/presentations');
-    const data = await res.json();
-    if (data.ok && data.presentations.length) {
-      const readable   = data.presentations.filter(p => p.readable);
-      const unreadable = data.presentations.filter(p => !p.readable);
-      sel.innerHTML =
-        '<option value="">— choose a presentation —</option>' +
-        readable.map(p => `<option value="${esc(p.path)}">${esc(p.name)} · ${p.cues} slides</option>`).join('') +
-        (unreadable.length
-          ? `<optgroup label="Can't be read (different format)">${
-              unreadable.map(p => `<option value="" disabled>${esc(p.name)}</option>`).join('')}</optgroup>`
-          : '');
-    } else {
-      sel.innerHTML = '<option value="">No presentations found in your Pro7 library</option>';
-    }
-  } catch (_) {
-    sel.innerHTML = '<option value="">Could not read your Pro7 library</option>';
-  }
-
-  // Browse fallback
-  overlay.querySelector('#si-browse').addEventListener('click', async () => {
-    try {
-      const res = await fetch('/api/scheme/browse');
-      const data = await res.json();
-      if (data.ok && data.path) {
-        sel.value = '';
-        setChosen(data.path);
-        const fname = data.path.split('/').pop();
-        let opt = sel.querySelector('option[data-browsed]');
-        if (!opt) { opt = document.createElement('option'); opt.dataset.browsed = '1'; sel.appendChild(opt); }
-        opt.value = data.path; opt.textContent = `📁 ${fname}`; sel.value = data.path;
-      }
-    } catch (_) {}
-  });
-
-  // Import → extract → create scheme
-  importBtn.addEventListener('click', async () => {
-    if (!chosenPath) return;
-    importBtn.disabled = true;
-    importBtn.textContent = 'Reading…';
-    reportEl.style.display = 'none';
-    try {
-      const res  = await fetch('/api/scheme/extract', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ path: chosenPath }),
-      });
-      const data = await res.json();
-      if (!data.ok) {
-        reportEl.style.display = 'block';
-        reportEl.className = 'scheme-import-report err';
-        reportEl.textContent = data.error || 'Could not read that presentation.';
-        importBtn.disabled = false; importBtn.textContent = 'Import';
-        return;
-      }
-      // Show the review screen before saving anything
-      renderImportReview(overlay, panel, data, close);
-    } catch (err) {
-      reportEl.style.display = 'block';
-      reportEl.className = 'scheme-import-report err';
-      reportEl.textContent = err.message;
-      importBtn.disabled = false; importBtn.textContent = 'Import';
-    }
-  });
-}
-
-// Review screen shown after extraction, before the scheme is saved.
-function renderImportReview(overlay, panel, data, close) {
-  const { scheme, report } = data;
-  const isColor = v => typeof v === 'string' && /^#[0-9a-fA-F]{6}$/.test(v);
-
-  // [key, label, kind] — kind: 'font' | 'size' | 'color' | 'num' | 'text'
-  const fmtVal = (key, label, kind) => {
-    if (scheme[key] == null || scheme[key] === '') return '';
-    let v = scheme[key];
-    let disp;
-    if (kind === 'color' && isColor(v)) {
-      disp = `<span class="si-swatch" style="background:${esc(v)}"></span>${esc(v)}`;
-    } else if (kind === 'font') {
-      disp = esc(parseFontPS(v).family ? `${parseFontPS(v).family} ${parseFontPS(v).style}`.trim() : v);
-    } else if (kind === 'size') {
-      disp = `${esc(String(v))} pt`;
-    } else if (kind === 'num') {
-      disp = esc(String(Math.round(v * 100) / 100));
-    } else {
-      disp = esc(String(v));
-    }
-    return `<div class="si-rev-row"><span class="si-rev-k">${esc(label)}</span><span class="si-rev-v">${disp}</span></div>`;
-  };
-  const group = (title, rows) => {
-    const html = rows.map(([k, l, kind]) => fmtVal(k, l, kind)).join('');
-    return html ? `<div class="si-rev-group"><div class="si-rev-title">${esc(title)}</div>${html}</div>` : '';
-  };
-
-  const textRows = [
-    ['bodyFont', 'Body font', 'font'], ['bodySize', 'Body size', 'size'],
-    ['titleFont', 'Title font', 'font'], ['titleSize', 'Title size', 'size'],
-    ['startEndFont', 'Utility font', 'font'], ['startEndSize', 'Utility size', 'size'],
-    ['bodyFill', 'Body fill', 'color'],
-  ];
-  const layoutRows = [
-    ['canvasW', 'Canvas width', 'num'], ['canvasH', 'Canvas height', 'num'],
-    ['bodyY', 'Body Y', 'num'], ['bodyH', 'Body height', 'num'],
-    ['titleY', 'Title Y', 'num'],
-    ['liveX', 'Live X', 'num'], ['queueW', 'Queue width', 'num'],
-    ['startEndY', 'Utility Y', 'num'],
-  ];
-  const transRows = [
-    ['transitionType', 'Slide transition', 'text'],
-    ['transitionDuration', 'Duration', 'size'],
-  ];
-
-  const warningsHtml = (report.warnings || []).length
-    ? `<div class="si-rev-group si-rev-warn">
-         <div class="si-rev-title">Heads up</div>
-         <ul>${report.warnings.map(w => `<li>${esc(w)}</li>`).join('')}</ul>
-       </div>` : '';
-
-  overlay.querySelector('.scheme-import-modal').innerHTML = `
-    <div class="warn-hdr"><span>Review imported scheme</span></div>
-    <p class="scheme-import-help">
-      From <strong>${esc(report.presentation)}</strong> — ${report.captured.length} setting${report.captured.length === 1 ? '' : 's'} detected
-      across ${report.slideCounts.scripture || 0} scripture, ${report.slideCounts.point || 0} point and ${report.slideCounts.startEnd || 0} start/end slides.
-      Review below, then save.
-    </p>
-    <div class="field" style="margin-bottom:10px">
-      <label>Palette name</label>
-      <input type="text" id="si-name" value="${esc(`From ${report.presentation}`.slice(0, 60))}" maxlength="60">
-    </div>
-    <div class="si-review-groups">
-      ${group('Text styles', textRows)}
-      ${group('Layout', layoutRows)}
-      ${group('Transitions', transRows)}
-      ${warningsHtml}
-    </div>
-    <div class="warn-actions">
-      <button class="warn-btn-cancel" id="si-back">Back</button>
-      <button class="warn-btn-ok" id="si-save">Save palette</button>
-    </div>`;
-
-  overlay.querySelector('#si-back').addEventListener('click', () => { close(); showSchemeImport(panel); });
-  overlay.querySelector('#si-save').addEventListener('click', () => {
-    const nameEl = overlay.querySelector('#si-name');
-    const name = (nameEl.value || '').trim() || `From ${report.presentation}`;
-    const merged = deepClone({
-      ...DEFAULT_STYLE_SCHEME(), ...scheme,
-      id: 'scheme_' + Date.now(),
-      name: name.slice(0, 60),
-      isDefault: false, isLocked: false,
-    });
-    delete merged.typography;
-    ensureSchemeTypography(merged, ensureGlobalTypography());
-    state.styleSchemes.push(merged);
-    state.activeSchemeId = merged.id;
-    saveState();
-    close();
-    renderStylePanel(panel);
-    toast('success', 'Palette imported', `Saved "${merged.name}" with ${report.captured.length} detected settings.`);
-  });
-}
-
-async function runSchemeTest(scheme) {
-  if (!scheme) return;
-  const btn = document.getElementById('btn-scheme-test');
-  const orig = btn.textContent;
-  btn.disabled = true;
-  btn.textContent = 'Testing…';
-
-  const safeName   = scheme.name.replace(/\s+/g, '_');
-  const prefix     = `SchemeTest_${safeName}`;
-  const history    = loadGenHistory();
-  const idx        = history.filter(e => (e.fileName || '').startsWith(prefix)).length + 1;
-  const testName   = `${prefix}_${String(idx).padStart(3, '0')}`;
-
-  const TEST_SPEC = {
-    name: testName,
-    deliverMode: true,
-    includeResponseCard: true,
-    style: styleForExport(scheme),
-    slides: [
-      { type: 'start' },
-
-      // Short reference scripture — 1 body, no blank before
-      {
-        type: 'scripture',
-        label: 'Sirach 38:4',
-        reference: 'Sirach 38:4',
-        bodies: [[
-          { text: 'The Lord created medicines out of the earth, and the ', bold: false },
-          { text: 'sensible', bold: true },
-          { text: ' will not despise them.', bold: false },
-        ]],
-        propName: 'Sirach 38:4',
-      },
-
-      // Long reference scripture — 2 bodies, mixed bold, blank before
-      {
-        type: 'scripture',
-        label: 'Tobit 6:2-4',
-        reference: 'Tobit 6:2-4',
-        blankBefore: true,
-        blankSpans: [{ text: 'Transition slide', bold: false }],
-        bodies: [
-          [
-            { text: 'When the young man went down to wash his feet in the Tigris River, a large fish ', bold: false },
-            { text: 'leaped up', bold: true },
-            { text: ' from the water and tried to swallow his foot, and Tobias cried out.', bold: false },
-          ],
-          [
-            { text: 'But the angel said to him, ', bold: false },
-            { text: '"Grab the fish and hold on to it!"', bold: true },
-          ],
-        ],
-        propName: 'Tobit 6:2-4',
-      },
-
-      // Point — single mode
-      {
-        type: 'point',
-        mode: 'single',
-        label: 'Point Single',
-        bodyText: 'Create Opportunities',
-        propName: 'Create Opportunities',
-        blankBefore: true,
-        blankSpans: [],
-      },
-
-      // Point — revealing mode (3 bullets)
-      {
-        type: 'point',
-        mode: 'revealing',
-        label: 'Revealing Points',
-        title: 'Three Things',
-        bullets: ['Create Opportunities', 'Go First', 'Stay Faithful'],
-        propBaseName: 'ThreeThings',
-        blankBefore: false,
-      },
-
-      // Blank text slide
-      {
-        type: 'blank',
-        label: 'Blank Text',
-        spans: [
-          { text: 'This is a blank slide with ', bold: false },
-          { text: 'bold text', bold: true },
-          { text: ' mixed in.', bold: false },
-        ],
-      },
-
-      // Image slide
-      { type: 'image', label: 'Image Slide' },
-
-      { type: 'end' },
-    ],
-  };
-
-  try {
-    const res  = await fetch('/api/generate', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ spec: TEST_SPEC, fileName: testName }),
-    });
-    const data = await res.json();
-    if (!data.ok) throw new Error(data.error || 'Export failed');
-    addGenHistoryEntry(data);
-    showGenerateModal(data, TEST_SPEC);
-  } catch (err) {
-    toast('error', 'Test failed', err.message);
-  } finally {
-    btn.disabled = false;
-    btn.textContent = orig;
   }
 }
 
@@ -12038,84 +11717,6 @@ function showVerseFormatPopover(anchorEl, slide) {
   });
 }
 
-// ─── Notes panel ─────────────────────────────────────────────────────────────
-
-function spansToHtml(spans) {
-  if (!spans || !spans.length) return '';
-  return spans.map(s => s.bold ? `<strong>${esc(s.text)}</strong>` : esc(s.text)).join('');
-}
-
-function renderNotesPanel() {
-  const body = document.getElementById('notes-panel-body');
-  if (!body) return;
-
-  const contentSlides = state.slides.filter(s => !['start', 'end'].includes(s.type));
-
-  if (!contentSlides.length) {
-    body.innerHTML = `<div class="notes-empty">No slides yet</div>`;
-    return;
-  }
-
-  let num = 0;
-  body.innerHTML = contentSlides.map(slide => {
-    num++;
-    let bodyHtml = '';
-    let refHtml  = '';
-
-    if (slide.type === 'scripture') {
-      const bodies = slide.bodies || [slide.body || []];
-      bodyHtml = bodies.map(b => spansToHtml(b)).filter(Boolean).join('<br>— ');
-      if (slide.reference) refHtml = `<div class="notes-entry-ref">${esc(slide.reference)}</div>`;
-    } else if (slide.type === 'point') {
-      if (slide.mode === 'revealing') {
-        bodyHtml = (slide.bullets || []).map((b, i) => {
-          const txt = esc(bulletToText(b));
-          return `${i < (slide.bullets.length - 1) ? '' : '<strong>'} ${txt}${i < (slide.bullets.length - 1) ? '' : '</strong>'}`;
-        }).join('<br>');
-      } else {
-        bodyHtml = `<strong>${esc(slide.bodyText || '')}</strong>`;
-      }
-    } else if (slide.type === 'blank') {
-      bodyHtml = spansToHtml(slide.spans || []) || `<span style="color:var(--muted);font-style:italic">Blank</span>`;
-    } else if (slide.type === 'image') {
-      bodyHtml = `<span style="color:var(--muted);font-style:italic">Image</span>`;
-    } else {
-      bodyHtml = esc(slide.label || '');
-    }
-
-    return `
-      <div class="notes-entry">
-        <div class="notes-entry-hdr">
-          <span class="notes-entry-num">${num}</span>
-          <span class="notes-entry-label">${esc(slide.label || slide.reference || '')}</span>
-        </div>
-        ${bodyHtml ? `<div class="notes-entry-body">${bodyHtml}</div>` : ''}
-        ${refHtml}
-      </div>
-    `;
-  }).join('');
-
-  // Response Card — appended to the outline so it's visible alongside the slides.
-  // Click to open its editor (the "Response Card" item in the queue).
-  const cfg = state.config;
-  if (cfg.includeResponseCard) {
-    const r = cfg.responses || {};
-    const lines = [r.decisionText, r.r1, r.r2, r.r3].filter(x => x && x.trim());
-    const rcBody = lines.length
-      ? lines.map(esc).join('<br>')
-      : `<span style="color:var(--muted);font-style:italic">No response text yet — click to add</span>`;
-    body.insertAdjacentHTML('beforeend', `
-      <div class="notes-entry notes-entry-rc">
-        <div class="notes-entry-hdr">
-          <span class="notes-entry-num">RC</span>
-          <span class="notes-entry-label">Response Card</span>
-        </div>
-        <div class="notes-entry-body">${rcBody}</div>
-      </div>
-    `);
-  }
-}
-
 // ─── Render ───────────────────────────────────────────────────────────────────
 
 let _lastActiveId = null;
@@ -12126,7 +11727,6 @@ function render() {
   saveState();
   renderSidebar();
   renderMain();
-  renderNotesPanel();
 }
 
 // ─── Pro7 connection helpers ──────────────────────────────────────────────────
@@ -13111,8 +12711,8 @@ function helpSections() {
       <h4>Center editor</h4>
       <p>The form for the selected slide. Its fields change with the slide type. This is where you type body text, references, bullets, and open the per-slide Overrides.</p>
 
-      <h4>Right panel — Outline &amp; ${D3}</h4>
-      <p>Toggle it with the <strong>Outline</strong> button. Two tabs: a live <strong>Outline</strong> of the whole message, and <strong>${D3}</strong> where you can drop a PDF or paste a Google Docs link to keep your script alongside while you build. Drag its left edge to resize.</p>
+      <h4>Right panel — Speaker Notes</h4>
+      <p>Toggle it with the <strong>Notes</strong> button. Drop a PDF or paste a Google Docs link to keep your script or ${D3} content alongside while you build. Drag its left edge to resize.</p>
 
       <h4>The ··· more menu</h4>
       <ul>
@@ -13294,8 +12894,6 @@ function helpSections() {
         <li><strong>New</strong> — a fresh palette that inherits everything from Global.</li>
         <li><strong>Duplicate</strong> — copy the current palette's exact values.</li>
         <li><strong>Delete</strong>, <strong>Lock</strong> (🔓/🔒 — protect a palette from edits).</li>
-        <li><strong>Import from Pro7</strong> — read styling out of an existing Pro7 file.</li>
-        <li><strong>Test Palette</strong> — export a sample deck to see the palette on real slides.</li>
       </ul>
 
       <h4>Tabs</h4>

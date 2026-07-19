@@ -109,30 +109,12 @@
         <span class="queue-header-label">Add Item</span>
       </div>
       <div class="sidebar-actions">
-        <button class="btn-add" id="btn-add-scripture">
-          <div class="icon icon-scripture">S</div>
-          Scripture
-        </button>
-        <button class="btn-add" id="btn-add-point">
-          <div class="icon icon-point">P</div>
-          Point
-        </button>
-        <button class="btn-add" id="btn-add-blank">
-          <div class="icon icon-blank">B</div>
-          Blank
-        </button>
-        <button class="btn-add" id="btn-add-image">
-          <div class="icon icon-image">I</div>
-          Image
-        </button>
-        <button class="btn-add btn-add-full" id="btn-add-custom">
-          <div class="icon icon-custom">C</div>
-          Custom
-        </button>
-        <button class="btn-add btn-add-full" id="btn-add-qrmarker" data-tip-key="qr-marker">
-          <div class="icon icon-qrmarker">◫</div>
-          QR Stop
-        </button>
+        <button class="btn-add icon-scripture" id="btn-add-scripture" data-tip-key="add-scripture">S</button>
+        <button class="btn-add icon-point" id="btn-add-point" data-tip-key="add-point">P</button>
+        <button class="btn-add icon-blank" id="btn-add-blank" data-tip-key="add-blank">B</button>
+        <button class="btn-add icon-image" id="btn-add-image" data-tip-key="add-image">I</button>
+        <button class="btn-add icon-custom" id="btn-add-custom" data-tip-key="add-custom">C</button>
+        <button class="btn-add icon-qrmarker" id="btn-add-qrmarker" data-tip-key="qr-marker">◫</button>
       </div>
       <div class="sidebar-queue-header">
         <span class="queue-header-label">Deck</span>
@@ -162,10 +144,7 @@
     <aside class="notes-panel" id="notes-panel">
       <div class="notes-resize-handle" id="notes-resize-handle"></div>
       <div class="notes-panel-hdr">
-        <div class="notes-tabs">
-          <button class="notes-tab active" id="tab-speaker" data-tab="speaker">Speaker Notes</button>
-          <button class="notes-tab" id="tab-outline" data-tab="outline">Outline</button>
-        </div>
+        <span class="notes-panel-title">Speaker Notes</span>
         <button class="notes-panel-close" id="btn-notes-close" title="Hide panel">×</button>
       </div>
       <div class="notes-tab-body" id="notes-tab-speaker">
@@ -232,9 +211,6 @@
             <div class="notes-tray-body" id="notes-tray-body"></div>
           </div>
         </div>
-      </div>
-      <div class="notes-tab-body hidden" id="notes-tab-outline">
-        <div class="notes-panel-body" id="notes-panel-body"></div>
       </div>
     </aside>
 
