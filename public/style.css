@@ -42,6 +42,7 @@ body.dark .icon-point     { background: rgba(21,128,61,.18);  color: #6fcf7a; }
 body.dark .icon-blank     { background: rgba(109,40,217,.18); color: #b798f7; }
 body.dark .icon-image     { background: rgba(194,65,12,.18);  color: #f7a87a; }
 body.dark .icon-custom    { background: rgba(190,24,93,.18);  color: #f7a0c8; }
+body.dark .icon-qrmarker  { background: rgba(224,96,16,.18);  color: #f7a874; }
 body.dark .si-scripture { background: rgba(29,78,216,.16); color: #93b4f7; }
 body.dark .si-start  { background: rgba(29,78,216,.16);   color: #93b4f7; }
 body.dark .si-end    { background: rgba(198,40,40,.16);   color: #f48080; }
@@ -1227,6 +1228,16 @@ body.dark .slide-item.active { background: rgba(224,96,16,.12); }
 }
 .sd-brush-icon { width: 10px; height: 10px; flex-shrink: 0; }
 
+/* ─── Sidebar badge for blanks that will fire the QR macro ──────────────── */
+.si-badge-qr {
+  background: transparent;
+  padding: 3px 1px;
+  color: var(--orange);
+  display: inline-flex;
+  align-items: center;
+}
+.si-qr-icon { width: 10px; height: 10px; flex-shrink: 0; }
+
 /* ─── Main panel stage chip ──────────────────────────────────────────── */
 .slide-chip-icon { width: 9px; height: 9px; flex-shrink: 0; vertical-align: middle; }
 .slide-stage-chip {
@@ -1580,6 +1591,14 @@ body.dark .slide-macro-chip {
 .qr-toggle-wrap.visible { display: flex; }
 .blank-before-row .qr-toggle-label { flex: 0 0 auto; margin: 0; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
 .blank-before-row .qr-toggle-inline { flex-shrink: 0; }
+/* Standalone Blank slide's own QR toggle — no blank-before row to nest under */
+.blank-qr-row {
+  display: flex; align-items: center; gap: 6px;
+  padding: 6px 10px; background: var(--bg); border: 1px solid var(--border);
+  border-radius: 6px; margin-bottom: 10px; width: fit-content;
+}
+.blank-qr-row .qr-toggle-label { margin: 0; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+
 .blank-before-preview {
   display: none;
   margin-top: 6px;
@@ -2704,15 +2723,18 @@ body.dark .si-tag-stage {
 
 /* rc-toggle-row (automanage) and blank-before toggles in content panels */
 .rc-toggle-row .toggle,
-.blank-before-row .toggle {
+.blank-before-row .toggle,
+.blank-qr-row .toggle {
   background: rgba(120,120,128,.35);
 }
 .rc-toggle-row .toggle.on,
-.blank-before-row .toggle.on {
+.blank-before-row .toggle.on,
+.blank-qr-row .toggle.on {
   background: var(--blue);
 }
 .rc-toggle-row .toggle::after,
-.blank-before-row .toggle::after {
+.blank-before-row .toggle::after,
+.blank-qr-row .toggle::after {
   background: white;
 }
 
@@ -3608,8 +3630,15 @@ details[open] .font-adv-summary::before { transform: rotate(90deg); }
 .nsm-opt.preferred { background: var(--blue); border-color: var(--blue); color: #fff; }
 
 /* Suggested Slides tray */
-.notes-tray { flex-shrink: 0; border-top: 1px solid var(--border); display: flex; flex-direction: column; max-height: 45%; }
+.notes-tray { flex-shrink: 0; border-top: 1px solid var(--border); display: flex; flex-direction: column; max-height: 45%; position: relative; }
 .notes-tray.collapsed .notes-tray-body { display: none; }
+.notes-tray-resize-handle {
+  position: absolute; top: 0; left: 0; right: 0;
+  height: 5px; cursor: row-resize; z-index: 20;
+}
+.notes-tray-resize-handle:hover,
+.notes-tray-resize-handle.dragging { background: var(--blue); opacity: .5; }
+.notes-tray.collapsed .notes-tray-resize-handle { display: none; }
 .notes-tray-hdr {
   display: flex; align-items: center; gap: 6px; width: 100%;
   background: var(--bg); border: none; cursor: pointer;

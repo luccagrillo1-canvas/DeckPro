@@ -211,6 +211,15 @@ function buildMenu() {
           accelerator: 'CmdOrCtrl+Shift+D',
           click: () => renderer(`typeof toggleTheme === 'function' && toggleTheme()`),
         },
+        {
+          label: 'Show Blanks',
+          accelerator: 'CmdOrCtrl+Shift+B',
+          click: () => renderer(`
+            state.showBlanks = !state.showBlanks;
+            saveState();
+            renderSidebar();
+          `),
+        },
         { type: 'separator' },
         {
           label: 'Preferences',

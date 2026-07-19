@@ -1679,6 +1679,13 @@ function buildPresentation(spec, propUuidMap = {}) {
       bc._slideTransition = slide.transition || null;
       bc._macroOverride   = slide.macroOverride || null;
       bc._slidePos        = _slidePos;
+      if (slide.type === 'blank') {
+        // A standalone Blank (not an auto-injected blank-before) can still
+        // carry its own QR macro — same eligibility check as the others,
+        // just no _isBlankBefore since it isn't an "extra" inserted cue.
+        bc._isContentBlank = true;
+        bc._qrOn           = !!slide.qrOn;
+      }
       rawCues.push(bc);
       continue;
     }
