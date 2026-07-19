@@ -2,12 +2,19 @@
 
 // ─── Version & Changelog ──────────────────────────────────────────────────────
 
-const APP_VERSION = '4.10.0';
+const APP_VERSION = '4.10.1';
 
 const CHANGELOG = [
   {
+    version: '4.10.1',
+    date: '2026-07-18',
+    changes: [
+      'Clearer tooltip on a deck\'s QR toggle (Decks → edit a deck) — explains it\'s just the default for untouched blanks, not a forcing switch, since the QR Stop marker and each blank\'s own QR toggle still apply on top of it.',
+    ],
+  },
+  {
     version: '4.10.0',
-    date: '2026-07-15',
+    date: '2026-07-18',
     changes: [
       'QR Code reworked: it\'s now a macro DeckPro fires, not an image it draws onto a slide. New "QR Code" tab in Palettes to pick which macro fires. A new "QR Stop" item in the sidebar (drag it anywhere) marks where auto QR-fill stops — blanks before it default to firing the macro when this deck\'s QR toggle is on, blanks at or after it default to not. A new per-slide QR toggle, right next to "Blank slide before this one" on scripture/point/image slides, lets you manually override any individual blank — and that choice sticks even if you move the marker or flip the deck\'s QR toggle later. Removed the old image-based QR element entirely.',
     ],
@@ -12548,7 +12555,7 @@ function deckEditFormHtml(deck) {
         <input class="deck-edit-input" id="de-title"  placeholder="Title"  value="${esc(deck.title  || '')}" spellcheck="true">
         <input class="deck-edit-input" id="de-speaker" placeholder="Speaker" value="${esc(deck.speaker || '')}" spellcheck="true">
         <input class="deck-edit-input deck-edit-date" id="de-date" type="date" value="${esc(deck.date || '')}">
-        <label class="deck-edit-qr-wrap" title="QR Code">
+        <label class="deck-edit-qr-wrap" title="Default QR state for this deck's blanks — a quick on/off you can flip per deck. Sets the starting point for untouched blanks only; the QR Stop marker and each blank's own QR toggle still apply on top of it.">
           <div class="toggle${deck._qrOn ? ' on' : ''}" id="de-qr-toggle"></div>
           QR
         </label>
