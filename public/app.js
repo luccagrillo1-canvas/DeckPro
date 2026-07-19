@@ -2,14 +2,16 @@
 
 // ─── Version & Changelog ──────────────────────────────────────────────────────
 
-const APP_VERSION = '4.15.0';
+const APP_VERSION = '4.16.0';
 
 const CHANGELOG = [
   {
-    version: '4.15.0',
+    version: '4.16.0',
     date: '2026-07-19',
     changes: [
-      'Smart Notes: adding a scripture suggestion now re-applies whatever words you bolded in the notes as ALT emphasis on the fetched Bible text — previously the bold was lost entirely since the body always comes fresh from the Bible API, not from the notes.',
+      'Smart Notes: point suggestions now use just the highlighted phrase within a block instead of the whole sentence — a block like "...second FRUIT of the Spirit: JOY!" where only "JOY!" is highlighted now suggests "JOY!", not the full sentence.',
+      'Smart Notes: point suggestions get a checkbox — select several and click "Group into Revealing" to combine them into one revealing point slide, in their original notes order. Replaces the old automatic "Revealing (N)" toggle, which was grabbing unrelated trailing bullets instead of the intended highlighted lines.',
+      'Add Item buttons (and Smart Notes\' Add) now insert the new slide right after whichever slide is currently selected in the deck, instead of always at the end.',
     ],
   },
   {
@@ -9568,7 +9570,12 @@ function addSlide(type) {
     qrmarker:  { label: 'QR Stop' },
   };
   const slide = { id: uid(), type, fixed: false, ...defaults[type] };
-  state.slides.splice(endIdx, 0, slide);
+  // Insert right after whichever slide is currently selected, so building a
+  // deck in order doesn't require dragging every new slide into place. Falls
+  // back to "just before END" when nothing valid is selected (or END itself is).
+  const activeIdx = state.slides.findIndex(s => s.id === state.activeId);
+  const insertAt = (activeIdx !== -1 && state.slides[activeIdx].type !== 'end') ? activeIdx + 1 : endIdx;
+  state.slides.splice(insertAt, 0, slide);
   state.activeId = slide.id;
   render();
 }
@@ -10795,6 +10802,7 @@ function attachPdfHandlers() {
 
 let _notesDoc  = null;   // { id, title, blocks:[{tag,text,bg,idx}], colors:[], suggestions:[] }
 let _notesZoom = 100;
+let _selectedPointKeys = new Set(); // point suggestion keys checked for grouping into one revealing slide
 
 // Flat book name list for Smart Notes scripture detection (apocrypha included).
 // Order longest-first so "Song of Solomon" wins over "Song".
@@ -10947,6 +10955,26 @@ function extractBoldWords(el) {
   return words;
 }
 
+// Text that's actually highlighted within a block — a block's own background
+// counts (whole line highlighted), or descendant spans (a phrase highlighted
+// inside an otherwise plain line, e.g. just "JOY!" inside a longer sentence).
+// Falls back to '' when nothing in the block is highlighted at all.
+function extractHighlightedText(el) {
+  const bits = [];
+  const startHighlighted = _isHighlight(getComputedStyle(el).backgroundColor);
+  const walk = (node, inHighlight) => {
+    if (node.nodeType === Node.TEXT_NODE) {
+      if (inHighlight) bits.push(node.textContent);
+      return;
+    }
+    if (node.nodeType !== Node.ELEMENT_NODE) return;
+    const highlighted = inHighlight || _isHighlight(getComputedStyle(node).backgroundColor);
+    node.childNodes.forEach(child => walk(child, highlighted));
+  };
+  el.childNodes.forEach(child => walk(child, startHighlighted));
+  return bits.join('').replace(/\s+/g, ' ').trim();
+}
+
 function extractNotesBlocks() {
   const bodyEl = document.getElementById('notes-doc-body');
   if (!bodyEl) return;
@@ -10964,7 +10992,7 @@ function extractNotesBlocks() {
     });
     if (bg) colorSet.add(bg);
     const idx = blocks.length;
-    blocks.push({ tag: el.tagName.toLowerCase(), text, bg, idx, boldWords: extractBoldWords(el) });
+    blocks.push({ tag: el.tagName.toLowerCase(), text, bg, idx, boldWords: extractBoldWords(el), highlightedText: extractHighlightedText(el) });
     el.dataset.notesBlock = idx;
   });
   _notesDoc.blocks  = blocks;
@@ -11054,11 +11082,17 @@ function buildNotesSuggestions() {
   };
 
   const makePoint = (b, conf) => {
-    const grp  = collectBullets(blocks, b._i);
-    const mode = 'single';
-    push({ type: 'point', mode, title: b.text, text: b.text, bullets: grp.bullets,
-           preview: b.text, blockIdx: b.idx, confidence: conf, key: 'pt:' + _normLabel(b.text),
-           dupe: pointExists(b.text) });
+    // Skip past any trailing detail bullets so they don't also surface as
+    // their own low-quality suggestions — but don't use them as this point's
+    // content. Grouping several points into one revealing slide is now a
+    // manual, explicit action (select checkboxes → Group into Revealing).
+    const grp = collectBullets(blocks, b._i);
+    // Prefer just the highlighted phrase over the whole block — a block can be
+    // a long bold sentence with only a short phrase actually highlighted
+    // (e.g. "...second FRUIT of the Spirit: JOY!" where only "JOY!" is lit up).
+    const text = b.highlightedText || b.text;
+    push({ type: 'point', mode: 'single', title: text, text, preview: text, blockIdx: b.idx,
+           confidence: conf, key: 'pt:' + _normLabel(text), dupe: pointExists(text) });
     return grp.consumed;
   };
 
@@ -11238,21 +11272,29 @@ function renderNotesTray() {
     body.innerHTML = `<p class="notes-tray-empty">No suggestions found in this doc.</p>`;
     return;
   }
+  // Selections only make sense for suggestions still on screen.
+  const liveKeys = new Set(sugs.filter(s => s.type === 'point').map(s => s.key));
+  [..._selectedPointKeys].forEach(k => { if (!liveKeys.has(k)) _selectedPointKeys.delete(k); });
+
   const chipLabel = t => t === 'scripture' ? 'Scripture' : t === 'confidence' ? 'Confidence' : t === 'response' ? 'Response' : 'Point';
   const dupeTitle = t => t === 'response' ? 'Response Card already has content' : 'A matching slide already exists';
-  body.innerHTML = sugs.map(s => `
+  const groupBar = _selectedPointKeys.size >= 2 ? `
+    <div class="sug-group-bar">
+      <span>${_selectedPointKeys.size} points selected</span>
+      <div class="sug-group-bar-acts">
+        <button class="sug-btn sug-btn-orange" id="btn-group-points">Group into Revealing</button>
+        <button class="sug-btn" id="btn-group-clear">Clear</button>
+      </div>
+    </div>` : '';
+  body.innerHTML = groupBar + sugs.map(s => `
     <div class="sug-card" data-key="${esc(s.key)}" data-block="${s.blockIdx}">
       <div class="sug-top">
+        ${s.type === 'point' ? `<input type="checkbox" class="sug-check" data-key="${esc(s.key)}" ${_selectedPointKeys.has(s.key) ? 'checked' : ''}>` : ''}
         <span class="sug-chip sug-${s.type}">${chipLabel(s.type)}</span>
         <span class="sug-conf">${s.confidence}</span>
         ${s.dupe ? `<span class="sug-dupe" title="${esc(dupeTitle(s.type))}">⚠ in deck</span>` : ''}
       </div>
       <div class="sug-preview">${esc(s.preview)}</div>
-      ${s.type === 'point' && s.bullets && s.bullets.length ? `
-        <div class="sug-mode" data-key="${esc(s.key)}">
-          <button class="sug-mode-btn ${s.mode === 'single' ? 'active' : ''}" data-mode="single">Single</button>
-          <button class="sug-mode-btn ${s.mode === 'revealing' ? 'active' : ''}" data-mode="revealing">Revealing (${s.bullets.length})</button>
-        </div>` : ''}
       ${s.verseRangeWarning ? `
         <div class="sug-verse-warn">
           <div class="sug-verse-warn-msg">⚠ Reference says v${esc(s.verseRangeWarning.claimedLabel)}, notes show v${esc(s.verseRangeWarning.foundLabel)}</div>
@@ -11445,18 +11487,36 @@ function attachNotesDocHandlers() {
   });
 
   // Tray Add / Ignore / mode-toggle (delegated)
+  document.getElementById('notes-tray-body')?.addEventListener('change', e => {
+    const check = e.target.closest('.sug-check');
+    if (!check) return;
+    if (check.checked) _selectedPointKeys.add(check.dataset.key);
+    else _selectedPointKeys.delete(check.dataset.key);
+    renderNotesTray();
+  });
+
   document.getElementById('notes-tray-body')?.addEventListener('click', e => {
-    const modeBtn     = e.target.closest('.sug-mode-btn');
     const addBtn      = e.target.closest('.sug-add');
     const igBtn       = e.target.closest('.sug-ignore');
     const verseKeepBtn = e.target.closest('.sug-verse-keep');
     const verseTrimBtn = e.target.closest('.sug-verse-trim');
-    if (modeBtn) {
-      const card = modeBtn.closest('.sug-card');
-      const s = notesSuggestionByKey(card?.dataset.key);
-      if (s) { s.mode = modeBtn.dataset.mode; renderNotesTray(); }
+    const groupBtn     = e.target.closest('#btn-group-points');
+    const clearBtn     = e.target.closest('#btn-group-clear');
+    if (groupBtn) {
+      const selected = [..._selectedPointKeys]
+        .map(k => notesSuggestionByKey(k))
+        .filter(Boolean)
+        .sort((a, b) => a.blockIdx - b.blockIdx);
+      if (selected.length >= 2) {
+        const bullets = selected.map(s => s.text);
+        notesAddPointFrom({ mode: 'revealing', text: bullets[0], bullets });
+        const keys = selected.map(s => s.key);
+        _selectedPointKeys.clear();
+        keys.forEach(k => notesIgnore(k)); // removes each from the tray, re-renders
+      }
       return;
     }
+    if (clearBtn) { _selectedPointKeys.clear(); renderNotesTray(); return; }
     if (verseKeepBtn) {
       // Conform Scripture to Reference — trust the claimed range as-is; Add
       // will fetch that full range from the Bible API like it always does.

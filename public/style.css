@@ -3644,15 +3644,20 @@ details[open] .font-adv-summary::before { transform: rotate(90deg); }
 }
 .sug-add:hover { background: var(--blue); border-color: var(--blue); color: #fff; }
 .sug-ignore:hover { border-color: var(--muted); color: var(--muted); }
+.sug-btn-orange { background: var(--orange); border-color: var(--orange); color: #fff; }
+.sug-btn-orange:hover { background: var(--blue-dk); border-color: var(--blue-dk); }
 .sug-confidence { background: #b45309; }
 .sug-response { background: #b06000; }
-.sug-mode { display: flex; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
-.sug-mode-btn {
-  flex: 1; background: none; border: none; cursor: pointer;
-  font-size: 10.5px; font-weight: 600; color: var(--muted); padding: 3px 0;
+.sug-check { flex-shrink: 0; width: 14px; height: 14px; accent-color: var(--blue); cursor: pointer; }
+
+.sug-group-bar {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  border: 1px solid var(--blue); border-radius: 8px; padding: 6px 10px;
+  background: color-mix(in srgb, var(--blue) 10%, var(--surface));
+  font-size: 11.5px; font-weight: 600; color: var(--text);
 }
-.sug-mode-btn + .sug-mode-btn { border-left: 1px solid var(--border); }
-.sug-mode-btn.active { background: var(--blue); color: #fff; }
+.sug-group-bar-acts { display: flex; gap: 6px; flex-shrink: 0; }
+.sug-group-bar-acts .sug-btn { flex: none; font-size: 11px; padding: 4px 10px; }
 
 .sug-verse-warn {
   border: 1px solid #c2410c; border-radius: 6px; padding: 6px 8px;
