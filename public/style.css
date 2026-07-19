@@ -1003,27 +1003,26 @@ header h1:hover { opacity: .8; }
 .slide-item.active { background: #e8f0fe; border-color: var(--blue); }
 body.dark .slide-item.active { background: rgba(224,96,16,.12); }
 
-/* QR Stop marker: a hashed divider bar, not a real slide */
+/* QR Stop marker: diagonal tick marks flanking the label, not a real slide */
 .qr-marker-item {
   justify-content: center;
+  align-items: center;
+  gap: 8px;
   height: 20px;
   padding: 0 8px;
-  background: repeating-linear-gradient(
-    45deg,
-    rgba(224,96,16,.18), rgba(224,96,16,.18) 5px,
-    transparent 5px, transparent 10px
-  );
-  border: 1px dashed rgba(224,96,16,.5);
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  color: var(--orange);
 }
 .qr-marker-item.active,
-.qr-marker-item:hover { border-color: var(--orange); }
+.qr-marker-item:hover { background: rgba(224,96,16,.1); }
+.qr-marker-ticks { flex-shrink: 0; }
 .qr-marker-label {
   font-size: 9px;
   font-weight: 800;
   letter-spacing: .08em;
   color: var(--orange);
-  background: var(--panel, var(--bg));
-  padding: 0 6px;
 }
 
 /* Insert-line drag indicator */

@@ -2,9 +2,16 @@
 
 // ─── Version & Changelog ──────────────────────────────────────────────────────
 
-const APP_VERSION = '4.11.0';
+const APP_VERSION = '4.11.1';
 
 const CHANGELOG = [
+  {
+    version: '4.11.1',
+    date: '2026-07-19',
+    changes: [
+      'QR Stop marker restyled: diagonal tick marks flanking the "QR STOP" label instead of a dashed-border pill — cleaner, and the striped background is gone from the whole bar (was competing with the sidebar\'s drag-reorder indicator).',
+    ],
+  },
   {
     version: '4.11.0',
     date: '2026-07-18',
@@ -4133,7 +4140,8 @@ function renderSidebar() {
       marker.className = `slide-item qr-marker-item${slide.id === state.activeId ? ' active' : ''}`;
       marker.dataset.id = slide.id;
       marker.draggable = true;
-      marker.innerHTML = `<span class="qr-marker-label">QR STOP</span>`;
+      const tickSvg = `<svg class="qr-marker-ticks" width="20" height="12" viewBox="0 0 20 12" fill="none" xmlns="http://www.w3.org/2000/svg"><line x1="2" y1="10" x2="6" y2="2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="8" y1="10" x2="12" y2="2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="14" y1="10" x2="18" y2="2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>`;
+      marker.innerHTML = `${tickSvg}<span class="qr-marker-label">QR STOP</span>${tickSvg}`;
       marker.addEventListener('click', () => selectSlide(slide.id));
       marker.addEventListener('contextmenu', e => {
         e.preventDefault();
