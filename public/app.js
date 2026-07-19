@@ -2,9 +2,18 @@
 
 // ─── Version & Changelog ──────────────────────────────────────────────────────
 
-const APP_VERSION = '4.13.0';
+const APP_VERSION = '4.13.1';
 
 const CHANGELOG = [
+  {
+    version: '4.13.1',
+    date: '2026-07-19',
+    changes: [
+      'Smart Notes: fixed a point\'s bullet list swallowing unrelated later bullets in a long list — collection now stops at a bullet that\'s been explicitly mapped to a different Style Map role, or that carries its own highlight color differing from the triggering block\'s, so it surfaces as its own suggestion instead of getting absorbed.',
+      'Smart Notes: fixed a Style Map "Scripture" highlight color producing a bogus second suggestion when it also covered the verse-text paragraph right after a reference (or any other unrelated block) — a scripture-mapped block now only suggests when its text actually contains a Bible reference, and a same-highlight block immediately following a pushed reference is treated as its continuation instead of a new fabricated suggestion.',
+      'Smart Notes: Response Card suggestions no longer let a "decided to follow Jesus" style boilerplate line crowd out real weekly response options — whichever single bullet overlaps the deck\'s decision text the most (pastors often write their own close paraphrase, not the exact string) is dropped, and the rest keep their original order before picking the first 3.',
+    ],
+  },
   {
     version: '4.13.0',
     date: '2026-07-19',
@@ -10902,10 +10911,19 @@ function resolveBlockRole(b) {
 }
 
 // Gather consecutive <li> blocks following block i (a heading's bullet list).
+// Stops early at a bullet that's been explicitly mapped to a non-auto role, or
+// that carries its own highlight differing from the triggering block's — both
+// signal the author intentionally split it off as a separate suggestion.
 function collectBullets(blocks, i) {
+  const trigger = blocks[i];
   const bullets = [];
   let j = i + 1, consumed = 0;
-  while (j < blocks.length && blocks[j].tag === 'li') { bullets.push(blocks[j].text); j++; consumed++; }
+  while (j < blocks.length && blocks[j].tag === 'li') {
+    const blk = blocks[j];
+    if (resolveBlockRole(blk) !== 'auto') break;
+    if (blk.bg && blk.bg !== trigger.bg) break;
+    bullets.push(blk.text); j++; consumed++;
+  }
   return { bullets, consumed };
 }
 
@@ -10927,9 +10945,29 @@ function buildNotesSuggestions() {
     return grp.consumed;
   };
 
+  // "I have decided to follow Jesus today!" (or whatever this deck's decisionText
+  // is) is boilerplate, not a weekly response option — count word overlap against
+  // it and demote high-overlap bullets to the back before taking the first 3, so a
+  // decision line mixed in with real options doesn't crowd one out.
+  const decisionWordOverlap = (text, phrase) => {
+    const words = s => (s || '').toLowerCase().replace(/[^\w\s]/g, '').split(/\s+/).filter(Boolean);
+    const phraseWords = new Set(words(phrase));
+    return words(text).filter(w => phraseWords.has(w)).length;
+  };
+
   const makeResponse = (b, conf) => {
     const grp = collectBullets(blocks, b._i);
-    const bullets = (grp.bullets.length ? grp.bullets : [b.text]).slice(0, 3);
+    const raw = grp.bullets.length ? grp.bullets : [b.text];
+    const decisionPhrase = state.config.responses?.decisionText || 'I have decided to follow Jesus today!';
+    // Whichever single line matches the decision text the most closely is the
+    // decision text — pastors often write their own close paraphrase of it
+    // rather than the exact string. Drop just that one line and keep the rest
+    // in their original order.
+    let pool = raw;
+    const scored = raw.map((t, i) => ({ t, i, overlap: decisionWordOverlap(t, decisionPhrase) }));
+    const top = scored.reduce((a, c) => (c.overlap > a.overlap ? c : a), scored[0]);
+    if (top && top.overlap > 0) pool = raw.filter((_, i) => i !== top.i);
+    const bullets = pool.slice(0, 3);
     push({ type: 'response', bullets, preview: bullets.join(' • '), blockIdx: b.idx,
            confidence: conf, key: 'rc:' + _normLabel(bullets.join('|')),
            dupe: responseCardHasContent() });
@@ -10982,9 +11020,19 @@ function buildNotesSuggestions() {
 
     if (role === 'scripture') {
       const m = b.text.match(rx);
-      const ref = (m ? m[0] : b.text).replace(/[.,;:]+$/, '').trim();
-      push({ type: 'scripture', ref, preview: ref, blockIdx: b.idx, confidence: 'Mapped', key: 'scr:' + _normRef(ref), dupe: scriptureExists(ref) });
-      scriptureContinuation = b;
+      if (m) {
+        const ref = m[0].replace(/[.,;:]+$/, '').trim();
+        push({ type: 'scripture', ref, preview: ref, blockIdx: b.idx, confidence: 'Mapped', key: 'scr:' + _normRef(ref), dupe: scriptureExists(ref) });
+        scriptureContinuation = b;
+      } else if (sameSignal(scriptureContinuation, b)) {
+        // Same highlight immediately after a highlighted reference is verse text,
+        // not a separate (and fabricated) reference suggestion.
+        scriptureContinuation = b;
+      } else {
+        // No reference found and not a continuation — skip rather than fabricate
+        // a "reference" out of the whole block's text.
+        scriptureContinuation = null;
+      }
       continue;
     }
     if (role === 'confidence') {
