@@ -2,9 +2,16 @@
 
 // ─── Version & Changelog ──────────────────────────────────────────────────────
 
-const APP_VERSION = '4.13.1';
+const APP_VERSION = '4.14.0';
 
 const CHANGELOG = [
+  {
+    version: '4.14.0',
+    date: '2026-07-19',
+    changes: [
+      'Smart Notes: scripture suggestions now warn when a reference\'s claimed verse range doesn\'t match what\'s actually quoted in the notes (e.g. it wants v1-2 but the notes only have v1) — pick "Conform Scripture to Reference" to fetch the full claimed range anyway, or "Conform Reference to Notes" to shrink the reference down to what\'s actually there.',
+    ],
+  },
   {
     version: '4.13.1',
     date: '2026-07-19',
@@ -10809,6 +10816,51 @@ function scriptureRegex() {
 const _normRef   = r => (r || '').toLowerCase().replace(/\s+/g, '').replace(/[.,;]/g, '');
 const _normLabel = t => (t || '').toLowerCase().replace(/\s+/g, ' ').trim();
 
+// ── Verse-range detection (Smart Notes) ─────────────────────────────────────
+// Splits a reference like "Galatians 5:22-23" into { bookPart: "Galatians ",
+// chapter: "5", verses: Set{22,23} }. Whole-chapter refs with no verse part
+// ("Luke 15") return null — nothing to compare against.
+function parseVerseRangeInfo(ref) {
+  const m = (ref || '').match(/^(.*?)(\d+):(\d+(?:[–—-]\d+)?(?:\s*,\s*\d+(?:[–—-]\d+)?)*)$/);
+  if (!m) return null;
+  const [, bookPart, chapter, versePart] = m;
+  const verses = new Set();
+  versePart.split(',').forEach(part => {
+    const rm = part.trim().match(/^(\d+)(?:[–—-](\d+))?$/);
+    if (!rm) return;
+    const start = +rm[1], end = rm[2] ? +rm[2] : start;
+    for (let v = start; v <= end && v - start < 200; v++) verses.add(v);
+  });
+  return verses.size ? { bookPart, chapter, verses } : null;
+}
+
+// Collapses a verse-number set back into a compact range string: {22,23} → "22-23".
+function formatVerseRange(versesSet) {
+  const sorted = [...versesSet].sort((a, b) => a - b);
+  if (!sorted.length) return '';
+  const parts = [];
+  let start = sorted[0], prev = sorted[0];
+  for (let idx = 1; idx <= sorted.length; idx++) {
+    const v = sorted[idx];
+    if (v === prev + 1) { prev = v; continue; }
+    parts.push(start === prev ? `${start}` : `${start}-${prev}`);
+    if (idx < sorted.length) { start = prev = v; }
+  }
+  return parts.join(',');
+}
+
+// Best-effort scan for verse-number markers surviving in plain-text-extracted
+// notes (superscript formatting is lost by the time we see .textContent) — a
+// short number preceded by start-of-text/whitespace/comma and followed by
+// whitespace, same shape as a real verse number sitting inline in prose.
+function extractVerseMarkers(text) {
+  const verses = new Set();
+  const re = /(?:^|[\s,])(\d{1,3})(?=\s)/g;
+  let m;
+  while ((m = re.exec(text || '')) !== null) verses.add(parseInt(m[1], 10));
+  return verses;
+}
+
 function scriptureExists(ref) {
   const n = _normRef(ref);
   return state.slides.some(s => s.type === 'scripture' && _normRef(s.reference) === n);
@@ -10934,7 +10986,43 @@ function buildNotesSuggestions() {
   const blocks  = _notesDoc.blocks;
   const out  = [];
   const seen = new Set();
-  const push = (s) => { if (!seen.has(s.key) && !ignored.has(s.key)) { seen.add(s.key); out.push(s); } };
+  const push = (s) => {
+    if (seen.has(s.key)) return out.find(x => x.key === s.key) || null;
+    if (ignored.has(s.key)) return null;
+    seen.add(s.key); out.push(s); return s;
+  };
+
+  // Tracks the verse text (as found in the notes) belonging to the active
+  // scripture suggestion, so it can be compared against the claimed reference
+  // range once the chain ends. A single verse has nothing to compare against,
+  // so only ranges of 2+ verses ever get flagged.
+  let scriptureChainSuggestion = null;
+  let scriptureChainText = '';
+  const finalizeScriptureChain = () => {
+    if (scriptureChainSuggestion) {
+      const info = parseVerseRangeInfo(scriptureChainSuggestion.ref);
+      if (info && info.verses.size >= 2) {
+        const found = extractVerseMarkers(scriptureChainText);
+        const claimed = info.verses;
+        const agree = found.size > 0 && [...claimed].every(v => found.has(v)) && [...found].every(v => claimed.has(v));
+        if (found.size > 0 && !agree) {
+          scriptureChainSuggestion.verseRangeWarning = {
+            claimedLabel: formatVerseRange(claimed),
+            foundLabel: formatVerseRange(found),
+            trimmedRef: info.bookPart + info.chapter + ':' + formatVerseRange(found),
+          };
+        }
+      }
+    }
+    scriptureChainSuggestion = null;
+    scriptureChainText = '';
+  };
+  const startScriptureChain = (suggestion, seedText) => {
+    finalizeScriptureChain();
+    scriptureChainSuggestion = suggestion;
+    scriptureChainText = seedText || '';
+  };
+  const continueScriptureChain = (text) => { scriptureChainText += ' ' + text; };
 
   const makePoint = (b, conf) => {
     const grp  = collectBullets(blocks, b._i);
@@ -10978,11 +11066,13 @@ function buildNotesSuggestions() {
     rx.lastIndex = 0;
     let found = false;
     let m;
+    let last = null;
     while ((m = rx.exec(b.text)) !== null) {
       found = true;
       const ref = m[0].replace(/[.,;:]+$/, '').trim();
-      push({ type: 'scripture', ref, preview: ref, blockIdx: b.idx, confidence: conf, key: 'scr:' + _normRef(ref), dupe: scriptureExists(ref) });
+      last = push({ type: 'scripture', ref, preview: ref, blockIdx: b.idx, confidence: conf, key: 'scr:' + _normRef(ref), dupe: scriptureExists(ref) });
     }
+    if (last) startScriptureChain(last, b.text);
     return found;
   };
 
@@ -11016,47 +11106,57 @@ function buildNotesSuggestions() {
   for (let i = 0; i < blocks.length; i++) {
     const b = blocks[i]; b._i = i;
     const role = resolveBlockRole(b);
-    if (role === 'ignore') { scriptureContinuation = null; continue; }
+    if (role === 'ignore') { scriptureContinuation = null; finalizeScriptureChain(); continue; }
 
     if (role === 'scripture') {
       const m = b.text.match(rx);
       if (m) {
         const ref = m[0].replace(/[.,;:]+$/, '').trim();
-        push({ type: 'scripture', ref, preview: ref, blockIdx: b.idx, confidence: 'Mapped', key: 'scr:' + _normRef(ref), dupe: scriptureExists(ref) });
+        const pushed = push({ type: 'scripture', ref, preview: ref, blockIdx: b.idx, confidence: 'Mapped', key: 'scr:' + _normRef(ref), dupe: scriptureExists(ref) });
         scriptureContinuation = b;
+        startScriptureChain(pushed, b.text);
       } else if (sameSignal(scriptureContinuation, b)) {
         // Same highlight immediately after a highlighted reference is verse text,
         // not a separate (and fabricated) reference suggestion.
         scriptureContinuation = b;
+        continueScriptureChain(b.text);
       } else {
         // No reference found and not a continuation — skip rather than fabricate
         // a "reference" out of the whole block's text.
         scriptureContinuation = null;
+        finalizeScriptureChain();
       }
       continue;
     }
     if (role === 'confidence') {
       scriptureContinuation = null;
+      finalizeScriptureChain();
       push({ type: 'confidence', text: b.text, preview: b.text, blockIdx: b.idx, confidence: 'Mapped', key: 'cf:' + _normLabel(b.text), dupe: false });
       continue;
     }
-    if (role === 'point') { scriptureContinuation = null; i += makePoint(b, 'Mapped'); continue; }
-    if (role === 'response') { scriptureContinuation = null; i += makeResponse(b, 'Mapped'); continue; }
+    if (role === 'point') { scriptureContinuation = null; finalizeScriptureChain(); i += makePoint(b, 'Mapped'); continue; }
+    if (role === 'response') { scriptureContinuation = null; finalizeScriptureChain(); i += makeResponse(b, 'Mapped'); continue; }
     if (role === 'content') {
       const hasScripture = pushScripturesFromBlock(b, 'Content');
       if (hasScripture) {
         scriptureContinuation = b;
+        // pushScripturesFromBlock already started the chain via startScriptureChain
       } else {
         const ref = nearbyUnhighlightedRef(i);
         if (ref) {
-          push({ type: 'scripture', ref, preview: ref, blockIdx: b.idx, confidence: 'Content', key: 'scr:' + _normRef(ref), dupe: scriptureExists(ref) });
+          const pushed = push({ type: 'scripture', ref, preview: ref, blockIdx: b.idx, confidence: 'Content', key: 'scr:' + _normRef(ref), dupe: scriptureExists(ref) });
           scriptureContinuation = b;
+          // b is the verse-text block itself (the ref lived in the unhighlighted
+          // block above it), so seed the chain with b's own text.
+          startScriptureChain(pushed, b.text);
         } else if (sameSignal(scriptureContinuation, b)) {
           // Same highlight immediately after a highlighted reference is verse text,
           // not a separate point suggestion.
           scriptureContinuation = b;
+          continueScriptureChain(b.text);
         } else {
           scriptureContinuation = null;
+          finalizeScriptureChain();
           i += makePoint(b, 'Content');
         }
       }
@@ -11065,9 +11165,11 @@ function buildNotesSuggestions() {
 
     // role === 'auto' — built-in detection
     scriptureContinuation = null;
+    finalizeScriptureChain();
     pushScripturesFromBlock(b, 'High');
     if (/^h[1-3]$/.test(b.tag) && b.text.length <= 80) i += makePoint(b, 'Medium');
   }
+  finalizeScriptureChain();
   _notesDoc.suggestions = out;
   return out;
 }
@@ -11121,6 +11223,14 @@ function renderNotesTray() {
         <div class="sug-mode" data-key="${esc(s.key)}">
           <button class="sug-mode-btn ${s.mode === 'single' ? 'active' : ''}" data-mode="single">Single</button>
           <button class="sug-mode-btn ${s.mode === 'revealing' ? 'active' : ''}" data-mode="revealing">Revealing (${s.bullets.length})</button>
+        </div>` : ''}
+      ${s.verseRangeWarning ? `
+        <div class="sug-verse-warn">
+          <div class="sug-verse-warn-msg">⚠ Reference says v${esc(s.verseRangeWarning.claimedLabel)}, notes show v${esc(s.verseRangeWarning.foundLabel)}</div>
+          <div class="sug-verse-warn-acts">
+            <button class="sug-btn sug-verse-keep" data-key="${esc(s.key)}">Conform Scripture to Reference</button>
+            <button class="sug-btn sug-verse-trim" data-key="${esc(s.key)}">Conform Reference to Notes</button>
+          </div>
         </div>` : ''}
       <div class="sug-acts">
         <button class="sug-btn sug-add" data-key="${esc(s.key)}">Add</button>
@@ -11307,13 +11417,36 @@ function attachNotesDocHandlers() {
 
   // Tray Add / Ignore / mode-toggle (delegated)
   document.getElementById('notes-tray-body')?.addEventListener('click', e => {
-    const modeBtn = e.target.closest('.sug-mode-btn');
-    const addBtn  = e.target.closest('.sug-add');
-    const igBtn   = e.target.closest('.sug-ignore');
+    const modeBtn     = e.target.closest('.sug-mode-btn');
+    const addBtn      = e.target.closest('.sug-add');
+    const igBtn       = e.target.closest('.sug-ignore');
+    const verseKeepBtn = e.target.closest('.sug-verse-keep');
+    const verseTrimBtn = e.target.closest('.sug-verse-trim');
     if (modeBtn) {
       const card = modeBtn.closest('.sug-card');
       const s = notesSuggestionByKey(card?.dataset.key);
       if (s) { s.mode = modeBtn.dataset.mode; renderNotesTray(); }
+      return;
+    }
+    if (verseKeepBtn) {
+      // Conform Scripture to Reference — trust the claimed range as-is; Add
+      // will fetch that full range from the Bible API like it always does.
+      const s = notesSuggestionByKey(verseKeepBtn.dataset.key);
+      if (s) { s.verseRangeWarning = null; renderNotesTray(); }
+      return;
+    }
+    if (verseTrimBtn) {
+      // Conform Reference to Notes — shrink the reference down to whatever
+      // verses were actually found in the notes text.
+      const s = notesSuggestionByKey(verseTrimBtn.dataset.key);
+      if (s && s.verseRangeWarning) {
+        s.ref = s.verseRangeWarning.trimmedRef;
+        s.preview = s.ref;
+        s.key = 'scr:' + _normRef(s.ref);
+        s.dupe = scriptureExists(s.ref);
+        s.verseRangeWarning = null;
+        renderNotesTray();
+      }
       return;
     }
     if (addBtn) {
