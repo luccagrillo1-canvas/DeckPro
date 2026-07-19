@@ -252,7 +252,9 @@ function buildSpec() {
       { type: 'point', mode: 'revealing', label: 'Rev', title: 'Reveal Title',
         bullets: [[{ text: 'Reveal bullet one' }], [{ text: 'Reveal bullet two' }]],
         propBaseName: S.revealBase, blankBefore: false },
-      { type: 'blank', label: 'Blank', spans: [{ text: S.smartQuote }] },
+      // qrOn on a standalone Blank (not an auto-injected blank-before) —
+      // separate code path in builder.js, its own way to silently drop the flag.
+      { type: 'blank', label: 'Blank', spans: [{ text: S.smartQuote }], qrOn: true },
       // per-slide stage-layout override on the image slide.
       { type: 'image', label: 'Image slide',
         stageLayout: { layoutName: S.slideStageName, layoutUuid: S.slideStageUuid } },
@@ -515,6 +517,19 @@ async function main() {
       beforeMacroUuids.includes(S.qrMacroUuid), beforeMacroUuids.join(', ') || 'no macros on blank-before cue');
     check('P0', 'structure', 'No QR image element anywhere (QR is a macro, not a drawn element)',
       !findEl(pres, 'qr'), findEl(pres, 'qr') ? 'found a "qr" element — old image-based approach resurfaced' : 'none found');
+  }
+
+  // ---- QR on a standalone Blank slide (not an auto-injected blank-before) —
+  // separate cue-building branch in builder.js (slide.type === 'blank'), its
+  // own way to silently drop qrOn even when the blank-before path works.
+  // A standalone blank's confidence-monitor text isn't a visible element at
+  // all — buildBlankCue() repurposes it as the cue's Slide Notes — so this
+  // has to search the whole cue tree (collectAllRtf), not element.text.rtfData.
+  const standaloneBlankCue = (pres.cues || []).find(c => collectAllRtf(c).some(r => r.includes('PLUMBING_QUOTE')));
+  if (standaloneBlankCue) {
+    const blankMacroUuids = cueMacroUuids(standaloneBlankCue);
+    check('P0', 'macros', `QR macro "${S.qrMacroName}" fires on a standalone Blank slide with qrOn`,
+      blankMacroUuids.includes(S.qrMacroUuid), blankMacroUuids.join(', ') || 'no macros on the standalone blank cue');
   }
 
   // ---- Revealing point: one prop per bullet, progressive ----

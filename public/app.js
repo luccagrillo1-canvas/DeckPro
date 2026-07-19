@@ -2,16 +2,18 @@
 
 // ─── Version & Changelog ──────────────────────────────────────────────────────
 
-const APP_VERSION = '4.16.0';
+const APP_VERSION = '4.17.0';
 
 const CHANGELOG = [
   {
-    version: '4.16.0',
+    version: '4.17.0',
     date: '2026-07-19',
     changes: [
-      'Smart Notes: point suggestions now use just the highlighted phrase within a block instead of the whole sentence — a block like "...second FRUIT of the Spirit: JOY!" where only "JOY!" is highlighted now suggests "JOY!", not the full sentence.',
-      'Smart Notes: point suggestions get a checkbox — select several and click "Group into Revealing" to combine them into one revealing point slide, in their original notes order. Replaces the old automatic "Revealing (N)" toggle, which was grabbing unrelated trailing bullets instead of the intended highlighted lines.',
-      'Add Item buttons (and Smart Notes\' Add) now insert the new slide right after whichever slide is currently selected in the deck, instead of always at the end.',
+      'Fixed: the QR Stop add-item button had no dark-mode variant, so it stayed a light peachy box even in dark mode — now matches the same dark-tinted-background pattern as every other add-item icon.',
+      '"Show Blanks" moved out of the ⋯ menu and into the native app menu (View → Show Blanks, ⌘⇧B).',
+      'Blanks that will fire the QR macro on export now show a small QR badge in the sidebar, next to the macro/stage badges.',
+      'Standalone Blank slides get their own QR toggle — previously only blank-before cues (in front of scripture/point/image) could fire the QR macro; a Blank slide you add directly had no QR option at all.',
+      'The Suggested Slides tray in Smart Notes is now vertically resizable, same drag-handle pattern as the sidebar and notes panel.',
     ],
   },
   {
@@ -4036,6 +4038,14 @@ function getSlideStageDisplays(...triggerKeys) {
 }
 
 // Sidebar: monitor-on-stand dot badges for stage displays firing on these triggers.
+// Small QR-square badge for a blank that will fire the QR macro on export —
+// same visual family as the macro/stage badges, shown next to them.
+function qrBadgeHTML(qrOn) {
+  if (!qrOn) return '';
+  const QR_ICON = `<svg class="si-qr-icon" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="1" y="1" width="3" height="3" rx="0.5" stroke="currentColor" stroke-width="1"/><rect x="6" y="1" width="3" height="3" rx="0.5" stroke="currentColor" stroke-width="1"/><rect x="1" y="6" width="3" height="3" rx="0.5" stroke="currentColor" stroke-width="1"/><rect x="6.5" y="6.5" width="2" height="2" rx="0.3" fill="currentColor"/></svg>`;
+  return `<span class="si-badge si-badge-qr" title="QR code fires on this blank">${QR_ICON}</span>`;
+}
+
 function stageDisplayBadgesHTML(...triggerKeys) {
   const STAGE_ICON = `<svg class="sd-brush-icon" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="2" y="1.3" width="6" height="4.2" rx="0.6" stroke="currentColor" stroke-width="1.1"/><path d="M5 5.5v1.6M3.3 7.9h3.4" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/></svg>`;
   return getSlideStageDisplays(...triggerKeys)
@@ -4186,10 +4196,6 @@ function renderSidebar() {
   const queue = document.getElementById('slide-queue');
   queue.innerHTML = '';
 
-  // Update show-blanks menu item label
-  const showBlanksLabel = document.getElementById('mm-show-blanks-label');
-  if (showBlanksLabel) showBlanksLabel.textContent = state.showBlanks ? 'Hide Blanks' : 'Show Blanks';
-
   // Update deck-wide QR toggle button state
   const qrToggleBtn = document.getElementById('btn-deck-qr');
   if (qrToggleBtn) qrToggleBtn.classList.toggle('active', !!state.config.qrCode);
@@ -4242,7 +4248,8 @@ function renderSidebar() {
       indicator.className = 'si-blank-indicator' + (!state.showBlanks ? ' hidden' : '');
       const bbBadges = getSlideMacroBadges('blankBefore', posKey);
       const bbStageBadges = stageDisplayBadgesHTML('blankBefore', posKey);
-      indicator.innerHTML = `<span class="si-blank-icon"><span class="badge-circle"></span></span><span class="si-blank-label">blank</span><div class="slide-badges" style="margin-left:auto">${macroBadgesHTML(bbBadges)}${bbStageBadges}</div>`;
+      const bbQrBadge = qrBadgeHTML(effectiveQR(slide));
+      indicator.innerHTML = `<span class="si-blank-icon"><span class="badge-circle"></span></span><span class="si-blank-label">blank</span><div class="slide-badges" style="margin-left:auto">${macroBadgesHTML(bbBadges)}${bbStageBadges}${bbQrBadge}</div>`;
       queue.appendChild(indicator);
     }
 
@@ -4258,7 +4265,8 @@ function renderSidebar() {
       onDelete:    slide.fixed ? null : () => deleteSlide(slide.id),
       onDuplicate: slide.fixed ? null : () => duplicateSlide(slide.id),
       macroBadges,
-      stageBadges: stageDisplayBadgesHTML(slide.type, ...(hasBB ? [] : [posKey])),
+      stageBadges: stageDisplayBadgesHTML(slide.type, ...(hasBB ? [] : [posKey]))
+                 + (slide.type === 'blank' ? qrBadgeHTML(effectiveQR(slide)) : ''),
       transBadge,
       propTransBadge,
     });
@@ -8562,6 +8570,10 @@ function blankForm(slide) {
         <input type="text" class="slide-title-input" id="f-label" spellcheck="true" value="${esc(slide.label)}" placeholder="Blank label">
         ${macroChipsHTML('blank', slidePosKey(slide))}${stageDisplayChipsHTML('blank', slidePosKey(slide))}
       </h2>
+      <div class="blank-qr-row" id="blank-qr-row">
+        <div class="toggle qr-toggle-inline${effectiveQR(slide) ? ' on' : ''}" id="blank-qr-toggle" data-tip-key="qr-toggle"></div>
+        <label data-tip-key="qr-toggle" class="qr-toggle-label">QR</label>
+      </div>
       ${F.confidenceMonitor ? `
         ${customConfidenceMonitorSection('f-body', slide.spans || [])}
       ` : ''}
@@ -9174,6 +9186,16 @@ function attachFormHandlers(slide) {
   // ── Blank-before (scripture + point) ──
   attachBlankBeforeHandlers(slide);
 
+  // ── QR toggle (standalone Blank slides — no blank-before row to nest under) ──
+  const blankQrToggle = get('blank-qr-toggle');
+  if (blankQrToggle) {
+    blankQrToggle.addEventListener('click', () => {
+      slide.qrOverride = !effectiveQR(slide);
+      blankQrToggle.classList.toggle('on', slide.qrOverride);
+      saveState();
+    });
+  }
+
   // ── Overrides section (macro override, all slide types) ──
   attachOverridesHandlers(slide);
 
@@ -9564,7 +9586,7 @@ function addSlide(type) {
   const defaults = {
     scripture: { label: 'New Scripture', reference: '', bodies: [[]], propName: '', blankBefore: true, blankSpans: [], blankShowProp: false, transition: null, propTransition: null, stripNewlines: false, fitWidth: true, bodyW: null, bodyX: null, propFitWidth: true, propBodyW: null, propBodyX: null, followReveal: 'single', qrOverride: null },
     point:     { label: 'New Point', mode: 'single', bodyText: '', propName: '', propBaseName: '', title: '', bullets: [[]], blankBefore: true, blankSpans: [], blankShowProp: false, transition: null, propTransition: null, propInitialTransition: null, propRevealTransition: null, fitWidth: true, bodyW: null, bodyX: null, propFitWidth: true, propBodyW: null, propBodyX: null, qrOverride: null },
-    blank:     { label: 'Blank', spans: [], transition: null },
+    blank:     { label: 'Blank', spans: [], transition: null, qrOverride: null },
     image:     { label: 'Image', blankBefore: true, blankSpans: [], transition: null, propTransition: null, qrOverride: null },
     custom:    { label: 'Custom' },
     qrmarker:  { label: 'QR Stop' },
@@ -9674,12 +9696,6 @@ function attachHeaderHandlers() {
   document.getElementById('btn-add-custom').addEventListener('click',    () => addSlide('custom'));
   document.getElementById('btn-add-qrmarker').addEventListener('click', () => addSlide('qrmarker'));
   document.getElementById('btn-generate').addEventListener('click', generate);
-  document.getElementById('mm-show-blanks')?.addEventListener('click', () => {
-    state.showBlanks = !state.showBlanks;
-    saveState();
-    renderSidebar();
-    moreMenu?.classList.remove('open');
-  });
   document.getElementById('btn-deck-qr')?.addEventListener('click', () => {
     state.config.qrCode = !state.config.qrCode;
     saveState();
@@ -10030,6 +10046,7 @@ function buildSpec() {
         type:        'blank',
         label:       normalizeDeckQuotes(slide.label || 'Blank'),
         spans:       normalizeExportSpans(slide.spans || []),
+        qrOn:        effectiveQR(slide),
         stageLayout: slide.stageLayout || null,
         transition:  slide.transition || null,
         macroOverride: slide.macroOverride || null,
@@ -11485,6 +11502,35 @@ function attachNotesDocHandlers() {
     saveState();
     renderNotesTray();
   });
+
+  // Tray drag-to-resize (vertical, same pattern as the sidebar/notes-panel's
+  // horizontal resize — handle sits on the tray's top edge)
+  const trayEl = document.getElementById('notes-tray');
+  const trayHandle = document.getElementById('notes-tray-resize-handle');
+  if (trayHandle && trayEl) {
+    trayHandle.addEventListener('mousedown', e => {
+      e.preventDefault();
+      const startY = e.clientY;
+      const startH = trayEl.offsetHeight;
+      trayEl.style.maxHeight = 'none'; // dragging overrides the default 45% cap
+      trayHandle.classList.add('dragging');
+      const shield = document.createElement('div');
+      shield.style.cssText = 'position:fixed;inset:0;z-index:99998;cursor:row-resize';
+      document.body.appendChild(shield);
+      const onMove = mv => {
+        const newH = Math.max(120, Math.min(700, startH - (mv.clientY - startY)));
+        trayEl.style.height = `${newH}px`;
+      };
+      const onUp = () => {
+        trayHandle.classList.remove('dragging');
+        shield.remove();
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+      };
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+    });
+  }
 
   // Tray Add / Ignore / mode-toggle (delegated)
   document.getElementById('notes-tray-body')?.addEventListener('change', e => {
