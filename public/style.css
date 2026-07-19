@@ -1796,7 +1796,8 @@ details[open].settings-disclosure .settings-disclosure-summary::before { transfo
   background: var(--bg); color: var(--text); font-size: 13px; outline: none;
 }
 .scheme-tb-name:focus, .scheme-tb-select:focus { border-color: var(--blue); }
-.scheme-tb-icons { display: flex; gap: 4px; flex-shrink: 0; }
+.scheme-tb-icons { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+.scheme-tb-sep { width: 1px; height: 16px; background: var(--border); margin: 0 2px; flex-shrink: 0; }
 
 /* Text-style cards */
 .tcard {
