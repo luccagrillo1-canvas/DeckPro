@@ -2,9 +2,18 @@
 
 // ─── Version & Changelog ──────────────────────────────────────────────────────
 
-const APP_VERSION = '4.11.3';
+const APP_VERSION = '4.12.0';
 
 const CHANGELOG = [
+  {
+    version: '4.12.0',
+    date: '2026-07-19',
+    changes: [
+      'Building (revealing) points now unfurl in the Deck sidebar just like Response Card — expand to see one subitem per bullet, live-updating as you edit them.',
+      'New Preferences → Book Names option: "Capitalize divine pronouns (He, Him, His, Himself)" — whole-word, applied at export to scripture/point/blank body text.',
+      'Palettes toolbar: added Import and Export buttons to save a palette as a standalone JSON file, or load one back in as a new palette.',
+    ],
+  },
   {
     version: '4.11.3',
     date: '2026-07-19',
@@ -2295,6 +2304,8 @@ const TOOLTIPS = {
   'feature-visibility':       'Feature Visibility\nHide advanced fields so the slide editor is simpler when handing off to other users. Turning one off just hides it — it doesn\'t change exports.',
   'scheme-new':               'New Palette\nCreate a blank palette from defaults.',
   'scheme-dupe':              'Duplicate\nCopy this palette into a new editable one — the usual way to make your own look.',
+  'scheme-import':            'Import Palette\nLoad a palette JSON file (from Export, or shared by someone else) as a new palette.',
+  'scheme-export':            'Export Palette\nSave this palette as a JSON file — share it, or back it up.',
   // Response Card
   'decision-text':            'Decision Text\nThe main commitment statement shown on the Response Card slide.',
   // Rich-text toolbar
@@ -2625,6 +2636,7 @@ const DEFAULT_STATE = () => ({
     notesStyleMap:       {},   // signal (heading tag / highlight color) → role mapping
     notesUseNearbyRefs:  true, // pair highlighted Content with a nearby unhighlighted scripture ref above it
     bookNames:           {},  // e.g. { acts: 'Acts of the Apostles', songOfSolomon: 'Song of Songs' }
+    capitalizeDivinePronouns: false, // capitalize He/Him/His/Himself in body text at export
     speakers:            [],  // permanent/recurring speakers offered in the New Deck dropdown
     displayNames:        { mainScreen: 'Main Screen', ledWall: 'LED Wall', monitor: 'Confidence Monitor' },
     responses: {
@@ -3970,6 +3982,7 @@ function macroDisplayColor(m) {
 // ─── Sidebar ──────────────────────────────────────────────────────────────────
 
 let rcGroupExpanded = false;
+const expandedRevealGroups = new Set(); // revealing-point slide ids currently unfurled
 
 const ICON = {
   start:     { cls: 'si-start',     text: 'S'  },
@@ -4284,6 +4297,50 @@ function renderSidebar() {
       }
 
       queue.appendChild(rcGroup);
+    }
+
+    // Building (revealing) points unfurl like Response Card — one subitem
+    // per bullet, since each bullet is its own output cue on export.
+    if (slide.type === 'point' && slide.mode === 'revealing') {
+      const isExpanded = expandedRevealGroups.has(slide.id);
+      const group = document.createElement('div');
+      group.className = 'rc-group';
+
+      const ARROW_SVG = `<svg viewBox="0 0 8 8" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2 3l2 2 2-2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+      const arrowBtn = document.createElement('button');
+      arrowBtn.className = `rc-unfurl-btn${isExpanded ? ' open' : ''}`;
+      arrowBtn.title = isExpanded ? 'Collapse' : 'Expand';
+      arrowBtn.innerHTML = ARROW_SVG;
+      arrowBtn.addEventListener('click', e => {
+        e.stopPropagation();
+        if (isExpanded) expandedRevealGroups.delete(slide.id);
+        else expandedRevealGroups.add(slide.id);
+        renderSidebar();
+      });
+      item.querySelector('.slide-icon')?.before(arrowBtn);
+      group.appendChild(item);
+
+      if (isExpanded) {
+        (slide.bullets || []).forEach((bullet, i) => {
+          const text = bulletToText(bullet)?.trim() || `Bullet ${i + 1}`;
+          const subItem = makeSidebarItem({
+            id:          `${slide.id}-b${i}`,
+            cls:         'rc-subitem',
+            iconCls:     ic.cls,
+            iconText:    String(i + 1),
+            label:       text,
+            fixed:       true,
+            draggable:   false,
+            onClick:     () => selectSlide(slide.id),
+            macroBadges: [],
+            stageBadges: '',
+          });
+          group.appendChild(subItem);
+        });
+      }
+
+      queue.appendChild(group);
+      continue;
     }
 
     queue.appendChild(item);
@@ -5542,6 +5599,13 @@ function renderConfigPanel(panel) {
             </div>
           `;
         }).join('')}
+        <div class="rc-toggle-row" id="capitalize-pronouns-row" style="margin-top:10px">
+          <div class="toggle ${cfg.capitalizeDivinePronouns === true ? 'on' : ''}" id="capitalize-pronouns-toggle"></div>
+          <span>Capitalize divine pronouns (He, Him, His, Himself)</span>
+        </div>
+        <div style="font-size:11.5px;color:var(--muted);margin-top:6px;line-height:1.5">
+          Applied at export to body text — scripture, points, blanks. Whole-word only, so "this" and "history" are untouched.
+        </div>
       </div>
 
     </div>
@@ -5777,6 +5841,13 @@ function renderConfigPanel(panel) {
       else delete cfg.bookNames[key];
       saveState();
     });
+  });
+
+  // Capitalize divine pronouns
+  document.getElementById('capitalize-pronouns-row')?.addEventListener('click', () => {
+    cfg.capitalizeDivinePronouns = cfg.capitalizeDivinePronouns !== true;
+    document.getElementById('capitalize-pronouns-toggle').classList.toggle('on', cfg.capitalizeDivinePronouns);
+    saveState();
   });
 }
 
@@ -7156,6 +7227,14 @@ function renderStylePanel(panel) {
           <button class="btn-scheme-icon" id="btn-scheme-dupe" data-tip-key="scheme-dupe">
             <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><rect x="4.5" y="1" width="7.5" height="8.5" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M1 4v6.5A1.5 1.5 0 0 0 2.5 12H9" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
           </button>
+          <span class="scheme-tb-sep"></span>
+          <button class="btn-scheme-icon" id="btn-scheme-import" data-tip-key="scheme-import">
+            <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M6.5 1v7.5M3.5 5l3 3.5 3-3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M1 9.5v1.5A1 1 0 0 0 2 12h9a1 1 0 0 0 1-1V9.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+          </button>
+          <input type="file" id="scheme-import-file" accept=".json" style="display:none">
+          <button class="btn-scheme-icon" id="btn-scheme-export" data-tip-key="scheme-export">
+            <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M6.5 8.5V1M3.5 4.5l3-3.5 3 3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M1 9.5v1.5A1 1 0 0 0 2 12h9a1 1 0 0 0 1-1V9.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+          </button>
           <button class="btn-scheme-icon btn-scheme-icon-danger" id="btn-scheme-delete" title="Delete palette"
             ${state.styleSchemes.length <= 1 ? 'disabled' : ''}>
             <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 3.5h9M5 3.5V2h3v1.5M4 3.5l.5 7h4l.5-7" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -7398,6 +7477,44 @@ function renderStylePanel(panel) {
     state.styleSchemes  = state.styleSchemes.filter(p => p.id !== state.activeSchemeId);
     state.activeSchemeId = state.styleSchemes[0].id;
     saveState(); renderStylePanel(panel);
+  });
+
+  // Import / export a palette as a standalone JSON file
+  document.getElementById('btn-scheme-export').addEventListener('click', () => {
+    const s = getScheme() || state.styleSchemes[0];
+    if (!s) return;
+    const { isDefault, isLocked, ...portable } = deepClone(s);
+    const json = JSON.stringify(portable, null, 2);
+    const blob = new Blob([json], { type: 'application/json' });
+    const url  = URL.createObjectURL(blob);
+    const slug = (s.name || 'palette').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'palette';
+    const a = Object.assign(document.createElement('a'), { href: url, download: `${slug}.deckpro-palette.json` });
+    document.body.appendChild(a); a.click();
+    setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 1000);
+    toast('success', 'Palette exported', `${s.name}.json`);
+  });
+  document.getElementById('btn-scheme-import').addEventListener('click', () => {
+    document.getElementById('scheme-import-file').click();
+  });
+  document.getElementById('scheme-import-file').addEventListener('change', async e => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    let parsed;
+    try {
+      parsed = JSON.parse(await file.text());
+    } catch (err) {
+      toast('error', 'Could not import palette', 'That file is not valid JSON.');
+      return;
+    }
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed) || !parsed.typography) {
+      toast('error', 'Could not import palette', 'That file doesn\'t look like a DeckPro palette.');
+      return;
+    }
+    const p = { ...deepClone(parsed), id: 'scheme_' + Date.now(), name: (parsed.name || 'Imported Palette'), isDefault: false, isLocked: false };
+    state.styleSchemes.push(p); state.activeSchemeId = p.id;
+    saveState(); renderStylePanel(panel);
+    toast('success', 'Palette imported', p.name);
   });
 
   // Lock / unlock
@@ -9232,6 +9349,7 @@ function attachFormHandlers(slide) {
       slide.bullets[idx] = extractSpans(div);
       // Auto-sync label (title → first bullet)
       if (idx === 0) syncRevealingLabel();
+      else renderSidebar(); // keep unfurled bullet subitems (Deck panel) in sync
       saveState();
     });
     div.addEventListener('keydown', e => {
@@ -9252,6 +9370,7 @@ function attachFormHandlers(slide) {
       if (!slide.bullets) slide.bullets = [];
       slide.bullets.push([]);
       renderMain();
+      renderSidebar(); // keep unfurled bullet subitems in sync
     });
   }
 
@@ -9266,6 +9385,7 @@ function attachFormHandlers(slide) {
       slide.bullets = lines.map(l => [{ text: l, bold: false }]);
       ta.value = '';
       renderMain();
+      renderSidebar(); // keep unfurled bullet subitems in sync
     });
   }
 
@@ -9277,6 +9397,7 @@ function attachFormHandlers(slide) {
       if (slide.bullets.length > 1) {
         slide.bullets.splice(idx, 1);
         renderMain();
+        renderSidebar(); // keep unfurled bullet subitems in sync
       }
     });
   });
@@ -9694,13 +9815,25 @@ function initLiveQuoteNormalization() {
   }, true);
 }
 
+// Whole-word capitalization of divine pronouns (He/Him/His/Himself) in body
+// text — opt-in via Preferences → Book Names, applied at export like the book
+// name overrides. Word-boundary matched so it never touches "this"/"shim"/etc.
+function applyDivinePronouns(text) {
+  if (!state.config.capitalizeDivinePronouns || !text) return text;
+  return text.replace(/\b(he|him|his|himself)\b/gi, m => m[0].toUpperCase() + m.slice(1));
+}
+
+function normalizeBodyText(value) {
+  return applyDivinePronouns(normalizeDeckQuotes(value));
+}
+
 function normalizeExportSpans(spans) {
-  return (spans || []).map(span => ({ ...span, text: normalizeDeckQuotes(span.text || '') }));
+  return (spans || []).map(span => ({ ...span, text: normalizeBodyText(span.text || '') }));
 }
 
 function normalizeExportBullets(bullets) {
   return (bullets || []).map(bullet =>
-    Array.isArray(bullet) ? normalizeExportSpans(bullet) : normalizeDeckQuotes(bullet || '')
+    Array.isArray(bullet) ? normalizeExportSpans(bullet) : normalizeBodyText(bullet || '')
   );
 }
 
@@ -9802,7 +9935,7 @@ function buildSpec() {
           type:                 'point',
           mode:                 'revealing',
           label:                normalizeDeckQuotes(slide.label || 'Point'),
-          title:                normalizeDeckQuotes(slide.title || ''),
+          title:                normalizeBodyText(slide.title || ''),
           bullets:              normalizeExportBullets((slide.bullets || [[]]).filter(b => bulletToText(b)?.trim())),
           propBaseName:         normalizeDeckQuotes(slide.propBaseName || slide.label || 'point'),
           followReveal:         slide.followReveal || 'single',
@@ -9824,18 +9957,18 @@ function buildSpec() {
         type:          'point',
         mode:          'single',
         label:         normalizeDeckQuotes(slide.label || slide.bodyText || 'Point'),
-        bodyText:      normalizeDeckQuotes(slide.bodyText || ''),
+        bodyText:      normalizeBodyText(slide.bodyText || ''),
         // Main-screen body only: same text with Fit Width's chosen hard breaks.
         // Prop name, notes and queue keep the unbroken bodyText. Guarded against
         // a stale cache: only used if collapsing the breaks reproduces the text.
         bodyDisplayText: (slide.fitWidth && slide._fitBrokenText &&
           slide._fitBrokenText.replace(/\n/g, ' ').trim() === (slide.bodyText || '').trim())
-          ? normalizeDeckQuotes(slide._fitBrokenText) : null,
+          ? normalizeBodyText(slide._fitBrokenText) : null,
         // Same idea for Display 2 (LED wall) — its own hard breaks, independent
         // of Display 1's, since it wraps at its own box width.
         propBodyDisplayText: (slide.fitWidth && slide.propFitWidth && slide._fitPropBrokenText &&
           slide._fitPropBrokenText.replace(/\n/g, ' ').trim() === (slide.bodyText || '').trim())
-          ? normalizeDeckQuotes(slide._fitPropBrokenText) : null,
+          ? normalizeBodyText(slide._fitPropBrokenText) : null,
         propName:      normalizeDeckQuotes(slide.propName || slide.bodyText || 'point'),
         customProp:    !!slide.customProp,
         blankBefore:   !!slide.blankBefore,
