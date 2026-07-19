@@ -152,7 +152,7 @@ On scripture slides, the `title` bar sits directly above the `this slide` body b
 - Props have same content as slides but formatted differently for LED wall
 
 ## QR Code
-Same QR image every Saturday — just an image element dropped into blank slides between content slides. Toggle in UI for Saturday builds.
+QR is a macro, not an image DeckPro draws — it fires a single deck-wide configured macro (Palettes → QR Code tab, `state.config.qrMacro`) on blank-before cues whose slide had `qrOn` true. Three pieces: (1) the QR macro picker in Palettes, (2) this deck's own QR toggle (Decks → edit this deck, `state.config.qrCode`) which sets the *default* for untouched blanks, (3) a `qrmarker` slide type ("QR Stop") — a non-exporting sidebar divider — whose position splits the deck into a default-on zone (before it) and default-off zone (at/after it). A per-slide QR toggle (next to "Blank slide before this one") lets a manual override always win over the auto default, computed client-side by `effectiveQR()`/`autoQRDefault()` in `public/app.js` and passed through the export spec as each slide's `qrOn` boolean.
 
 ## Working Directory
 `~/pro7-decode/` — proto schema, decode script, and output.json are all here.
@@ -210,17 +210,17 @@ await encode(spec, '/path/to/output.pro');
 {
   name: 'Message_26.02.24_Series_Title',
   outputFolder: '/Users/.../Documents/ProPresenter',  // written here
-  qrEnabled: false,
+  qrMacro: { name, uuid } | null,  // fires on blank-before cues with qrOn true
   includeResponseCard: true,
   slides: [
     { type: 'start' },
     { type: 'scripture', label, reference, bodies: [[spans], [spans]],
-      propName, blankBefore: true, blankSpans: [] },
+      propName, blankBefore: true, blankSpans: [], qrOn: false },
     { type: 'point', mode: 'single', label, bodyText, propName,
-      blankBefore: true, blankSpans: [] },
+      blankBefore: true, blankSpans: [], qrOn: false },
     { type: 'point', mode: 'revealing', label, title, bullets: ['…'],
-      propBaseName, blankBefore: true, blankSpans: [] },
-    { type: 'image', label },
+      propBaseName, blankBefore: true, blankSpans: [], qrOn: false },
+    { type: 'image', label, blankBefore: true, blankSpans: [], qrOn: false },
     { type: 'blank', label, spans: [] },
     { type: 'end' },
   ]
@@ -233,7 +233,7 @@ await encode(spec, '/path/to/output.pro');
 1. Expand slides → raw cues (blank-before injection, multi-body scripture, revealing bullets)
 2. Append Response Card cues before END (if `includeResponseCard`)
 3. Inject Message-Content macro into `cues[1]`
-4. Inject `qr` element into all scripture/point + blank-before cues (if `qrEnabled`)
+4. Fire `qrMacro` on blank-before cues whose slide had `qrOn` true (computed client-side, see QR Code section)
 5. Inject `queue` element into every cue (upcoming slide labels, ≤20 chars each)
 
 **Element positioning:**

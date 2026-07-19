@@ -66,16 +66,16 @@ function randSlide() {
     const nBodies = int(1, 3);
     return { ...base, reference: label, propName: label,
       bodies: Array.from({ length: nBodies }, randSpans),
-      blankBefore: chance(0.4), blankSpans: randSpans(), stripNewlines: chance(0.3) };
+      blankBefore: chance(0.4), blankSpans: randSpans(), stripNewlines: chance(0.3), qrOn: chance(0.3) };
   }
   if (type === 'point') {
-    if (chance(0.5)) return { ...base, mode: 'single', bodyText: pick(NASTY), propName: label, blankBefore: chance(0.4), customProp: chance(0.3) };
+    if (chance(0.5)) return { ...base, mode: 'single', bodyText: pick(NASTY), propName: label, blankBefore: chance(0.4), customProp: chance(0.3), qrOn: chance(0.3) };
     // Realistic: buildSpec filters empty bullets, so generate non-empty ones (>=1).
     const NONEMPTY = NASTY.filter(s => s.trim());
     return { ...base, mode: 'revealing', title: pick(NASTY), propBaseName: label, blankBefore: chance(0.4),
-      bullets: Array.from({ length: int(1, 5) }, () => pick(NONEMPTY)), followReveal: pick(['single', 'stacking']) };
+      bullets: Array.from({ length: int(1, 5) }, () => pick(NONEMPTY)), followReveal: pick(['single', 'stacking']), qrOn: chance(0.3) };
   }
-  if (type === 'image') return { ...base, blankBefore: chance(0.4), blankSpans: randSpans() };
+  if (type === 'image') return { ...base, blankBefore: chance(0.4), blankSpans: randSpans(), qrOn: chance(0.3) };
   return { ...base, spans: randSpans() }; // blank / custom
 }
 
@@ -85,7 +85,8 @@ function randDeck() {
   if (chance(0.7)) slides.push({ type: 'start', label: 'START', text: 'START' });
   for (let i = 0; i < n; i++) slides.push(randSlide());
   if (chance(0.7)) slides.push({ type: 'end', label: 'End of Notes', text: 'End of Notes' });
-  const deck = { name: 'fuzz-' + int(1, 99999), slides, includeResponseCard: chance(0.4), qrEnabled: chance(0.3) };
+  const deck = { name: 'fuzz-' + int(1, 99999), slides, includeResponseCard: chance(0.4),
+    qrMacro: chance(0.5) ? { name: 'QR Show', uuid: 'QR-' + int(1, 99) } : null };
   if (chance(0.5)) deck.customMacros = [
     { id: 'm', name: pick(NASTY) || 'm', uuid: 'M-' + int(1, 99), color: '#abc',
       triggers: ['start', 'end', 'scripture', 'point', 'blank', 'blankBefore', 'image', 'rc'].filter(() => chance(0.4)) },

@@ -2,9 +2,16 @@
 
 // ─── Version & Changelog ──────────────────────────────────────────────────────
 
-const APP_VERSION = '4.9.6';
+const APP_VERSION = '4.10.0';
 
 const CHANGELOG = [
+  {
+    version: '4.10.0',
+    date: '2026-07-15',
+    changes: [
+      'QR Code reworked: it\'s now a macro DeckPro fires, not an image it draws onto a slide. New "QR Code" tab in Palettes to pick which macro fires. A new "QR Stop" item in the sidebar (drag it anywhere) marks where auto QR-fill stops — blanks before it default to firing the macro when this deck\'s QR toggle is on, blanks at or after it default to not. A new per-slide QR toggle, right next to "Blank slide before this one" on scripture/point/image slides, lets you manually override any individual blank — and that choice sticks even if you move the marker or flip the deck\'s QR toggle later. Removed the old image-based QR element entirely.',
+    ],
+  },
   {
     version: '4.9.6',
     date: '2026-07-15',
@@ -2270,6 +2277,9 @@ const TOOLTIPS = {
   // Point
   'point-single':             'Point — Single\nOne static prop that stays up while you talk. Use for a single point or statement.',
   'point-revealing':          'Point — Revealing\nOne prop per bullet, revealed one at a time. Use for a list that builds as you go.',
+  // QR
+  'qr-marker':                'QR Stop\nDrag into the deck to mark where auto QR-fill stops. Blanks before it default to QR on (when the deck-wide QR toggle is on); blanks at or after it default to off. Doesn\'t export as a slide.',
+  'qr-toggle':                'QR\nToggles the QR macro for this blank specifically — overrides whatever the QR Stop marker would otherwise set, and stays put even if you move the marker later.',
 };
 
 // ─── State ────────────────────────────────────────────────────────────────────
@@ -2543,6 +2553,7 @@ const DEFAULT_STATE = () => ({
     messageTitle:        '',
     weekDate:            new Date().toISOString().slice(0, 10),
     qrCode:              false,
+    qrMacro:             null,
     includeResponseCard: true,
     outputFolder:        '',
     pro7Port:            1025,
@@ -3953,6 +3964,26 @@ function stageDisplayChipsHTML(...triggerKeys) {
 // Returns `pos:N` key for a slide (1-indexed position in state.slides).
 function slidePosKey(slide) { return `pos:${state.slides.indexOf(slide) + 1}`; }
 
+// Auto QR default for a blank-before-eligible slide: true only when the
+// deck-wide QR toggle (state.config.qrCode) is on AND this slide sits before
+// the first QR Stop marker in the deck (no marker in the deck = everything
+// counts as "before").
+function autoQRDefault(slide) {
+  if (!state.config.qrCode) return false;
+  const markerIdx = state.slides.findIndex(s => s.type === 'qrmarker');
+  if (markerIdx === -1) return true;
+  const slideIdx = state.slides.indexOf(slide);
+  return slideIdx !== -1 && slideIdx < markerIdx;
+}
+
+// Final QR state for a blank-before-eligible slide. Manual override
+// (slide.qrOverride, set by clicking the per-slide QR toggle) always wins
+// over the auto default computed from the marker + deck-wide toggle —
+// moving the marker later never changes a slide you've already touched by hand.
+function effectiveQR(slide) {
+  return (slide.qrOverride !== null && slide.qrOverride !== undefined) ? slide.qrOverride : autoQRDefault(slide);
+}
+
 // Inline text chips shown in the main panel heading — accepts multiple trigger keys (type + pos).
 function macroChipsHTML(...triggerKeys) {
   const macros = activeStyleScheme().macros || [];
@@ -4073,6 +4104,31 @@ function renderSidebar() {
     const slide = state.slides[_si];
     // Hide blank slides from sidebar when showBlanks is false
     if (!state.showBlanks && slide.type === 'blank') continue;
+
+    // QR Stop marker: a striped divider, not a real slide — marks where
+    // auto QR-fill (deck-wide QR toggle) stops. No form, no export.
+    if (slide.type === 'qrmarker') {
+      const marker = document.createElement('div');
+      marker.className = `slide-item qr-marker-item${slide.id === state.activeId ? ' active' : ''}`;
+      marker.dataset.id = slide.id;
+      marker.draggable = true;
+      marker.innerHTML = `<span class="qr-marker-label">QR STOP</span>`;
+      marker.addEventListener('click', () => selectSlide(slide.id));
+      marker.addEventListener('contextmenu', e => {
+        e.preventDefault();
+        showSlideCtxMenu(e.clientX, e.clientY, {
+          onDuplicate: () => duplicateSlide(slide.id),
+          onDelete:    () => deleteSlide(slide.id),
+        });
+      });
+      marker.addEventListener('dragstart', onDragStart);
+      marker.addEventListener('dragend',   onDragEnd);
+      marker.addEventListener('dragover',  onDragOver);
+      marker.addEventListener('dragleave', onDragLeave);
+      marker.addEventListener('drop',      onDrop);
+      queue.appendChild(marker);
+      continue;
+    }
 
     const ic             = ICON[slide.type] || { cls: '', text: '?' };
     const posKey         = `pos:${_si + 1}`;
@@ -4275,6 +4331,7 @@ function renderMain() {
     case 'point':     panel.innerHTML = pointForm(slide);     break;
     case 'image':     panel.innerHTML = imageForm(slide);     break;
     case 'custom':    panel.innerHTML = customForm(slide);    break;
+    case 'qrmarker':  panel.innerHTML = qrMarkerForm(slide);  return; // no form fields to wire
     default:          panel.innerHTML = '<div class="panel-empty">Unknown type</div>'; return;
   }
   attachFormHandlers(slide);
@@ -5155,6 +5212,60 @@ function attachSchemesResponseCardTab(containerId) {
       state.globalRcElements = els;
       saveState(); rerender();
       toast('success', 'Pushed to Global', 'Every palette inheriting Response Card elements will now use this.');
+    }
+  });
+}
+
+// QR Code tab: a single macro assignment, deck-wide (state.config.qrMacro) —
+// not per-scheme, since the macro that actually shows a QR code (in
+// Companion/Resolume/whatever fires it) doesn't change with visual palette.
+// QR itself has no image or position — it IS this one macro, fired on
+// whichever blank-before cues end up QR-on (see the per-slide QR toggle and
+// the QR Stop marker).
+function attachSchemesQRTab(containerId) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+
+  function rerender() {
+    const m = state.config.qrMacro || null;
+    const dot = m && m.color
+      ? `<span class="cm-dot" style="background:${m.color}"></span>`
+      : `<span class="cm-dot cm-dot-default"></span>`;
+    el.querySelector('.qr-macro-val').innerHTML = m
+      ? `${dot}<span class="override-macro-name">${esc(m.name)}</span><code class="cm-uuid-ro">${esc(m.uuid || '')}</code>
+         <button class="btn-custom-del" id="qr-macro-clear" title="Remove">×</button>`
+      : `<span class="cm-empty" style="margin:0">No macro selected.</span>`;
+    el.querySelector('#qr-macro-pick').textContent = m ? 'Change' : 'Pick Macro';
+  }
+
+  el.innerHTML = `
+    <p class="style-group-hint">QR Code is a macro, not an image DeckPro draws. Pick which macro fires on any blank slide with QR turned on — see the QR toggle next to "Blank slide before this one" on scripture/point/image slides, the QR Stop marker in the deck sidebar, and this deck's own QR toggle (Decks → edit this deck).</p>
+    <div class="field">
+      <label>QR Macro</label>
+      <div class="qr-macro-row" style="display:flex;align-items:center;gap:8px">
+        <div class="qr-macro-val" style="display:flex;align-items:center;gap:6px;flex:1"></div>
+        <button class="btn-sm" id="qr-macro-pick" type="button">Pick Macro</button>
+      </div>
+    </div>
+  `;
+  rerender();
+
+  el.querySelector('#qr-macro-pick').addEventListener('click', () => {
+    showMacroPicker((selected) => {
+      if (selected.length) {
+        const { name, uuid, color } = selected[0];
+        state.config.qrMacro = { name, uuid, color };
+        saveState();
+        rerender();
+      }
+    }, true);
+  });
+
+  el.addEventListener('click', (e) => {
+    if (e.target.id === 'qr-macro-clear') {
+      state.config.qrMacro = null;
+      saveState();
+      rerender();
     }
   });
 }
@@ -6948,7 +7059,7 @@ function renderStylePanel(panel) {
     return;
   }
   const scheme = state.styleSchemes.find(p => p.id === state.activeSchemeId) || state.styleSchemes[0];
-  if (!['palette', 'text', 'layout', 'motion', 'macros', 'stage', 'responseCard'].includes(_styleTab)) _styleTab = 'text';
+  if (!['palette', 'text', 'layout', 'motion', 'macros', 'stage', 'responseCard', 'qr'].includes(_styleTab)) _styleTab = 'text';
   const locked = !!scheme.isLocked;
   const dis    = locked ? 'disabled' : '';
   ensureGlobalTypography();
@@ -7031,6 +7142,7 @@ function renderStylePanel(panel) {
         <button class="style-tab style-tab-global${_styleTab === 'macros' ? ' active' : ''}" data-tab="macros">Macros</button>
         <button class="style-tab style-tab-global${_styleTab === 'stage' ? ' active' : ''}" data-tab="stage">Stage</button>
         <button class="style-tab style-tab-global${_styleTab === 'responseCard' ? ' active' : ''}" data-tab="responseCard">Response Card</button>
+        <button class="style-tab style-tab-global${_styleTab === 'qr' ? ' active' : ''}" data-tab="qr">QR Code</button>
       </div>
 
       <fieldset class="scheme-fields ${locked ? 'scheme-locked' : ''}" ${locked ? 'disabled' : ''}>
@@ -7143,6 +7255,11 @@ function renderStylePanel(panel) {
         <div id="scheme-rc-tab"></div>
       </div>
 
+      <!-- QR CODE tab — deck-wide macro that fires on QR-on blanks (not per-scheme) -->
+      <div class="style-tab-body" id="style-tab-qr" ${_styleTab !== 'qr' ? 'style="display:none"' : ''}>
+        <div id="scheme-qr-tab"></div>
+      </div>
+
     </div>
   `;
 
@@ -7163,6 +7280,8 @@ function renderStylePanel(panel) {
   attachSchemesStageTab('scheme-stage-tab');
   // Response Card tab (display-2 prop elements)
   attachSchemesResponseCardTab('scheme-rc-tab');
+  // QR Code tab (deck-wide macro, not per-scheme)
+  attachSchemesQRTab('scheme-qr-tab');
 
   // Motion sub-tabs: Transitions / Build Order
   panel.querySelectorAll('.motion-subtab').forEach(btn => {
@@ -8271,6 +8390,10 @@ function imageForm(slide) {
     <div class="blank-before-row" id="blank-before-row">
       <div class="toggle${on ? ' on' : ''}" id="bb-toggle"></div>
       <label data-tip-key="blank-before">Blank slide before this one</label>
+      <div class="qr-toggle-wrap${on ? ' visible' : ''}" id="qr-toggle-wrap">
+        <div class="toggle qr-toggle-inline${effectiveQR(slide) ? ' on' : ''}" id="qr-toggle" data-tip-key="qr-toggle"></div>
+        <label data-tip-key="qr-toggle" class="qr-toggle-label">QR</label>
+      </div>
     </div>
     ${F.confidenceMonitor ? `
       <div class="blank-before-preview${on ? ' visible' : ''}" id="bb-preview">
@@ -8290,6 +8413,20 @@ function imageForm(slide) {
         ${overridesSection(slide, F)}
         ${propSection(slide, F, { idPrefix: 'fp' })}
       </div>
+    </div>
+  `;
+}
+
+function qrMarkerForm(slide) {
+  return `
+    <div class="slide-form">
+      <h2>QR Stop</h2>
+      <p style="color:var(--muted);font-size:13px;margin-top:4px">
+        Not a real slide — doesn't export. It's a boundary: when this deck's QR toggle (Decks → edit this deck) is on,
+        blanks before this marker default to showing the QR macro, and blanks at or after it default to not.
+        Drag it anywhere in the deck to move the boundary. Any blank you've manually toggled with its own QR
+        switch keeps that choice regardless of where this marker is.
+      </p>
     </div>
   `;
 }
@@ -8327,6 +8464,10 @@ function scriptureForm(slide) {
     <div class="blank-before-row" id="blank-before-row">
       <div class="toggle${on ? ' on' : ''}" id="bb-toggle"></div>
       <label data-tip-key="blank-before">Blank slide before this one</label>
+      <div class="qr-toggle-wrap${on ? ' visible' : ''}" id="qr-toggle-wrap">
+        <div class="toggle qr-toggle-inline${effectiveQR(slide) ? ' on' : ''}" id="qr-toggle" data-tip-key="qr-toggle"></div>
+        <label data-tip-key="qr-toggle" class="qr-toggle-label">QR</label>
+      </div>
     </div>
     ${F.confidenceMonitor ? `
       <div class="blank-before-preview${on ? ' visible' : ''}" id="bb-preview">
@@ -8504,6 +8645,10 @@ function pointForm(slide) {
     <div class="blank-before-row" id="blank-before-row">
       <div class="toggle${on ? ' on' : ''}" id="bb-toggle"></div>
       <label data-tip-key="blank-before">Blank slide before this one</label>
+      <div class="qr-toggle-wrap${on ? ' visible' : ''}" id="qr-toggle-wrap">
+        <div class="toggle qr-toggle-inline${effectiveQR(slide) ? ' on' : ''}" id="qr-toggle" data-tip-key="qr-toggle"></div>
+        <label data-tip-key="qr-toggle" class="qr-toggle-label">QR</label>
+      </div>
     </div>
     ${F.confidenceMonitor ? `
       <div class="blank-before-preview${on ? ' visible' : ''}" id="bb-preview">
@@ -8781,9 +8926,11 @@ function attachRichEditor(editorId, onSave) {
 }
 
 function attachBlankBeforeHandlers(slide) {
-  const bbRow     = document.getElementById('blank-before-row');
-  const bbToggle  = document.getElementById('bb-toggle');
-  const bbPreview = document.getElementById('bb-preview');
+  const bbRow      = document.getElementById('blank-before-row');
+  const bbToggle   = document.getElementById('bb-toggle');
+  const bbPreview  = document.getElementById('bb-preview');
+  const qrWrap     = document.getElementById('qr-toggle-wrap');
+  const qrToggle   = document.getElementById('qr-toggle');
   if (!bbRow) return;
 
   // Sync initial state
@@ -8793,8 +8940,18 @@ function attachBlankBeforeHandlers(slide) {
     slide.blankBefore = !slide.blankBefore;
     bbToggle.classList.toggle('on', slide.blankBefore);
     bbPreview.classList.toggle('visible', slide.blankBefore);
+    qrWrap?.classList.toggle('visible', slide.blankBefore);
     saveState();
   });
+
+  if (qrToggle) {
+    qrToggle.addEventListener('click', e => {
+      e.stopPropagation(); // don't also flip the parent blank-before row
+      slide.qrOverride = !effectiveQR(slide);
+      qrToggle.classList.toggle('on', slide.qrOverride);
+      saveState();
+    });
+  }
 
   attachRichEditor('f-blank-spans', spans => {
     slide.blankSpans = spans;
@@ -9210,11 +9367,12 @@ function selectSlide(id) {
 function addSlide(type) {
   const endIdx = state.slides.findIndex(s => s.type === 'end');
   const defaults = {
-    scripture: { label: 'New Scripture', reference: '', bodies: [[]], propName: '', blankBefore: true, blankSpans: [], blankShowProp: false, transition: null, propTransition: null, stripNewlines: false, fitWidth: true, bodyW: null, bodyX: null, propFitWidth: true, propBodyW: null, propBodyX: null, followReveal: 'single' },
-    point:     { label: 'New Point', mode: 'single', bodyText: '', propName: '', propBaseName: '', title: '', bullets: [[]], blankBefore: true, blankSpans: [], blankShowProp: false, transition: null, propTransition: null, propInitialTransition: null, propRevealTransition: null, fitWidth: true, bodyW: null, bodyX: null, propFitWidth: true, propBodyW: null, propBodyX: null },
+    scripture: { label: 'New Scripture', reference: '', bodies: [[]], propName: '', blankBefore: true, blankSpans: [], blankShowProp: false, transition: null, propTransition: null, stripNewlines: false, fitWidth: true, bodyW: null, bodyX: null, propFitWidth: true, propBodyW: null, propBodyX: null, followReveal: 'single', qrOverride: null },
+    point:     { label: 'New Point', mode: 'single', bodyText: '', propName: '', propBaseName: '', title: '', bullets: [[]], blankBefore: true, blankSpans: [], blankShowProp: false, transition: null, propTransition: null, propInitialTransition: null, propRevealTransition: null, fitWidth: true, bodyW: null, bodyX: null, propFitWidth: true, propBodyW: null, propBodyX: null, qrOverride: null },
     blank:     { label: 'Blank', spans: [], transition: null },
-    image:     { label: 'Image', blankBefore: true, blankSpans: [], transition: null, propTransition: null },
+    image:     { label: 'Image', blankBefore: true, blankSpans: [], transition: null, propTransition: null, qrOverride: null },
     custom:    { label: 'Custom' },
+    qrmarker:  { label: 'QR Stop' },
   };
   const slide = { id: uid(), type, fixed: false, ...defaults[type] };
   state.slides.splice(endIdx, 0, slide);
@@ -9314,6 +9472,7 @@ function attachHeaderHandlers() {
   document.getElementById('btn-add-blank').addEventListener('click',     () => addSlide('blank'));
   document.getElementById('btn-add-image').addEventListener('click',     () => addSlide('image'));
   document.getElementById('btn-add-custom').addEventListener('click',    () => addSlide('custom'));
+  document.getElementById('btn-add-qrmarker').addEventListener('click', () => addSlide('qrmarker'));
   document.getElementById('btn-generate').addEventListener('click', generate);
   document.getElementById('btn-show-blanks')?.addEventListener('click', () => {
     state.showBlanks = !state.showBlanks;
@@ -9556,7 +9715,7 @@ function schemeStageScreen() {
 }
 
 function buildSpec() {
-  const { qrCode, includeResponseCard, outputFolder, responses } = state.config;
+  const { includeResponseCard, outputFolder, responses } = state.config;
 
   // Resolve active style scheme (strip UI-only fields)
   const activeScheme = (state.styleSchemes || []).find(p => p.id === state.activeSchemeId)
@@ -9587,6 +9746,7 @@ function buildSpec() {
         propName:      normalizeDeckQuotes(slide.propName || slide.reference || 'scripture'),
         blankBefore:   !!slide.blankBefore,
         blankSpans:    normalizeExportSpans(blankSpans),
+        qrOn:          slide.blankBefore ? effectiveQR(slide) : false,
         stageLayout:   slide.stageLayout || null,
         transition:    slide.transition || null,
         propTransition: slide.propTransition || null,
@@ -9614,6 +9774,7 @@ function buildSpec() {
           followReveal:         slide.followReveal || 'single',
           blankBefore:          !!slide.blankBefore,
           blankSpans:           normalizeExportSpans(slide.blankSpans || []),
+          qrOn:                 slide.blankBefore ? effectiveQR(slide) : false,
           stageLayout:          slide.stageLayout || null,
           transition:           slide.transition || null,
           macroOverride:        slide.macroOverride || null,
@@ -9645,6 +9806,7 @@ function buildSpec() {
         customProp:    !!slide.customProp,
         blankBefore:   !!slide.blankBefore,
         blankSpans:    normalizeExportSpans(slide.blankSpans || []),
+        qrOn:          slide.blankBefore ? effectiveQR(slide) : false,
         stageLayout:   slide.stageLayout || null,
         transition:    slide.transition || null,
         macroOverride: slide.macroOverride || null,
@@ -9677,6 +9839,7 @@ function buildSpec() {
         macroOverride:  slide.macroOverride || null,
         blankBefore:    !!slide.blankBefore,
         blankSpans:     normalizeExportSpans(slide.blankSpans || []),
+        qrOn:           slide.blankBefore ? effectiveQR(slide) : false,
       };
     }
 
@@ -9697,7 +9860,7 @@ function buildSpec() {
 
   return {
     name:                buildFileName(),
-    qrEnabled:           qrCode,
+    qrMacro:             state.config.qrMacro || null,
     includeResponseCard: includeResponseCard,
     outputFolder:        outputFolder || '',
     responses:           Object.fromEntries(Object.entries(responses || { decisionText: '', r1: '', r2: '', r3: '' }).map(([k, v]) => [k, normalizeDeckQuotes(v)])),
@@ -12968,7 +13131,7 @@ function helpSections() {
       <ul>
         <li><strong>Date</strong> → <code>YY.MM.DD</code> (2-digit year).</li>
         <li><strong>Series</strong> and <strong>Title</strong> → PascalCase tokens (spaces and punctuation stripped).</li>
-        <li><strong>QR / Saturday</strong> toggle → appends <code>_SAT</code> and drops the QR image onto blank slides.</li>
+        <li><strong>QR</strong> toggle (Decks → edit this deck) → appends <code>_SAT</code> and sets the default for which blanks fire the QR macro (see <em>QR Code</em>).</li>
       </ul>
 
       <h4>Adding &amp; ordering slides</h4>
@@ -13242,6 +13405,28 @@ function helpSections() {
     `,
   },
   {
+    id: 'qrcode',
+    label: 'QR Code',
+    html: `
+      <h3>QR Code is a macro, not an image</h3>
+      <p>DeckPro doesn't draw a QR code onto any slide. Instead, it fires a single configured <strong>macro</strong> — whatever your show actually uses to display the QR code (Companion, Resolume, an ATEM macro, etc.) — on the blank slides you want it to appear on.</p>
+
+      <h4>Setup — three pieces</h4>
+      <ul>
+        <li><strong>Pick the macro.</strong> Palettes → <em>QR Code</em> tab → Pick Macro. One deck-wide setting, not per-palette — the macro that shows a QR code doesn't change with visual style.</li>
+        <li><strong>This deck's QR toggle.</strong> Decks → edit this deck → the QR toggle. Off by default. When on, it sets the <em>default</em> for every blank in the deck — before the QR Stop marker (see below), blanks default to firing the macro; after it, they default to not.</li>
+        <li><strong>Per-slide QR toggle.</strong> Next to "Blank slide before this one" on scripture, point, and image slides. Overrides the auto default for that one blank specifically, and keeps that choice even if you later move the QR Stop marker or flip the deck's QR toggle.</li>
+      </ul>
+
+      <h4>QR Stop marker</h4>
+      <p>Add <strong>QR Stop</strong> from the sidebar — it renders as a striped divider, not a real slide (it never exports). Drag it anywhere in the deck. Blanks before it default to QR on (when the deck's QR toggle is on); blanks at or after it default to off. It's purely a bulk-default boundary — any blank you've touched with its own QR toggle ignores it entirely.</p>
+
+      <div class="help-callout">
+        <strong>Manual always wins.</strong> Once you've clicked a slide's own QR toggle, that choice is locked in — moving the marker or flipping the deck-wide toggle later never changes it again. Only untouched blanks follow the auto default.
+      </div>
+    `,
+  },
+  {
     id: 'library',
     label: 'Deck Library',
     html: `
@@ -13419,7 +13604,7 @@ function helpSections() {
       <ol class="help-steps">
         <li>Expand slides → raw cues (blank-before injection, multi-body scripture, revealing bullets).</li>
         <li>Append Response Card cues before End (if enabled).</li>
-        <li>Inject the Message-Content macro; inject the QR element (if Saturday); inject the queue element into every cue.</li>
+        <li>Inject the Message-Content macro; fire the configured QR macro on blank-before cues whose slide had <code>qrOn</code> (computed client-side — see <em>QR Code</em>); inject the queue element into every cue.</li>
       </ol>
 
       <h4>Default element bounds (1920×1080)</h4>
