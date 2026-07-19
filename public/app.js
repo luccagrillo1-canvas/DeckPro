@@ -2,9 +2,16 @@
 
 // ─── Version & Changelog ──────────────────────────────────────────────────────
 
-const APP_VERSION = '4.14.0';
+const APP_VERSION = '4.15.0';
 
 const CHANGELOG = [
+  {
+    version: '4.15.0',
+    date: '2026-07-19',
+    changes: [
+      'Smart Notes: adding a scripture suggestion now re-applies whatever words you bolded in the notes as ALT emphasis on the fetched Bible text — previously the bold was lost entirely since the body always comes fresh from the Bible API, not from the notes.',
+    ],
+  },
   {
     version: '4.14.0',
     date: '2026-07-19',
@@ -10929,6 +10936,17 @@ function showNotesDoc({ id, styleText, bodyHtml }, title) {
   refreshNotesMode();
 }
 
+// Words the author bolded within a notes block, normalized for later
+// word-by-word matching against Bible-API text (case/punctuation-insensitive).
+function extractBoldWords(el) {
+  const words = new Set();
+  el.querySelectorAll('b,strong').forEach(node => {
+    const t = (node.textContent || '').toLowerCase().replace(/[^\w\s']/g, '');
+    t.split(/\s+/).filter(Boolean).forEach(w => words.add(w));
+  });
+  return words;
+}
+
 function extractNotesBlocks() {
   const bodyEl = document.getElementById('notes-doc-body');
   if (!bodyEl) return;
@@ -10946,7 +10964,7 @@ function extractNotesBlocks() {
     });
     if (bg) colorSet.add(bg);
     const idx = blocks.length;
-    blocks.push({ tag: el.tagName.toLowerCase(), text, bg, idx });
+    blocks.push({ tag: el.tagName.toLowerCase(), text, bg, idx, boldWords: extractBoldWords(el) });
     el.dataset.notesBlock = idx;
   });
   _notesDoc.blocks  = blocks;
@@ -10998,6 +11016,7 @@ function buildNotesSuggestions() {
   // so only ranges of 2+ verses ever get flagged.
   let scriptureChainSuggestion = null;
   let scriptureChainText = '';
+  let scriptureChainBoldWords = new Set();
   const finalizeScriptureChain = () => {
     if (scriptureChainSuggestion) {
       const info = parseVerseRangeInfo(scriptureChainSuggestion.ref);
@@ -11013,16 +11032,26 @@ function buildNotesSuggestions() {
           };
         }
       }
+      // Words the author bolded in the notes get carried onto the suggestion so
+      // Add can re-apply them as ALT emphasis on the Bible-API-fetched body text.
+      if (scriptureChainBoldWords.size) {
+        scriptureChainSuggestion.notesBoldWords = scriptureChainBoldWords;
+      }
     }
     scriptureChainSuggestion = null;
     scriptureChainText = '';
+    scriptureChainBoldWords = new Set();
   };
-  const startScriptureChain = (suggestion, seedText) => {
+  const startScriptureChain = (suggestion, seedText, seedBoldWords) => {
     finalizeScriptureChain();
     scriptureChainSuggestion = suggestion;
     scriptureChainText = seedText || '';
+    scriptureChainBoldWords = new Set(seedBoldWords || []);
   };
-  const continueScriptureChain = (text) => { scriptureChainText += ' ' + text; };
+  const continueScriptureChain = (text, boldWords) => {
+    scriptureChainText += ' ' + text;
+    (boldWords || []).forEach(w => scriptureChainBoldWords.add(w));
+  };
 
   const makePoint = (b, conf) => {
     const grp  = collectBullets(blocks, b._i);
@@ -11072,7 +11101,7 @@ function buildNotesSuggestions() {
       const ref = m[0].replace(/[.,;:]+$/, '').trim();
       last = push({ type: 'scripture', ref, preview: ref, blockIdx: b.idx, confidence: conf, key: 'scr:' + _normRef(ref), dupe: scriptureExists(ref) });
     }
-    if (last) startScriptureChain(last, b.text);
+    if (last) startScriptureChain(last, b.text, b.boldWords);
     return found;
   };
 
@@ -11114,12 +11143,12 @@ function buildNotesSuggestions() {
         const ref = m[0].replace(/[.,;:]+$/, '').trim();
         const pushed = push({ type: 'scripture', ref, preview: ref, blockIdx: b.idx, confidence: 'Mapped', key: 'scr:' + _normRef(ref), dupe: scriptureExists(ref) });
         scriptureContinuation = b;
-        startScriptureChain(pushed, b.text);
+        startScriptureChain(pushed, b.text, b.boldWords);
       } else if (sameSignal(scriptureContinuation, b)) {
         // Same highlight immediately after a highlighted reference is verse text,
         // not a separate (and fabricated) reference suggestion.
         scriptureContinuation = b;
-        continueScriptureChain(b.text);
+        continueScriptureChain(b.text, b.boldWords);
       } else {
         // No reference found and not a continuation — skip rather than fabricate
         // a "reference" out of the whole block's text.
@@ -11148,12 +11177,12 @@ function buildNotesSuggestions() {
           scriptureContinuation = b;
           // b is the verse-text block itself (the ref lived in the unhighlighted
           // block above it), so seed the chain with b's own text.
-          startScriptureChain(pushed, b.text);
+          startScriptureChain(pushed, b.text, b.boldWords);
         } else if (sameSignal(scriptureContinuation, b)) {
           // Same highlight immediately after a highlighted reference is verse text,
           // not a separate point suggestion.
           scriptureContinuation = b;
-          continueScriptureChain(b.text);
+          continueScriptureChain(b.text, b.boldWords);
         } else {
           scriptureContinuation = null;
           finalizeScriptureChain();
@@ -11244,7 +11273,7 @@ function notesSuggestionByKey(key) {
 }
 
 // ── Add wiring (reuses addSlide so shapes are always correct) ──────────────
-function notesAddScripture(ref) {
+function notesAddScripture(ref, boldWords = null) {
   addSlide('scripture');
   const slide = state.slides.find(s => s.id === state.activeId);
   if (!slide) return;
@@ -11253,7 +11282,7 @@ function notesAddScripture(ref) {
   slide.propName  = ref;
   saveState();
   render();
-  lookupBibleVerse(slide, ref);            // async — fills bodies + toast on miss
+  lookupBibleVerse(slide, ref, '', boldWords); // async — fills bodies + toast on miss
   toast('success', 'Scripture added', ref);
 }
 
@@ -11452,7 +11481,7 @@ function attachNotesDocHandlers() {
     if (addBtn) {
       const s = notesSuggestionByKey(addBtn.dataset.key);
       if (!s) return;
-      if (s.type === 'scripture')       notesAddScripture(s.ref);
+      if (s.type === 'scripture')       notesAddScripture(s.ref, s.notesBoldWords);
       else if (s.type === 'confidence') notesAddConfidence(s.text);
       else if (s.type === 'response')   notesAddResponseCard(s);
       else                              notesAddPointFrom(s);
@@ -11795,6 +11824,38 @@ function stripVerseSpans(spans) {
   return out.length ? out : [{ text: '', bold: false }];
 }
 
+// Re-applies bold words found in the source notes as ALT emphasis onto
+// Bible-API-fetched spans, since the API text is very likely the same
+// translation the author copied into their notes — word-for-word, just
+// without the formatting once it's plain-text-extracted. Walks each span
+// word-by-word and splits it into runs wherever the ALT state changes.
+function applyNotesBoldToSpans(spans, boldWords) {
+  if (!boldWords || !boldWords.size) return spans;
+  const out = [];
+  for (const s of spans) {
+    if (s.verseNum || !s.text) { out.push(s); continue; }
+    const tokens = s.text.split(/(\s+)/).filter(t => t !== '');
+    let buf = '', curAlt = null;
+    for (const tok of tokens) {
+      const isSpace = /^\s+$/.test(tok);
+      let tokAlt = curAlt;
+      if (!isSpace) {
+        const norm = tok.toLowerCase().replace(/[^\w'’]/g, '');
+        tokAlt = !!(norm && boldWords.has(norm));
+      }
+      if (curAlt === null) curAlt = tokAlt;
+      if (!isSpace && tokAlt !== curAlt) {
+        if (buf) out.push({ text: buf, bold: false, alt: curAlt });
+        buf = tok; curAlt = tokAlt;
+      } else {
+        buf += tok;
+      }
+    }
+    if (buf) out.push({ text: buf, bold: false, alt: curAlt });
+  }
+  return out;
+}
+
 // Returns true if any body in the slide contains verse-number spans.
 function slideHasVerseNums(slide) {
   return (slide.bodies || []).some(b => (b || []).some(s => s.verseNum));
@@ -11805,7 +11866,7 @@ function applyVerseSuper(slide, superscript) {
   (slide.bodies || []).forEach(b => (b || []).forEach(s => { if (s.verseNum) s.super = !!superscript; }));
 }
 
-async function lookupBibleVerse(slide, ref, overrideBibleId = '') {
+async function lookupBibleVerse(slide, ref, overrideBibleId = '', boldWords = null) {
   if (!ref) return;
   const btn = document.getElementById('btn-bible-lookup');
   if (btn) { btn.disabled = true; btn.textContent = '…'; }
@@ -11835,9 +11896,10 @@ async function lookupBibleVerse(slide, ref, overrideBibleId = '') {
       .trim();
     if (!text) { toast('error', 'No text returned', ref); return; }
 
-    const spans = wantVerseNums
+    let spans = wantVerseNums
       ? parseVerseSpans(text, state.config.verseSuper !== false)
       : [{ text: text.replace(/\uE000[\d\u2013-]+\uE001\s*/g, ''), bold: false }];
+    if (boldWords && boldWords.size) spans = applyNotesBoldToSpans(spans, boldWords);
     if (!slide.bodies) slide.bodies = [[]];
     slide.bodies[0] = spans;
 
