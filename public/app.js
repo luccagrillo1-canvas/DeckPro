@@ -2,9 +2,17 @@
 
 // ─── Version & Changelog ──────────────────────────────────────────────────────
 
-const APP_VERSION = '4.11.1';
+const APP_VERSION = '4.11.2';
 
 const CHANGELOG = [
+  {
+    version: '4.11.2',
+    date: '2026-07-19',
+    changes: [
+      'Fixed: scripture slide icons stayed white in dark mode — every other slide type had a dark-mode override, scripture was the one missing it.',
+      'The sidebar\'s "Blanks" show/hide toggle moved into the ⋯ menu (next to Dark Mode); its spot next to "Deck" is now a QR toggle for this deck\'s default QR state.',
+    ],
+  },
   {
     version: '4.11.1',
     date: '2026-07-19',
@@ -2309,6 +2317,7 @@ const TOOLTIPS = {
   // QR
   'qr-marker':                'QR Stop\nDrag into the deck to mark where auto QR-fill stops. Blanks before it default to QR on (when the deck-wide QR toggle is on); blanks at or after it default to off. Doesn\'t export as a slide.',
   'qr-toggle':                'QR\nToggles the QR macro for this blank specifically — overrides whatever the QR Stop marker would otherwise set, and stays put even if you move the marker later.',
+  'qr-deck-toggle':           'QR\nThis deck\'s default QR state for blanks — turns the QR macro on for blanks before the QR Stop marker (or all blanks, if there\'s no marker). Any blank with its own QR override ignores this.',
 };
 
 // ─── State ────────────────────────────────────────────────────────────────────
@@ -4124,9 +4133,13 @@ function renderSidebar() {
   const queue = document.getElementById('slide-queue');
   queue.innerHTML = '';
 
-  // Update show-blanks toggle button state
-  const toggleBtn = document.getElementById('btn-show-blanks');
-  if (toggleBtn) toggleBtn.classList.toggle('active', state.showBlanks);
+  // Update show-blanks menu item label
+  const showBlanksLabel = document.getElementById('mm-show-blanks-label');
+  if (showBlanksLabel) showBlanksLabel.textContent = state.showBlanks ? 'Hide Blanks' : 'Show Blanks';
+
+  // Update deck-wide QR toggle button state
+  const qrToggleBtn = document.getElementById('btn-deck-qr');
+  if (qrToggleBtn) qrToggleBtn.classList.toggle('active', !!state.config.qrCode);
 
   for (let _si = 0; _si < state.slides.length; _si++) {
     const slide = state.slides[_si];
@@ -9493,8 +9506,14 @@ function attachHeaderHandlers() {
   document.getElementById('btn-add-custom').addEventListener('click',    () => addSlide('custom'));
   document.getElementById('btn-add-qrmarker').addEventListener('click', () => addSlide('qrmarker'));
   document.getElementById('btn-generate').addEventListener('click', generate);
-  document.getElementById('btn-show-blanks')?.addEventListener('click', () => {
+  document.getElementById('mm-show-blanks')?.addEventListener('click', () => {
     state.showBlanks = !state.showBlanks;
+    saveState();
+    renderSidebar();
+    moreMenu?.classList.remove('open');
+  });
+  document.getElementById('btn-deck-qr')?.addEventListener('click', () => {
+    state.config.qrCode = !state.config.qrCode;
     saveState();
     renderSidebar();
   });
