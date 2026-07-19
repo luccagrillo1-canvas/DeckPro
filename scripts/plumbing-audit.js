@@ -81,6 +81,9 @@ const S = {
   // can't leak into Display 2 or vice versa and still pass.
   fitBodyLines:     6,
   fitPropBodyLines: 9,
+  // QR: fires as a macro (not an image) on blank-before cues with qrOn true.
+  qrMacroName: 'PLUMBING_QR_MACRO_INDIA',
+  qrMacroUuid: 'FFFFFFFF-1313-2424-3535-464646464646',
 };
 
 // ── Findings ─────────────────────────────────────────────────────────────────
@@ -222,7 +225,7 @@ function buildSpec() {
     name: 'PLUMBING_AUDIT_DECK',
     downloadMode: true,          // return buffers, no disk writes
     includeResponseCard: true,
-    qrEnabled: true,             // QR element injected into content cues
+    qrMacro: { name: S.qrMacroName, uuid: S.qrMacroUuid }, // fires on blank-before cues with qrOn
     responses: { r1: S.rcResponse1, r2: 'RC two', r3: 'RC three' },
     style,
     // palette-level macros + stage displays, triggered on scripture slides
@@ -237,7 +240,7 @@ function buildSpec() {
       // blankBefore → a blank cue is injected ahead of this one; its Smart
       // Notes should preview the upcoming scripture text.
       { type: 'scripture', label: S.reference, reference: S.reference,
-        bodies: [scriptureSpans], propName: S.propName, blankBefore: true,
+        bodies: [scriptureSpans], propName: S.propName, blankBefore: true, qrOn: true,
         stripNewlines: true,
         bodyW: S.fitBodyW, bodyX: S.fitBodyX, bodyLines: S.fitBodyLines,
         propBodyW: S.fitPropBodyW, propBodyX: S.fitPropBodyX, propBodyLines: S.fitPropBodyLines },
@@ -503,10 +506,16 @@ async function main() {
       !!(before && beforeIsBlank), before ? `cue #${scrIdx - 1}` : 'no preceding cue');
     check('P1', 'notes', 'Blank-before Smart Notes preview the upcoming scripture',
       beforeNotes.includes(S.scriptureText), beforeNotes.includes(S.scriptureText) ? 'preview present' : 'sentinel not in blank notes');
-  }
 
-  // ---- QR element injected (qrEnabled) ----
-  check('P2', 'structure', 'QR element injected on content cues', !!findEl(pres, 'qr'), '');
+    // ---- QR: fires as a macro on the blank-before cue (qrOn: true), not an
+    // image element — that whole approach was removed since QR isn't
+    // something DeckPro draws, it's whatever macro actually shows it.
+    const beforeMacroUuids = before ? cueMacroUuids(before) : [];
+    check('P0', 'macros', `QR macro "${S.qrMacroName}" fires on the blank-before cue`,
+      beforeMacroUuids.includes(S.qrMacroUuid), beforeMacroUuids.join(', ') || 'no macros on blank-before cue');
+    check('P0', 'structure', 'No QR image element anywhere (QR is a macro, not a drawn element)',
+      !findEl(pres, 'qr'), findEl(pres, 'qr') ? 'found a "qr" element — old image-based approach resurfaced' : 'none found');
+  }
 
   // ---- Revealing point: one prop per bullet, progressive ----
   if (propDoc) {
