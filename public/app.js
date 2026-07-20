@@ -2,9 +2,16 @@
 
 // ─── Version & Changelog ──────────────────────────────────────────────────────
 
-const APP_VERSION = '4.17.0';
+const APP_VERSION = '4.18.0';
 
 const CHANGELOG = [
+  {
+    version: '4.18.0',
+    date: '2026-07-19',
+    changes: [
+      'You can now drag selected text out of the notes doc straight into any field — Reference, Body, Confidence Monitor, Response options, all of it — instead of copy-pasting. Bold text carries over as bold in rich-text fields.',
+    ],
+  },
   {
     version: '4.17.0',
     date: '2026-07-19',
@@ -9871,6 +9878,86 @@ function initLiveQuoteNormalization() {
   }, true);
 }
 
+// ─── Drag text from the notes doc straight into any field ─────────────────
+// Captured at dragstart (live DOM, so bold survives even when the browser's
+// serialized text/html drag payload would lose it) and consumed on drop —
+// same field-detection rule as live quote normalization above.
+let _draggedNotesText = null; // { plain, html } — html is <strong>-only, sanitized
+
+function isTextFieldTarget(el) {
+  if (!el) return false;
+  if (el.isContentEditable) return true;
+  if (el.tagName === 'TEXTAREA') return true;
+  if (el.tagName === 'INPUT' && (el.type === 'text' || el.type === 'search')) return true;
+  return false;
+}
+
+function initNotesFieldDragDrop() {
+  const docBody = document.getElementById('notes-doc-body');
+  if (docBody) {
+    docBody.addEventListener('dragstart', () => {
+      const sel = window.getSelection();
+      if (!sel || sel.isCollapsed || !sel.rangeCount || !docBody.contains(sel.anchorNode)) {
+        _draggedNotesText = null;
+        return;
+      }
+      const frag = sel.getRangeAt(0).cloneContents();
+      const bits = [];
+      const walk = (node, bold) => {
+        if (node.nodeType === Node.TEXT_NODE) {
+          if (node.textContent) bits.push(bold ? `<strong>${esc(node.textContent)}</strong>` : esc(node.textContent));
+          return;
+        }
+        if (node.nodeType !== Node.ELEMENT_NODE) return;
+        if (node.tagName === 'BR') { bits.push('<br>'); return; }
+        const isBold = bold || node.tagName === 'B' || node.tagName === 'STRONG'
+          || /bold|[7-9]00/.test(node.style?.fontWeight || '');
+        node.childNodes.forEach(child => walk(child, isBold));
+      };
+      [...frag.childNodes].forEach(n => walk(n, false));
+      // Read plain text off the clone, not sel.toString() — the live selection
+      // can already be gone by the time this runs (the browser collapses it
+      // as part of entering drag mode), even synchronously within this handler.
+      _draggedNotesText = { plain: frag.textContent, html: bits.join('') };
+    });
+    docBody.addEventListener('dragend', () => { _draggedNotesText = null; });
+  }
+
+  document.addEventListener('dragover', e => {
+    if (isTextFieldTarget(e.target)) e.preventDefault();
+  });
+
+  document.addEventListener('drop', e => {
+    const t = e.target;
+    if (!isTextFieldTarget(t)) return;
+    const dragged = _draggedNotesText;
+    const plain = dragged?.plain ?? e.dataTransfer.getData('text/plain');
+    if (!plain) return;
+    e.preventDefault();
+
+    if (t.isContentEditable) {
+      t.focus();
+      const range = document.caretRangeFromPoint?.(e.clientX, e.clientY);
+      if (range) {
+        const sel = window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(range);
+      }
+      document.execCommand('insertHTML', false, dragged?.html || esc(plain));
+    } else {
+      t.focus();
+      const start = t.selectionStart ?? t.value.length;
+      const end   = t.selectionEnd   ?? t.value.length;
+      const next  = t.value.slice(0, start) + plain + t.value.slice(end);
+      t.value = next;
+      const caret = start + plain.length;
+      try { t.setSelectionRange(caret, caret); } catch (_) {}
+    }
+    t.dispatchEvent(new Event('input', { bubbles: true }));
+    _draggedNotesText = null;
+  });
+}
+
 // Whole-word capitalization of divine pronouns (He/Him/His/Himself) in body
 // text — opt-in via Preferences → Book Names, applied at export like the book
 // name overrides. Word-boundary matched so it never touches "this"/"shim"/etc.
@@ -14261,6 +14348,7 @@ async function bootstrap() {
   await loadState();
   initTheme();
   initLiveQuoteNormalization();
+  initNotesFieldDragDrop();
   syncUidCounter();
   attachHeaderHandlers();
   initDecks();
